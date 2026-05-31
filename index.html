@@ -21967,8 +21967,19 @@ function printUnitDailyReport() {
 
   // ── PAGE 3: Float & Sitter ────────────────────────────────────
   // From sheetRows / _floatSummary
-  const floatData = window._floatSummary || {};
-  const floatNames = Object.keys(floatData);
+  // Pull float/sitter data directly from state
+const floatKey = `${dateKey}`;
+const floatGrid = state.floatSitter || {};
+
+// Build floatData keyed by name from state
+const floatData = {};
+Object.entries(floatGrid).forEach(([k, val]) => {
+  if (k.startsWith(floatKey + '|')) {
+    const name = k.split('|')[1];
+    floatData[name] = val;
+  }
+});
+const floatNames = Object.keys(floatData).sort();
 
   let floatHtml = '';
   if (floatNames.length) {
