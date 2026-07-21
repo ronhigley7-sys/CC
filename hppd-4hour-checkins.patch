@@ -1,0 +1,383 @@
+diff --git a/index.html b/index.html
+index 3881de0..3a12986 100644
+--- a/index.html
++++ b/index.html
+@@ -4155,6 +4155,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--white);
+         <button onclick="openProdModal()" class="btn btn-primary" style="font-size:12px;padding:5px 14px;">+ Log Day</button>
+       </div>
+     </div>
++    <!-- 4-Hour Staffing & Census Check-Ins -->
++    <div id="hppd-checkin-card" style="margin-bottom:14px;"></div>
++
+     <!-- HPPD Excel Drop + Paste Importer -->
+     <div id="hppd-import-bar" style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:14px 16px;margin-bottom:14px;">
+       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+@@ -5801,6 +5804,7 @@ let state = {
+   otLog: {},          // { name: [{ payPeriod, regularHrs, otHrs, premiumType, approved, notes }] }
+   incidentReports: [],// [{ id, date, time, room, patient, type, severity, rlNumber, status, followUp, staff, notes, ts }]
+   productivity: {},   // { 'YYYY-MM-DD': { census, productiveHrs, nonProductiveHrs, staffedHrs, notes } }
++  hppdCheckins: {},   // { 'YYYY-MM-DD': { '0700': {census, staff, notes, savedAt}, '1100': {...}, ... } }
+   equipmentLog: [],   // [{ id, item, location, issue, reportedBy, reportedDate, status, resolvedDate, workOrder, notes, ts }]
+   shiftTargets: {},   // { shift: { RN:n, LPN:n, CA:n, UC:n } } — overrides RISK_REQS defaults
+   customOriMilestones: [], // [{ key, label }] — user-added milestones appended to ORI_MILESTONES
+@@ -16137,6 +16141,7 @@ function buildSavePayload() {
+     recognition: state.recognition, policies: state.policies,
+     messages: state.messages, rrtLog: state.rrtLog, otLog: state.otLog,
+     incidentReports: state.incidentReports, productivity: state.productivity,
++    hppdCheckins: state.hppdCheckins,
+     equipmentLog: state.equipmentLog, shiftTargets: state.shiftTargets,
+     customOriMilestones: state.customOriMilestones, customOriGoals: state.customOriGoals,
+     onboarding: state.onboarding, offboarding: state.offboarding,
+@@ -16318,6 +16323,7 @@ function applyLoadedData(data) {
+     if (has('otLog'))          state.otLog          = data.otLog          || {};
+     if (has('incidentReports'))state.incidentReports= data.incidentReports|| [];
+     if (has('productivity'))   state.productivity   = data.productivity   || {};
++    if (has('hppdCheckins'))   state.hppdCheckins   = data.hppdCheckins   || {};
+     if (has('equipmentLog'))   state.equipmentLog   = data.equipmentLog   || [];
+     if (has('shiftTargets'))   state.shiftTargets   = data.shiftTargets   || {};
+     if (has('customOriMilestones')) state.customOriMilestones = data.customOriMilestones || [];
+@@ -17692,8 +17698,120 @@ const IV_STATUS_CFG = {
+ 
+ const IV_ROLE_COLOR = { RN:'var(--accent2)', LPN:'var(--purple2)', CA:'var(--teal2)', UC:'var(--amber2)', Other:'var(--text2)' };
+ 
+-// Rubric categories — scored 1-5 per question
+-const IV_RUBRIC = [
++// Rubric categories — scored 1-5 per question. Role-specific question sets for
++// RN / LPN / CA (3B Tele Med-Surg / Stroke Telemetry, 3C flex/triad). Falls back
++// to IV_RUBRIC_DEFAULT for UC / Other candidates.
++const IV_RUBRIC_BY_ROLE = {
++  RN: [
++    {
++      section: 'Clinical Competency',
++      icon: '🩺',
++      items: [
++        { key:'rn_prioritization',      label:'Prioritization & Triage',            prompt:'Walk me through how you would prioritize care for a 5-patient assignment if two patients are due for meds, one is a new stroke rule-out just back from CT, and one call light has been on for 5 minutes.' },
++        { key:'rn_stroke_scale',        label:'NIHSS / Stroke Assessment',          prompt:'What are the key components of an NIH Stroke Scale assessment, and how often would you reassess a patient in the acute post-stroke window?' },
++        { key:'rn_telemetry',           label:'Cardiac Telemetry Knowledge',        prompt:'Describe your experience with cardiac telemetry monitoring — what rhythm changes would prompt you to notify the provider immediately?' },
++        { key:'rn_fall_risk',           label:'Fall Risk Intervention',             prompt:'A patient on your unit is a fall risk and has attempted to get up unassisted twice this shift. Walk me through your interventions.' },
++        { key:'rn_med_safety',          label:'Medication Safety & Reconciliation', prompt:'How do you approach medication reconciliation and double-checks for high-alert medications (e.g., anticoagulants, insulin)?' },
++        { key:'rn_deterioration',       label:'Recognizing Deterioration',          prompt:'Tell me about a time you identified early signs of patient deterioration. What did you do, and what was the outcome?' },
++        { key:'rn_tpa',                 label:'tPA / Thrombolytic Protocol',        prompt:'What is your experience with thrombolytic (tPA) administration or post-tPA monitoring protocols?' },
++        { key:'rn_order_discrepancy',   label:'Clinical Judgment vs. Orders',       prompt:'How do you handle a discrepancy between a physician\'s order and what you believe is clinically appropriate for the patient?' },
++      ],
++    },
++    {
++      section: 'Communication & Teamwork',
++      icon: '🤝',
++      items: [
++        { key:'rn_delegation',          label:'Delegation to LPN / CA',             prompt:'Describe how you delegate tasks to LPNs and CAs on your team. How do you decide what to delegate?' },
++        { key:'rn_feedback',            label:'Giving Feedback',                    prompt:'Tell me about a time you had to give an LPN or CA feedback about their performance. How did you approach it?' },
++        { key:'rn_handoff',             label:'Handoff Communication',              prompt:'How do you communicate handoff information to the oncoming shift to ensure continuity of care?' },
++        { key:'rn_disagreement',        label:'Handling Disagreement',              prompt:'Describe a time you disagreed with a charge nurse or manager about a staffing or patient care decision. How did you handle it?' },
++        { key:'rn_rapid_response',      label:'Composure in Emergencies',           prompt:'How do you stay calm and organized during a rapid response or code on the unit?' },
++      ],
++    },
++    {
++      section: 'Culture Fit & Motivation',
++      icon: '⭐',
++      items: [
++        { key:'rn_unit_interest',       label:'Interest in the Unit',               prompt:'Why are you interested in working on a Tele Med-Surg / Stroke Telemetry unit specifically?' },
++        { key:'rn_teamwork_def',        label:'Definition of Teamwork',             prompt:'What does good teamwork look like to you on a busy inpatient unit?' },
++        { key:'rn_above_beyond',        label:'Above & Beyond Example',             prompt:'Tell me about a time you went above and beyond for a patient or family.' },
++        { key:'rn_emotional_resilience',label:'Emotional Resilience',               prompt:'How do you handle the emotional toll of caring for critically ill or rapidly declining patients?' },
++        { key:'rn_career_goals',        label:'Career Trajectory',                  prompt:'Where do you see your nursing career in the next 2–3 years?' },
++      ],
++    },
++  ],
++  LPN: [
++    {
++      section: 'Clinical Competency',
++      icon: '🩺',
++      items: [
++        { key:'lpn_med_admin',          label:'Medication Administration Process',  prompt:'Under an RN\'s supervision, walk me through your process for administering scheduled oral medications to a group of patients.' },
++        { key:'lpn_scope',              label:'Scope of Practice Awareness',        prompt:'What is your understanding of the scope-of-practice differences between an LPN and an RN on a telemetry unit, particularly around IV push medications and blood product administration?' },
++        { key:'lpn_deterioration',      label:'Recognizing & Escalating Deterioration', prompt:'How would you recognize and respond to signs of patient deterioration (e.g., change in mental status, abnormal vital signs) and who would you notify first?' },
++        { key:'lpn_wound_care',         label:'Wound / Ostomy Care Experience',     prompt:'Describe your experience with wound care, dressing changes, or ostomy care.' },
++        { key:'lpn_documentation',      label:'I/O, Vitals, Glucose Documentation', prompt:'What is your process for documenting intake/output, vital signs, and blood glucose results accurately and on time?' },
++        { key:'lpn_telemetry',          label:'Telemetry Alarm Awareness',          prompt:'Have you worked with patients on cardiac telemetry monitors before? What would you do if you noticed an alarm you didn\'t recognize?' },
++      ],
++    },
++    {
++      section: 'Communication & Teamwork',
++      icon: '🤝',
++      items: [
++        { key:'lpn_escalation',         label:'Escalating to RN',                   prompt:'Tell me about a time you had to escalate a concern about a patient to the RN. How did that conversation go?' },
++        { key:'lpn_prioritization',     label:'Task Prioritization',                prompt:'How do you prioritize your task list when caring for multiple patients with competing needs?' },
++        { key:'lpn_ca_partnership',     label:'Partnership with CA',                prompt:'Describe a time you worked closely with a Care Associate to complete patient care tasks. How did you communicate?' },
++        { key:'lpn_scope_boundary',     label:'Recognizing Scope Boundaries',       prompt:'How do you handle being asked to do something you\'re not sure is within your scope of practice?' },
++      ],
++    },
++    {
++      section: 'Culture Fit & Motivation',
++      icon: '⭐',
++      items: [
++        { key:'lpn_unit_interest',      label:'Interest in the Unit',               prompt:'What draws you to working on a Med-Surg / Stroke Telemetry unit?' },
++        { key:'lpn_pace',               label:'Handling Fast Pace',                 prompt:'How do you handle a fast-paced shift with frequent interruptions?' },
++        { key:'lpn_feedback_receptivity',label:'Receptiveness to Feedback',         prompt:'Tell me about a time you received constructive feedback. How did you respond?' },
++        { key:'lpn_career_goals',       label:'Career Goals',                       prompt:'What are your long-term career goals in nursing?' },
++      ],
++    },
++  ],
++  CA: [
++    {
++      section: 'Clinical Competency',
++      icon: '🩺',
++      items: [
++        { key:'ca_vitals',              label:'Vital Signs & Documentation',        prompt:'Walk me through how you would take and document a full set of vital signs, and what results would you report to the nurse right away.' },
++        { key:'ca_adls',                label:'ADL Assistance Experience',          prompt:'Describe your experience assisting patients with activities of daily living (bathing, toileting, mobility, feeding).' },
++        { key:'ca_change_condition',    label:'Recognizing Condition Change',       prompt:'What would you do if you noticed a change in a patient\'s condition — for example, they seemed more confused or short of breath than earlier in the shift?' },
++        { key:'ca_fall_risk',           label:'Fall Risk Mobility Assistance',      prompt:'How do you safely assist a fall-risk patient with ambulation or transfers?' },
++        { key:'ca_poc_testing',         label:'Point-of-Care Testing / Specimens',  prompt:'What is your experience with blood glucose checks (point-of-care testing) or specimen collection?' },
++        { key:'ca_task_organization',   label:'Task Organization Across Patients',  prompt:'How do you keep track of tasks for multiple patients across a shift (rounding, vitals, intake/output)?' },
++      ],
++    },
++    {
++      section: 'Communication & Teamwork',
++      icon: '🤝',
++      items: [
++        { key:'ca_reporting',           label:'Reporting Concerns to Nurse',        prompt:'Tell me about a time you noticed something concerning with a patient and reported it to the nurse. What happened?' },
++        { key:'ca_communication_pulled',label:'Communicating When Pulled Thin',     prompt:'How do you communicate with the RN or LPN when you\'re pulled in multiple directions at once?' },
++        { key:'ca_helping_coworkers',   label:'Helping Overwhelmed Coworkers',      prompt:'Describe a time you helped a coworker who was overwhelmed during a shift.' },
++        { key:'ca_difficult_patient',   label:'De-escalating Upset Patients/Families', prompt:'How would you handle a patient or family member who is upset or verbally frustrated with you?' },
++      ],
++    },
++    {
++      section: 'Culture Fit & Motivation',
++      icon: '⭐',
++      items: [
++        { key:'ca_unit_interest',       label:'Interest in the Unit / Role',        prompt:'Why are you interested in working as a Care Associate on a Med-Surg / Stroke Telemetry unit?' },
++        { key:'ca_customer_service',    label:'Customer Service Philosophy',        prompt:'What does excellent customer service look like when caring for patients and families?' },
++        { key:'ca_composure',           label:'Staying Organized Under Pressure',   prompt:'How do you stay organized and calm when the unit is busy or short-staffed?' },
++        { key:'ca_growth_plans',        label:'Growth & Certification Plans',       prompt:'Where do you see yourself growing within healthcare — do you have plans to pursue further certification or nursing school?' },
++      ],
++    },
++  ],
++};
++
++// Fallback rubric for UC / Other candidates (kept generic — not role-specific)
++const IV_RUBRIC_DEFAULT = [
+   {
+     section: 'Clinical Competency',
+     icon: '🩺',
+@@ -17722,17 +17840,12 @@ const IV_RUBRIC = [
+       { key:'initiative',            label:'Initiative & Accountability',prompt:'Examples of going above and beyond, owning mistakes, advocating for patients or process improvement.' },
+     ],
+   },
+-  {
+-    section: 'Unit-Specific Fit',
+-    icon: '🏥',
+-    items: [
+-      { key:'telemetry_knowledge',   label:'Telemetry / Cardiac Knowledge', prompt:'For RN/LPN: rhythm recognition, rate response, waveform changes. For CA: telemetry observation duties.' },
+-      { key:'culture_fit',           label:'Culture & Values Fit',       prompt:'How do they describe their ideal team? Alignment with AOMC values, patient-centered care, respect.' },
+-      { key:'longevity_interest',    label:'Long-Term Interest',         prompt:'Why this unit? Where do they see themselves in 2-3 years? Realistic expectations about the role.' },
+-    ],
+-  },
+ ];
+ 
++function ivRubricFor(role) {
++  return IV_RUBRIC_BY_ROLE[role] || IV_RUBRIC_DEFAULT;
++}
++
+ let _ivActiveId = null;
+ 
+ function ivById(id) { return (state.interviews || []).find(i => i.id === id); }
+@@ -17744,14 +17857,15 @@ function ivScoreTotal(iv) {
+   return vals.reduce((a, b) => a + b, 0);
+ }
+ 
+-function ivScoreMax() {
+-  return IV_RUBRIC.reduce((s, sec) => s + sec.items.length * 5, 0);
++function ivScoreMax(iv) {
++  const rubric = ivRubricFor(iv && iv.role);
++  return rubric.reduce((s, sec) => s + sec.items.length * 5, 0);
+ }
+ 
+ function ivScorePct(iv) {
+   const t = ivScoreTotal(iv);
+   if (t === null) return null;
+-  return Math.round(t / ivScoreMax() * 100);
++  return Math.round(t / ivScoreMax(iv) * 100);
+ }
+ 
+ function ivRecommendation(pct) {
+@@ -17921,7 +18035,7 @@ function saveIvScore(id, key, val) {
+   const pct = ivScorePct(iv);
+   const rec = ivRecommendation(pct);
+   const totEl = document.getElementById('iv-score-total-' + id);
+-  if (totEl) totEl.textContent = (ivScoreTotal(iv) || 0) + ' / ' + ivScoreMax();
++  if (totEl) totEl.textContent = (ivScoreTotal(iv) || 0) + ' / ' + ivScoreMax(iv);
+   const recEl = document.getElementById('iv-rec-' + id);
+   if (recEl) { recEl.textContent = rec.label; recEl.style.color = rec.color; }
+   const pctEl = document.getElementById('iv-pct-' + id);
+@@ -17993,8 +18107,8 @@ function renderInterviewDetail(id) {
+   const dateStr  = iv.date ? new Date(iv.date + 'T12:00:00').toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' }) : 'No date set';
+   const safeId   = id.replace(/[^a-zA-Z0-9_]/g, '_');
+ 
+-  // Build rubric sections
+-  const rubricHtml = IV_RUBRIC.map(sec => {
++  // Build rubric sections (role-specific: RN / LPN / CA, default fallback for UC/Other)
++  const rubricHtml = ivRubricFor(iv.role).map(sec => {
+     const sectionNote = (iv.notes || {})[sec.icon] || '';
+     const itemsHtml = sec.items.map(item => {
+       const score = (iv.scores || {})[item.key] || 0;
+@@ -18065,7 +18179,7 @@ function renderInterviewDetail(id) {
+     <!-- Score summary -->
+     <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+       <div style="flex:1;min-width:140px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;padding:12px 16px;text-align:center;">
+-        <div id="iv-score-total-${id}" style="font-size:22px;font-weight:700;color:var(--white);">${tot !== null ? tot + ' / ' + ivScoreMax() : '— / ' + ivScoreMax()}</div>
++        <div id="iv-score-total-${id}" style="font-size:22px;font-weight:700;color:var(--white);">${tot !== null ? tot + ' / ' + ivScoreMax(iv) : '— / ' + ivScoreMax(iv)}</div>
+         <div style="font-size:10px;color:var(--text3);margin-top:2px;">Total Score</div>
+       </div>
+       <div style="flex:1;min-width:100px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;padding:12px 16px;text-align:center;">
+@@ -20017,9 +20131,151 @@ function initProductivity(){
+   if(mSel&&!mSel.options.length){const now=new Date();for(let i=-3;i<=3;i++){const d=new Date(now.getFullYear(),now.getMonth()+i,1);const val=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');const o=document.createElement('option');o.value=val;o.textContent=d.toLocaleDateString('en-US',{month:'long',year:'numeric'});if(i===0)o.selected=true;mSel.appendChild(o);}}
+   const d=document.getElementById('prod-date');if(d&&!d.value)d.value=new Date().toISOString().split('T')[0];
+   const t=document.getElementById('prod-target');if(t&&!t.value)t.value='7.5';
++  renderHppdCheckins();
+   renderProductivity();
+ }
+ 
++// ── 4-Hour Staffing & Census Check-Ins ──────────────────────────
++// Fixed hospital check-in blocks. Each block covers the 4 hours starting at that time.
++// Matches the app's existing shift structure: Day (8h), Eve1 (4h), Eve2 (4h), Night (8h).
++const HPPD_CK_BLOCKS = [
++  { key:'0700', label:'0700 – 1500', icon:'☀️', hours:8, name:'Day' },
++  { key:'1500', label:'1500 – 1900', icon:'🌆', hours:4, name:'Eve1' },
++  { key:'1900', label:'1900 – 2300', icon:'🌆', hours:4, name:'Eve2' },
++  { key:'2300', label:'2300 – 0700', icon:'🌙', hours:8, name:'Night' },
++];
++let _hppdCkDate = new Date().toISOString().split('T')[0];
++
++function hppdCkChangeDate(delta){
++  const d = new Date(_hppdCkDate + 'T12:00:00');
++  d.setDate(d.getDate() + delta);
++  _hppdCkDate = d.toISOString().split('T')[0];
++  renderHppdCheckins();
++}
++
++function hppdCkSetDate(dateKey){
++  if (dateKey) _hppdCkDate = dateKey;
++  renderHppdCheckins();
++}
++
++// Aggregate a date's logged check-ins into totals used to drive the daily HPPD record.
++function hppdCkAggregate(dateKey){
++  const day = (state.hppdCheckins || {})[dateKey] || {};
++  const logged = HPPD_CK_BLOCKS
++    .map(b => ({ ...b, entry: day[b.key] }))
++    .filter(b => b.entry && (b.entry.census || b.entry.staff));
++  const totalHours  = logged.reduce((s,b) => s + ((b.entry.staff||0) * b.hours), 0);
++  const avgCensus   = logged.length ? Math.round(logged.reduce((s,b) => s + (b.entry.census||0), 0) / logged.length * 10) / 10 : 0;
++  const runningHppd = avgCensus ? Math.round(totalHours / avgCensus * 100) / 100 : null;
++  return { logged, totalHours, avgCensus, runningHppd, blocksLogged: logged.length };
++}
++
++function saveHppdCheckin(dateKey, blockKey, field, rawVal){
++  if (!state.hppdCheckins) state.hppdCheckins = {};
++  if (!state.hppdCheckins[dateKey]) state.hppdCheckins[dateKey] = {};
++  if (!state.hppdCheckins[dateKey][blockKey]) state.hppdCheckins[dateKey][blockKey] = {};
++  const entry = state.hppdCheckins[dateKey][blockKey];
++  if (field === 'notes') {
++    entry.notes = rawVal || '';
++  } else {
++    const val = parseFloat(rawVal);
++    entry[field] = isNaN(val) ? 0 : val;
++  }
++  entry.savedAt = new Date().toISOString();
++  hppdCkSyncToDaily(dateKey);
++  persistSave();
++  renderHppdCheckins();
++  renderProductivity();
++}
++
++function deleteHppdCheckin(dateKey, blockKey){
++  if (!(state.hppdCheckins||{})[dateKey]) return;
++  delete state.hppdCheckins[dateKey][blockKey];
++  hppdCkSyncToDaily(dateKey);
++  persistSave();
++  renderHppdCheckins();
++  renderProductivity();
++}
++
++// Push the running totals from check-ins into the existing daily productivity
++// record so the monthly HPPD table/summary reflect the real-time entries.
++function hppdCkSyncToDaily(dateKey){
++  const agg = hppdCkAggregate(dateKey);
++  if (!state.productivity) state.productivity = {};
++  const existing = state.productivity[dateKey] || {};
++  if (!agg.blocksLogged) {
++    // No check-ins logged for this date — leave any manually-entered daily record alone.
++    return;
++  }
++  state.productivity[dateKey] = {
++    ...existing,
++    census: agg.avgCensus,
++    productiveHrs: agg.totalHours,
++    targetHppd: existing.targetHppd || 7.5,
++    fromCheckins: true,
++  };
++}
++
++function renderHppdCheckins(){
++  const card = document.getElementById('hppd-checkin-card');
++  if (!card) return;
++  const dateKey = _hppdCkDate;
++  const day = (state.hppdCheckins || {})[dateKey] || {};
++  const agg = hppdCkAggregate(dateKey);
++  const target = (state.productivity||{})[dateKey]?.targetHppd || 7.5;
++  const dateStr = new Date(dateKey + 'T12:00:00').toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
++  const over = agg.runningHppd !== null && agg.runningHppd > target;
++
++  const rows = HPPD_CK_BLOCKS.map(b => {
++    const e = day[b.key] || {};
++    const intervalHppd = (e.census && e.staff) ? Math.round((e.staff*b.hours) / e.census * 100) / 100 : null;
++    const hasData = e.census || e.staff;
++    return `<div style="display:grid;grid-template-columns:110px 1fr 1fr 90px 32px;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
++      <div style="font-size:11px;color:var(--text2);font-weight:600;">${b.icon} ${b.label}</div>
++      <input type="number" min="0" max="30" placeholder="Census" value="${e.census||''}"
++        onchange="saveHppdCheckin('${dateKey}','${b.key}','census',this.value)"
++        style="width:100%;background:var(--slate);border:1px solid var(--border);border-radius:4px;padding:5px 8px;color:var(--white);font-size:12px;outline:none;box-sizing:border-box;">
++      <input type="number" min="0" max="30" step="0.5" placeholder="Staff on duty" value="${e.staff||''}"
++        onchange="saveHppdCheckin('${dateKey}','${b.key}','staff',this.value)"
++        style="width:100%;background:var(--slate);border:1px solid var(--border);border-radius:4px;padding:5px 8px;color:var(--white);font-size:12px;outline:none;box-sizing:border-box;">
++      <div style="font-size:12px;font-weight:700;text-align:right;color:${intervalHppd?(intervalHppd>target?'var(--red2)':'var(--green2)'):'var(--text3)'};">${intervalHppd ?? '—'}</div>
++      <div style="text-align:center;">${hasData?`<button onclick="deleteHppdCheckin('${dateKey}','${b.key}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px;" onmouseover="this.style.color='var(--red2)'" onmouseout="this.style.color='var(--text3)'">✕</button>`:''}</div>
++    </div>`;
++  }).join('');
++
++  card.innerHTML = `
++    <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 16px;">
++      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
++        <div>
++          <div style="font-size:12px;font-weight:700;color:var(--white);">⏱️ Shift Staffing & Census Check-Ins</div>
++          <div style="font-size:10px;color:var(--text3);margin-top:2px;">Log census + staff on duty each shift — feeds the daily HPPD in real time</div>
++        </div>
++        <div style="display:flex;align-items:center;gap:6px;">
++          <button onclick="hppdCkChangeDate(-1)" style="background:rgba(255,255,255,0.07);border:1px solid var(--border);border-radius:4px;padding:4px 9px;color:var(--text2);font-size:12px;cursor:pointer;">◀</button>
++          <input type="date" value="${dateKey}" onchange="hppdCkSetDate(this.value)"
++            style="background:var(--slate);border:1px solid var(--border);border-radius:4px;padding:4px 8px;color:var(--white);font-size:12px;outline:none;">
++          <button onclick="hppdCkChangeDate(1)" style="background:rgba(255,255,255,0.07);border:1px solid var(--border);border-radius:4px;padding:4px 9px;color:var(--text2);font-size:12px;cursor:pointer;">▶</button>
++        </div>
++      </div>
++      <div style="font-size:10px;color:var(--text3);margin-bottom:6px;">${dateStr}</div>
++      <div style="display:grid;grid-template-columns:110px 1fr 1fr 90px 32px;gap:8px;padding:0 0 6px;border-bottom:1px solid var(--border);">
++        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;">Block</div>
++        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;">Census</div>
++        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;">Staff on Duty</div>
++        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;text-align:right;">HPPD</div>
++        <div></div>
++      </div>
++      ${rows}
++      <div style="margin-top:10px;padding:10px 12px;background:rgba(255,255,255,0.04);border-radius:6px;display:flex;gap:20px;flex-wrap:wrap;align-items:center;">
++        <div><div style="font-size:10px;color:var(--text3);">Blocks Logged</div><div style="font-size:16px;font-weight:700;color:var(--white);">${agg.blocksLogged} / 6</div></div>
++        <div><div style="font-size:10px;color:var(--text3);">Avg Census</div><div style="font-size:16px;font-weight:700;color:var(--white);">${agg.avgCensus||'—'}</div></div>
++        <div><div style="font-size:10px;color:var(--text3);">Total Staffed Hours</div><div style="font-size:16px;font-weight:700;color:var(--accent2);">${agg.totalHours||'—'}</div></div>
++        <div><div style="font-size:10px;color:var(--text3);">Running HPPD</div><div style="font-size:16px;font-weight:700;color:${agg.runningHppd?(over?'var(--red2)':'var(--green2)'):'var(--text3)'};">${agg.runningHppd??'—'}</div></div>
++        <div><div style="font-size:10px;color:var(--text3);">Target</div><div style="font-size:16px;font-weight:700;color:var(--text2);">${target}</div></div>
++      </div>
++    </div>`;
++}
++
+ function openProdModal(dateKey){
+   const m=document.getElementById('prod-modal');if(!m)return;m.style.display='flex';
+   document.getElementById('prod-edit-date').value=dateKey||'';
