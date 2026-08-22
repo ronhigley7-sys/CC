@@ -27143,6 +27143,24 @@ function printHuddle() {
     : '';
   const weekOf = d.week || (dateKey ? dateKey : '');
 
+  // ── Determine week start so we can build one form page per day (7 days) ──
+  let weekStartDate;
+  const wkMatch = (d.week || '').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (wkMatch) {
+    weekStartDate = new Date(parseInt(wkMatch[3]), parseInt(wkMatch[1]) - 1, parseInt(wkMatch[2]));
+  } else if (dateKey) {
+    weekStartDate = new Date(dateKey + 'T12:00:00');
+    weekStartDate.setDate(weekStartDate.getDate() - weekStartDate.getDay());
+  } else {
+    weekStartDate = new Date();
+    weekStartDate.setDate(weekStartDate.getDate() - weekStartDate.getDay());
+  }
+  const weekDayLabels = Array.from({ length: 7 }, (_, i) => {
+    const dt = new Date(weekStartDate);
+    dt.setDate(weekStartDate.getDate() + i);
+    return dt.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  });
+
   // Format CNO content: numbered items with sub-bullets, Q&A answers bolded
   function formatCNOContent(raw) {
     if (!raw) return '';
@@ -27181,123 +27199,10 @@ function printHuddle() {
   const auditLinkHtml = d.auditLink
     ? `<div style="margin-top:6px;font-weight:700;font-size:9pt;">Audit Link: <span style="color:#1d4ed8;">${d.auditLink}</span></div>` : '';
 
-  const w = window.open('', '_blank');
-  if (!w) { alert('Popup blocked. Please allow popups and try again.'); return; }
-
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
-  <title>3B Huddle — ${d.week || 'Weekly'}</title>
-  <style>
-    * { box-sizing:border-box; margin:0; padding:0; }
-    body { font-family:Arial,Helvetica,sans-serif; font-size:10pt; color:#111; background:#fff; }
-
-    /* ── PAGE 1: HUDDLE REPORT (front) ── */
-    .page { width:100%; max-width:900px; margin:0 auto; padding:18px 24px 14px; }
-    .page-break { page-break-before:always; }
-
-    /* Report styles */
-    .rpt-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; }
-    .rpt-logo { font-size:22pt; font-style:italic; font-weight:700; }
-    .rpt-logo span { font-weight:400; }
-    .rpt-title { font-size:20pt; font-style:italic; font-weight:700; text-align:right; }
-    .rpt-section { border:1px solid #999; border-collapse:collapse; width:100%; margin-bottom:0; }
-    .rpt-section td { border:1px solid #999; padding:7px 10px; vertical-align:top; }
-    .rpt-label { width:130px; font-size:9pt; color:#555; vertical-align:top; padding-top:9px; }
-    .rpt-header-bar { background:#4472c4; color:#fff; font-weight:700; font-size:10pt; padding:5px 10px; }
-    .rpt-recognitions-bar { background:#4472c4; color:#fff; font-weight:700; font-size:10pt; padding:5px 10px; text-align:center; }
-    .rpt-end-bar { background:#4472c4; color:#fff; font-weight:700; font-size:10pt; padding:5px 10px; text-align:center; }
-    .rpt-content { font-size:9.5pt; line-height:1.45; }
-
-    /* ── PAGE 2: HUDDLE FORM (back) — fills full letter page ── */
-    .frm { font-size:10.5pt; }
-    .frm-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:7px; }
-    .frm-logo { font-size:17pt; font-style:italic; font-weight:700; }
-    .frm-logo span { font-weight:400; }
-    .frm-logo-sub { font-size:9.5pt; color:#555; }
-    .frm-title-box { border:2px solid #111; padding:6px 22px; font-size:19pt; font-style:italic; font-weight:700; }
-    .frm-week { display:flex; gap:30px; font-size:10.5pt; margin-bottom:7px; }
-    .frm-leaders { display:flex; gap:0; margin-bottom:0; font-size:10.5pt; }
-    .frm-leader-box { border:1px solid #999; padding:5px 12px; flex:1; }
-    .frm-leader-label { font-style:italic; }
-    .frm table { border-collapse:collapse; width:100%; }
-    .frm td, .frm th { border:1px solid #999; padding:5px 7px; font-size:10pt; vertical-align:middle; text-align:center; }
-    .frm-section-hdr { background:#dce6f1; font-weight:700; font-size:10.5pt; font-style:italic; padding:5px 8px; }
-    .frm-lbl { font-weight:700; font-size:10pt; padding:3px 5px; white-space:nowrap; text-align:left; }
-    .frm-blank { min-height:18px; border-bottom:1px solid #888; display:inline-block; width:90px; }
-    .frm-blank-lg { min-height:18px; border-bottom:1px solid #888; display:inline-block; width:160px; }
-    .frm-reminder-col { font-size:9.5pt; vertical-align:top; padding:7px 9px; line-height:1.7; }
-    .sig-line { border-top:1px solid #111; margin-top:18px; display:inline-block; width:230px; font-size:9.5pt; }
-    .frm-attest { font-size:9.5pt; color:#555; font-style:italic; }
-
-    @media print {
-      @page { size:letter portrait; margin:0.35in 0.35in; }
-      body { font-size:10.5pt; }
-      .page { padding:0; max-width:100%; }
-      .no-print { display:none !important; }
-    }
-  </style>
-  </head><body>
-
-  <!-- ══ PAGE 1: HUDDLE REPORT (weekly, changes each week) ══ -->
-  <div class="page">
-    <div class="rpt-header">
-      <div>
-        <div class="rpt-logo">Arnot<span>Health</span></div>
-        <div style="font-size:8pt;color:#555;font-style:italic;">It's what we do</div>
-      </div>
-      <div class="rpt-title">Huddle</div>
-    </div>
-
-    <table class="rpt-section">
-      <!-- Reminders & Announcements header -->
-      <tr><td colspan="2" class="rpt-header-bar">Reminders &amp; Announcements</td></tr>
-
-      <!-- CNO Section -->
-      <tr>
-        <td class="rpt-label">Chief Nursing Officer &amp; Nursing Operations</td>
-        <td class="rpt-content">
-          <div style="font-size:11pt;font-weight:700;margin-bottom:8px;">${d.cnoTitle || 'Daily Safety Shift Huddle'}</div>
-          ${formatCNOContent(d.cnoContent)}
-        </td>
-      </tr>
-
-      <!-- Arnot Health Weekly -->
-      <tr>
-        <td class="rpt-label">Arnot Health Weekly Announcements</td>
-        <td class="rpt-content">
-          ${formatAnnouncements(d.announcements)}
-          ${auditLinkHtml}
-        </td>
-      </tr>
-
-      <!-- Unit / Department -->
-      <tr>
-        <td class="rpt-label">Unit/Department Announcements</td>
-        <td class="rpt-content" style="min-height:50px;">
-          ${(d.unit || '').split('\n').map(l=>l.trim()).filter(Boolean).map(function(l){return '<div style="margin-bottom:2px;">'+l+'</div>';}).join('') || '&nbsp;'}
-        </td>
-      </tr>
-
-      <!-- Recognitions -->
-      <tr>
-        <td colspan="2" class="rpt-recognitions-bar">
-          Recognitions/Compliments/What is going well<br>
-          <span style="font-weight:400;font-size:8.5pt;font-style:italic;">(Patient comments should be read aloud every Tuesday during am and pm huddles)</span>
-        </td>
-      </tr>
-      <tr>
-        <td colspan="2" class="rpt-content" style="min-height:40px;padding:8px 12px;">
-          ${(d.recognitions || '').split('\n').map(l=>l.trim()).filter(Boolean).map(function(l){return '<div style="margin-bottom:2px;">'+l+'</div>';}).join('') || '&nbsp;'}
-        </td>
-      </tr>
-
-      <!-- End bar -->
-      <tr><td colspan="2" class="rpt-end-bar">End on a positive note and thank everyone for being present.</td></tr>
-    </table>
-
-    <div style="font-size:7.5pt;color:#888;text-align:right;margin-top:6px;">Printed: ${printedAt}</div>
-  </div>
-
-  <!-- ══ PAGE 2: HUDDLE FORM (back — rarely changes) ══ -->
+  // Build one huddle form page (page 2 layout) per calendar day of the week
+  function buildHuddleFormPage(lbl) {
+    return `
+  <!-- ══ HUDDLE FORM (one per day, ${lbl}) ══ -->
   <div class="page page-break frm">
 
     <!-- Header -->
@@ -27312,7 +27217,7 @@ function printHuddle() {
     <!-- Week / Date / Leaders -->
     <div class="frm-week">
       <span>WEEK OF: <span style="font-weight:700;">${weekOf || '___________________'}</span></span>
-      <span style="margin-left:30px;">DATE: <span style="font-weight:700;">${dateLabel || new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'})}</span></span>
+      <span style="margin-left:30px;">DATE: <span style="font-weight:700;">${lbl}</span></span>
     </div>
     <div class="frm-leaders" style="margin-bottom:6px;">
       <div class="frm-leader-box" style="margin-right:20px;"><span class="frm-leader-label">Huddle Leader am</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
@@ -27562,7 +27467,127 @@ function printHuddle() {
       By signing, you attest that all information was reviewed during the shift huddle and was determined to be accurate.
     </div>
 
+  </div>`;
+  }
+  const huddleFormPagesHtml = weekDayLabels.map(buildHuddleFormPage).join('');
+
+  const w = window.open('', '_blank');
+  if (!w) { alert('Popup blocked. Please allow popups and try again.'); return; }
+
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
+  <title>3B Huddle — ${d.week || 'Weekly'}</title>
+  <style>
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:Arial,Helvetica,sans-serif; font-size:10pt; color:#111; background:#fff; }
+
+    /* ── PAGE 1: HUDDLE REPORT (front) ── */
+    .page { width:100%; max-width:900px; margin:0 auto; padding:18px 24px 14px; }
+    .page-break { page-break-before:always; }
+
+    /* Report styles */
+    .rpt-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; }
+    .rpt-logo { font-size:22pt; font-style:italic; font-weight:700; }
+    .rpt-logo span { font-weight:400; }
+    .rpt-title { font-size:20pt; font-style:italic; font-weight:700; text-align:right; }
+    .rpt-section { border:1px solid #999; border-collapse:collapse; width:100%; margin-bottom:0; }
+    .rpt-section td { border:1px solid #999; padding:7px 10px; vertical-align:top; }
+    .rpt-label { width:130px; font-size:9pt; color:#555; vertical-align:top; padding-top:9px; }
+    .rpt-header-bar { background:#4472c4; color:#fff; font-weight:700; font-size:10pt; padding:5px 10px; }
+    .rpt-recognitions-bar { background:#4472c4; color:#fff; font-weight:700; font-size:10pt; padding:5px 10px; text-align:center; }
+    .rpt-end-bar { background:#4472c4; color:#fff; font-weight:700; font-size:10pt; padding:5px 10px; text-align:center; }
+    .rpt-content { font-size:9.5pt; line-height:1.45; }
+
+    /* ── PAGE 2: HUDDLE FORM (back) — fills full letter page ── */
+    .frm { font-size:10.5pt; }
+    .frm-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:7px; }
+    .frm-logo { font-size:17pt; font-style:italic; font-weight:700; }
+    .frm-logo span { font-weight:400; }
+    .frm-logo-sub { font-size:9.5pt; color:#555; }
+    .frm-title-box { border:2px solid #111; padding:6px 22px; font-size:19pt; font-style:italic; font-weight:700; }
+    .frm-week { display:flex; gap:30px; font-size:10.5pt; margin-bottom:7px; }
+    .frm-leaders { display:flex; gap:0; margin-bottom:0; font-size:10.5pt; }
+    .frm-leader-box { border:1px solid #999; padding:5px 12px; flex:1; }
+    .frm-leader-label { font-style:italic; }
+    .frm table { border-collapse:collapse; width:100%; }
+    .frm td, .frm th { border:1px solid #999; padding:5px 7px; font-size:10pt; vertical-align:middle; text-align:center; }
+    .frm-section-hdr { background:#dce6f1; font-weight:700; font-size:10.5pt; font-style:italic; padding:5px 8px; }
+    .frm-lbl { font-weight:700; font-size:10pt; padding:3px 5px; white-space:nowrap; text-align:left; }
+    .frm-blank { min-height:18px; border-bottom:1px solid #888; display:inline-block; width:90px; }
+    .frm-blank-lg { min-height:18px; border-bottom:1px solid #888; display:inline-block; width:160px; }
+    .frm-reminder-col { font-size:9.5pt; vertical-align:top; padding:7px 9px; line-height:1.7; }
+    .sig-line { border-top:1px solid #111; margin-top:18px; display:inline-block; width:230px; font-size:9.5pt; }
+    .frm-attest { font-size:9.5pt; color:#555; font-style:italic; }
+
+    @media print {
+      @page { size:letter portrait; margin:0.35in 0.35in; }
+      body { font-size:10.5pt; }
+      .page { padding:0; max-width:100%; }
+      .no-print { display:none !important; }
+    }
+  </style>
+  </head><body>
+
+  <!-- ══ PAGE 1: HUDDLE REPORT (weekly, changes each week) ══ -->
+  <div class="page">
+    <div class="rpt-header">
+      <div>
+        <div class="rpt-logo">Arnot<span>Health</span></div>
+        <div style="font-size:8pt;color:#555;font-style:italic;">It's what we do</div>
+      </div>
+      <div class="rpt-title">Huddle</div>
+    </div>
+
+    <table class="rpt-section">
+      <!-- Reminders & Announcements header -->
+      <tr><td colspan="2" class="rpt-header-bar">Reminders &amp; Announcements</td></tr>
+
+      <!-- CNO Section -->
+      <tr>
+        <td class="rpt-label">Chief Nursing Officer &amp; Nursing Operations</td>
+        <td class="rpt-content">
+          <div style="font-size:11pt;font-weight:700;margin-bottom:8px;">${d.cnoTitle || 'Daily Safety Shift Huddle'}</div>
+          ${formatCNOContent(d.cnoContent)}
+        </td>
+      </tr>
+
+      <!-- Arnot Health Weekly -->
+      <tr>
+        <td class="rpt-label">Arnot Health Weekly Announcements</td>
+        <td class="rpt-content">
+          ${formatAnnouncements(d.announcements)}
+          ${auditLinkHtml}
+        </td>
+      </tr>
+
+      <!-- Unit / Department -->
+      <tr>
+        <td class="rpt-label">Unit/Department Announcements</td>
+        <td class="rpt-content" style="min-height:50px;">
+          ${(d.unit || '').split('\n').map(l=>l.trim()).filter(Boolean).map(function(l){return '<div style="margin-bottom:2px;">'+l+'</div>';}).join('') || '&nbsp;'}
+        </td>
+      </tr>
+
+      <!-- Recognitions -->
+      <tr>
+        <td colspan="2" class="rpt-recognitions-bar">
+          Recognitions/Compliments/What is going well<br>
+          <span style="font-weight:400;font-size:8.5pt;font-style:italic;">(Patient comments should be read aloud every Tuesday during am and pm huddles)</span>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2" class="rpt-content" style="min-height:40px;padding:8px 12px;">
+          ${(d.recognitions || '').split('\n').map(l=>l.trim()).filter(Boolean).map(function(l){return '<div style="margin-bottom:2px;">'+l+'</div>';}).join('') || '&nbsp;'}
+        </td>
+      </tr>
+
+      <!-- End bar -->
+      <tr><td colspan="2" class="rpt-end-bar">End on a positive note and thank everyone for being present.</td></tr>
+    </table>
+
+    <div style="font-size:7.5pt;color:#888;text-align:right;margin-top:6px;">Printed: ${printedAt}</div>
   </div>
+
+  ${huddleFormPagesHtml}
 
   <script>window.onload = function() { window.print(); }<\/script>
   </body></html>`);
