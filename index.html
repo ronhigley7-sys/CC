@@ -27469,7 +27469,77 @@ function printHuddle() {
 
   </div>`;
   }
-  const huddleFormPagesHtml = weekDayLabels.map(buildHuddleFormPage).join('');
+  // Build the "Huddle" report page (page 1 layout), one per day, labeled with that day's date
+  function buildHuddleReportPage(lbl, isFirst) {
+    return `
+  <!-- ══ HUDDLE REPORT (one per day, ${lbl}) ══ -->
+  <div class="page${isFirst ? '' : ' page-break'}">
+    <div class="rpt-header">
+      <div>
+        <div class="rpt-logo">Arnot<span>Health</span></div>
+        <div style="font-size:8pt;color:#555;font-style:italic;">It's what we do</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="rpt-title">Huddle</div>
+        <div style="font-size:9pt;font-weight:700;margin-top:2px;">${lbl}</div>
+      </div>
+    </div>
+
+    <table class="rpt-section">
+      <!-- Reminders & Announcements header -->
+      <tr><td colspan="2" class="rpt-header-bar">Reminders &amp; Announcements</td></tr>
+
+      <!-- CNO Section -->
+      <tr>
+        <td class="rpt-label">Chief Nursing Officer &amp; Nursing Operations</td>
+        <td class="rpt-content">
+          <div style="font-size:11pt;font-weight:700;margin-bottom:8px;">${d.cnoTitle || 'Daily Safety Shift Huddle'}</div>
+          ${formatCNOContent(d.cnoContent)}
+        </td>
+      </tr>
+
+      <!-- Arnot Health Weekly -->
+      <tr>
+        <td class="rpt-label">Arnot Health Weekly Announcements</td>
+        <td class="rpt-content">
+          ${formatAnnouncements(d.announcements)}
+          ${auditLinkHtml}
+        </td>
+      </tr>
+
+      <!-- Unit / Department -->
+      <tr>
+        <td class="rpt-label">Unit/Department Announcements</td>
+        <td class="rpt-content" style="min-height:50px;">
+          ${(d.unit || '').split('\n').map(l=>l.trim()).filter(Boolean).map(function(l){return '<div style="margin-bottom:2px;">'+l+'</div>';}).join('') || '&nbsp;'}
+        </td>
+      </tr>
+
+      <!-- Recognitions -->
+      <tr>
+        <td colspan="2" class="rpt-recognitions-bar">
+          Recognitions/Compliments/What is going well<br>
+          <span style="font-weight:400;font-size:8.5pt;font-style:italic;">(Patient comments should be read aloud every Tuesday during am and pm huddles)</span>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2" class="rpt-content" style="min-height:40px;padding:8px 12px;">
+          ${(d.recognitions || '').split('\n').map(l=>l.trim()).filter(Boolean).map(function(l){return '<div style="margin-bottom:2px;">'+l+'</div>';}).join('') || '&nbsp;'}
+        </td>
+      </tr>
+
+      <!-- End bar -->
+      <tr><td colspan="2" class="rpt-end-bar">End on a positive note and thank everyone for being present.</td></tr>
+    </table>
+
+    <div style="font-size:7.5pt;color:#888;text-align:right;margin-top:6px;">Printed: ${printedAt}</div>
+  </div>`;
+  }
+
+  // Pair a Huddle report page with its Med/Surg Huddle Form page for each day of the week
+  const huddleFormPagesHtml = weekDayLabels.map(function(lbl, i) {
+    return buildHuddleReportPage(lbl, i === 0) + buildHuddleFormPage(lbl);
+  }).join('');
 
   const w = window.open('', '_blank');
   if (!w) { alert('Popup blocked. Please allow popups and try again.'); return; }
@@ -27526,66 +27596,6 @@ function printHuddle() {
     }
   </style>
   </head><body>
-
-  <!-- ══ PAGE 1: HUDDLE REPORT (weekly, changes each week) ══ -->
-  <div class="page">
-    <div class="rpt-header">
-      <div>
-        <div class="rpt-logo">Arnot<span>Health</span></div>
-        <div style="font-size:8pt;color:#555;font-style:italic;">It's what we do</div>
-      </div>
-      <div class="rpt-title">Huddle</div>
-    </div>
-
-    <table class="rpt-section">
-      <!-- Reminders & Announcements header -->
-      <tr><td colspan="2" class="rpt-header-bar">Reminders &amp; Announcements</td></tr>
-
-      <!-- CNO Section -->
-      <tr>
-        <td class="rpt-label">Chief Nursing Officer &amp; Nursing Operations</td>
-        <td class="rpt-content">
-          <div style="font-size:11pt;font-weight:700;margin-bottom:8px;">${d.cnoTitle || 'Daily Safety Shift Huddle'}</div>
-          ${formatCNOContent(d.cnoContent)}
-        </td>
-      </tr>
-
-      <!-- Arnot Health Weekly -->
-      <tr>
-        <td class="rpt-label">Arnot Health Weekly Announcements</td>
-        <td class="rpt-content">
-          ${formatAnnouncements(d.announcements)}
-          ${auditLinkHtml}
-        </td>
-      </tr>
-
-      <!-- Unit / Department -->
-      <tr>
-        <td class="rpt-label">Unit/Department Announcements</td>
-        <td class="rpt-content" style="min-height:50px;">
-          ${(d.unit || '').split('\n').map(l=>l.trim()).filter(Boolean).map(function(l){return '<div style="margin-bottom:2px;">'+l+'</div>';}).join('') || '&nbsp;'}
-        </td>
-      </tr>
-
-      <!-- Recognitions -->
-      <tr>
-        <td colspan="2" class="rpt-recognitions-bar">
-          Recognitions/Compliments/What is going well<br>
-          <span style="font-weight:400;font-size:8.5pt;font-style:italic;">(Patient comments should be read aloud every Tuesday during am and pm huddles)</span>
-        </td>
-      </tr>
-      <tr>
-        <td colspan="2" class="rpt-content" style="min-height:40px;padding:8px 12px;">
-          ${(d.recognitions || '').split('\n').map(l=>l.trim()).filter(Boolean).map(function(l){return '<div style="margin-bottom:2px;">'+l+'</div>';}).join('') || '&nbsp;'}
-        </td>
-      </tr>
-
-      <!-- End bar -->
-      <tr><td colspan="2" class="rpt-end-bar">End on a positive note and thank everyone for being present.</td></tr>
-    </table>
-
-    <div style="font-size:7.5pt;color:#888;text-align:right;margin-top:6px;">Printed: ${printedAt}</div>
-  </div>
 
   ${huddleFormPagesHtml}
 
