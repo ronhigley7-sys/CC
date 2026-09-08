@@ -3,8 +3,7 @@
 // overlay itself is ready — prevents any flash of the unit dashboard.
 if (new URLSearchParams(location.search).get('vf')) {
   document.documentElement.style.visibility = 'hidden';
-  setTimeout(function(){ document.documentElement.style.visibility = 'visible'; }, 8000); // safety fallback
-  // Surface any uncaught error instead of leaving a silent blank screen.
+  setTimeout(function(){ document.documentElement.style.visibility = 'visible'; }, 8000);
   window.addEventListener('error', function(ev) {
     document.documentElement.style.visibility = 'visible';
     if (document.getElementById('staff-variance-overlay') || document.getElementById('vf-fatal-error')) return;
@@ -23,12 +22,9 @@ if (new URLSearchParams(location.search).get('vf')) {
 // ════════════════════════════════════════════════════════════════
 // RN ADMISSION ORDER — staffing printouts
 // Updated 2026-09-08
-// • Prints the FULL RN admission order for Day and Night.
-// • Agency RNs ALWAYS lead the admission order.
-// • If multiple agency RNs are working, the first agency RN rotates fairly.
-// • Day and Night rotations are tracked independently.
-// • Reprinting the same date preserves the saved order.
-// • Orientees are placed after independently practicing RNs when possible.
+// Full RN order for Day and Night. Agency RNs remain first in the logic,
+// but no explanatory "agency staff are first" sentence is printed.
+// Staffing print is compacted and auto-scaled to one letter-size page.
 // ════════════════════════════════════════════════════════════════
 (function () {
   const INSTALLED_FLAG = '__ccAdmissionOrderInstalled';
@@ -50,16 +46,15 @@ if (new URLSearchParams(location.search).get('vf')) {
   function eligibleRNs(dateKey, shiftName) {
     if (typeof state === 'undefined') return [];
     const p = (state.placements || {})[dateKey] || {};
-    let rows = [];
-    if (shiftName === 'DAY') rows = [...(p['0700-1500'] || []), ...(p['1500-1900'] || [])];
-    else rows = [...(p['1900-0700'] || [])];
+    const rows = shiftName === 'DAY'
+      ? [...(p['0700-1500'] || []), ...(p['1500-1900'] || [])]
+      : [...(p['1900-0700'] || [])];
     return uniqNames(rows.filter(x => x && x.role === 'RN'));
   }
 
   function isAgency(name) {
     if (typeof state === 'undefined') return false;
-    const a = (state.agencyDates || {})[name] || {};
-    return a.isAgency === true;
+    return ((state.agencyDates || {})[name] || {}).isAgency === true;
   }
 
   function isOrientee(name) {
@@ -68,8 +63,8 @@ if (new URLSearchParams(location.search).get('vf')) {
 
   function isCharge(dateKey, shiftName, name) {
     if (typeof state === 'undefined') return false;
-    const shiftKeys = shiftName === 'DAY' ? ['0700-1500', '1500-1900'] : ['1900-0700'];
-    return shiftKeys.some(sk =>
+    const keys = shiftName === 'DAY' ? ['0700-1500', '1500-1900'] : ['1900-0700'];
+    return keys.some(sk =>
       (state.chargeNurses || {})[dateKey + '|' + sk] === name ||
       (state.charge3C || {})[dateKey + '|' + sk] === name
     );
@@ -96,13 +91,12 @@ if (new URLSearchParams(location.search).get('vf')) {
     const prevOrder = (state.admissionOrder || {})[yesterday] && (state.admissionOrder || {})[yesterday][shiftName];
     const prevFirst = Array.isArray(prevOrder) ? prevOrder[0] : '';
 
-    const sorted = [...names].sort((a, b) => {
+    return [...names].sort((a, b) => {
       if (avoidYesterdayFirst && names.length > 1) {
         const ap = a === prevFirst ? 1 : 0;
         const bp = b === prevFirst ? 1 : 0;
         if (ap !== bp) return ap - bp;
       }
-      // Prefer non-charge RNs inside the same agency/non-agency tier.
       const ac = isCharge(dateKey, shiftName, a) ? 1 : 0;
       const bc = isCharge(dateKey, shiftName, b) ? 1 : 0;
       if (ac !== bc) return ac - bc;
@@ -112,7 +106,6 @@ if (new URLSearchParams(location.search).get('vf')) {
       if (ah.last !== bh.last) return (ah.last || '').localeCompare(bh.last || '');
       return a.localeCompare(b);
     });
-    return sorted;
   }
 
   function buildAdmissionOrder(dateKey, shiftName) {
@@ -126,30 +119,24 @@ if (new URLSearchParams(location.search).get('vf')) {
       return [];
     }
 
-    // Preserve a saved order if it still contains exactly today's eligible RNs.
     const saved = state.admissionOrder[dateKey][shiftName];
     if (Array.isArray(saved) && saved.length === all.length &&
         saved.every(n => all.includes(n)) && all.every(n => saved.includes(n))) {
       return saved;
     }
 
-    // Agency ALWAYS goes first. Within agency, rotate who leads when more than one works.
     const agency = all.filter(isAgency);
     const staff = all.filter(n => !isAgency(n));
-
     const agencyIndependent = agency.filter(n => !isOrientee(n));
-    const agencyOrientee = agency.filter(isOrientee);
     const staffIndependent = staff.filter(n => !isOrientee(n));
     const staffOrientee = staff.filter(isOrientee);
 
     let order = [];
     if (agency.length) {
-      // If any agency RN works, first admission must be agency.
       const agPool = agencyIndependent.length ? agencyIndependent : agency;
       const agLeadOrder = rotateGroup(agPool, dateKey, shiftName, true);
       const leader = agLeadOrder[0];
       order.push(leader);
-      // Remaining agency RNs stay ahead of all non-agency RNs.
       const remainingAgency = agency.filter(n => n !== leader);
       order.push(...rotateGroup(remainingAgency.filter(n => !isOrientee(n)), dateKey, shiftName, false));
       order.push(...rotateGroup(remainingAgency.filter(isOrientee), dateKey, shiftName, false));
@@ -157,13 +144,10 @@ if (new URLSearchParams(location.search).get('vf')) {
 
     order.push(...rotateGroup(staffIndependent, dateKey, shiftName, agency.length === 0));
     order.push(...rotateGroup(staffOrientee, dateKey, shiftName, false));
-
-    // Safety: no duplicates and include every eligible RN exactly once.
     order = uniqNames(order.map(name => ({ name })));
     all.forEach(n => { if (!order.includes(n)) order.push(n); });
 
     state.admissionOrder[dateKey][shiftName] = order;
-    // Backward compatibility for the earlier firstAdmission field.
     state.firstAdmission = state.firstAdmission || {};
     state.firstAdmission[dateKey] = state.firstAdmission[dateKey] || {};
     state.firstAdmission[dateKey][shiftName] = order[0] || '';
@@ -177,32 +161,75 @@ if (new URLSearchParams(location.search).get('vf')) {
 
   function orderCell(order) {
     const esc = s => String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    if (!order.length) return '<div style="padding:6px;color:#6b7280;font-style:italic;">No eligible RN assigned</div>';
+    if (!order.length) return '<div style="padding:3px;color:#6b7280;font-style:italic;font-size:7.5pt;">No eligible RN assigned</div>';
     return order.map((name, i) => {
-      const agency = isAgency(name);
-      const badge = agency ? ' <span style="font-size:7pt;font-weight:800;color:#7c2d12;background:#ffedd5;border:1px solid #fdba74;padding:1px 4px;border-radius:3px;">AGENCY</span>' : '';
+      const badge = isAgency(name)
+        ? ' <span style="font-size:5.8pt;font-weight:800;color:#7c2d12;background:#ffedd5;border:1px solid #fdba74;padding:0 3px;border-radius:2px;">AGENCY</span>'
+        : '';
       const firstStyle = i === 0 ? 'font-weight:800;color:#0f4c81;background:#e0f2fe;' : '';
-      return `<div style="display:flex;align-items:center;gap:5px;padding:4px 6px;border-bottom:1px solid #dbe5ef;${firstStyle}"><span style="width:25px;font-weight:800;">${i + 1}${i===0?'st':i===1?'nd':i===2?'rd':'th'}</span><span>${esc(name)}${badge}</span></div>`;
+      const suffix = i===0?'st':i===1?'nd':i===2?'rd':'th';
+      return `<div style="display:flex;align-items:center;gap:3px;padding:2px 4px;border-bottom:1px solid #dbe5ef;font-size:7.4pt;line-height:1.05;${firstStyle}"><span style="width:21px;font-weight:800;">${i + 1}${suffix}</span><span>${esc(name)}${badge}</span></div>`;
     }).join('');
   }
 
   function assignmentHtml(dateKey) {
     const day = buildAdmissionOrder(dateKey, 'DAY');
     const night = buildAdmissionOrder(dateKey, 'NIGHT');
-    return `<div class="first-admission-print" style="margin:0 0 12px;padding:9px 12px;border:2px solid #0f4c81;border-radius:6px;background:#f8fbff;page-break-inside:avoid;">
-      <div style="font-size:10pt;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#0f4c81;margin-bottom:6px;">RN Admission Order</div>
+    return `<div class="first-admission-print" style="margin:0 0 5px;padding:4px 6px;border:1.5px solid #0f4c81;border-radius:4px;background:#f8fbff;page-break-inside:avoid;">
+      <div style="font-size:8.2pt;font-weight:800;text-transform:uppercase;letter-spacing:.35px;color:#0f4c81;margin-bottom:3px;">RN Admission Order</div>
       <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
         <tr>
-          <th style="width:50%;border:1px solid #9fbad0;padding:5px 8px;background:#eef6ff;">☀ Day Shift — Admission Order</th>
-          <th style="width:50%;border:1px solid #9fbad0;padding:5px 8px;background:#eef6ff;">🌙 Night Shift — Admission Order</th>
+          <th style="width:50%;border:1px solid #9fbad0;padding:2px 4px;background:#eef6ff;font-size:7.3pt;">☀ Day Shift</th>
+          <th style="width:50%;border:1px solid #9fbad0;padding:2px 4px;background:#eef6ff;font-size:7.3pt;">🌙 Night Shift</th>
         </tr>
         <tr>
           <td style="border:1px solid #9fbad0;vertical-align:top;padding:0;">${orderCell(day)}</td>
           <td style="border:1px solid #9fbad0;vertical-align:top;padding:0;">${orderCell(night)}</td>
         </tr>
       </table>
-      <div style="font-size:7.5pt;color:#6b7280;margin-top:5px;">Agency RNs are placed first in the admission rotation. Day and Night are tracked separately.</div>
     </div>`;
+  }
+
+  function compactPrintCss() {
+    return `<style id="cc-one-page-print-fix">
+      @page { size: letter portrait !important; margin: .20in .24in !important; }
+      @media print {
+        html,body { margin:0 !important; padding:0 !important; }
+        .ps-page { padding:0 !important; margin:0 auto !important; max-width:none !important; width:100% !important; }
+        .ps-title { font-size:14pt !important; margin:0 0 1px !important; line-height:1 !important; }
+        .ps-date { font-size:8.5pt !important; margin:0 0 4px !important; line-height:1 !important; }
+        .ps-section-label { font-size:8pt !important; margin:4px 0 1px !important; padding-bottom:1px !important; border-bottom-width:1px !important; line-height:1.05 !important; }
+        .ps-table { margin-bottom:1px !important; }
+        .ps-table th { font-size:7pt !important; padding:2px 3px !important; line-height:1 !important; }
+        .ps-table td { font-size:7.2pt !important; padding:2px 3px !important; line-height:1.05 !important; }
+        .ps-notes-label { font-size:6.5pt !important; }
+        .ps-notes-text { font-size:7pt !important; line-height:1.1 !important; }
+        .ps-footer { font-size:6.3pt !important; margin-top:4px !important; padding-top:2px !important; }
+        .first-admission-print { margin-bottom:4px !important; }
+      }
+    </style>`;
+  }
+
+  function fitOnePageScript() {
+    return `<script id="cc-fit-one-page">
+      (function(){
+        function fit(){
+          try{
+            var page=document.querySelector('.ps-page')||document.body;
+            document.body.style.zoom='1';
+            var dpi=96;
+            var printableHeight=(11-.40)*dpi;
+            var h=Math.max(page.scrollHeight,page.getBoundingClientRect().height);
+            var scale=h>printableHeight?Math.max(.58,printableHeight/h):1;
+            document.body.style.zoom=String(scale);
+          }catch(e){}
+        }
+        window.addEventListener('load',function(){
+          fit();
+          setTimeout(function(){fit();window.print();},80);
+        });
+      })();
+    <\/script>`;
   }
 
   function wrapPrintFunction(fnName) {
@@ -213,6 +240,7 @@ if (new URLSearchParams(location.search).get('vf')) {
       const dateKey = (typeof state !== 'undefined' && state.activeBoardDate) || '';
       const inject = dateKey ? assignmentHtml(dateKey) : '';
       const realOpen = window.open;
+      const forceOnePage = fnName === 'printNursingServices';
 
       window.open = function () {
         const child = realOpen.apply(window, arguments);
@@ -222,6 +250,11 @@ if (new URLSearchParams(location.search).get('vf')) {
           child.document.write = function (html) {
             if (typeof html === 'string' && !html.includes('first-admission-print')) {
               html = html.replace(/(<div class=["']ps-date["'][^>]*>.*?<\/div>)/s, '$1' + inject);
+              if (forceOnePage) {
+                html = html.replace('</head>', compactPrintCss() + '</head>');
+                html = html.replace(/<script>window\.onload=function\(\)\{window\.print\(\);\}<\\\/script>/,
+                  fitOnePageScript());
+              }
             }
             return realWrite(html);
           };
