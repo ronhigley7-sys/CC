@@ -22,9 +22,11 @@ if (new URLSearchParams(location.search).get('vf')) {
 // ════════════════════════════════════════════════════════════════
 // RN ADMISSION ORDER — staffing printouts
 // Updated 2026-09-08
-// Full RN order for Day and Night. Agency RNs remain first in the logic,
-// but no explanatory "agency staff are first" sentence is printed.
-// Print sizing is optimized for readability and only shrinks if needed.
+// • Full RN admission order for Day and Night.
+// • Agency RNs remain first in the logic.
+// • Any RN assigned to 3C (including 3C charge) is excluded.
+// • Admission order prints at the BOTTOM of the staffing sheet.
+// • Print sizing stays readable and only shrinks if truly necessary.
 // ════════════════════════════════════════════════════════════════
 (function () {
   const INSTALLED_FLAG = '__ccAdmissionOrderInstalled';
@@ -33,7 +35,8 @@ if (new URLSearchParams(location.search).get('vf')) {
     const seen = new Set();
     return (arr || []).map(x => x && x.name).filter(Boolean).filter(n => {
       if (seen.has(n)) return false;
-      seen.add(n); return true;
+      seen.add(n);
+      return true;
     });
   }
 
@@ -43,13 +46,33 @@ if (new URLSearchParams(location.search).get('vf')) {
     return d.toISOString().slice(0, 10);
   }
 
+  function shiftKeysFor(shiftName) {
+    return shiftName === 'DAY' ? ['0700-1500', '1500-1900'] : ['1900-0700'];
+  }
+
+  function assignedTo3C(dateKey, shiftName, name) {
+    if (typeof state === 'undefined' || !name) return false;
+    const staff3C = state.staff3C || {};
+    const charge3C = state.charge3C || {};
+
+    return shiftKeysFor(shiftName).some(sk => {
+      const key = dateKey + '|' + sk;
+      if (charge3C[key] === name) return true;
+
+      const triad = staff3C[key] || {};
+      return Object.keys(triad).some(roleKey => triad[roleKey] === name);
+    });
+  }
+
   function eligibleRNs(dateKey, shiftName) {
     if (typeof state === 'undefined') return [];
     const p = (state.placements || {})[dateKey] || {};
     const rows = shiftName === 'DAY'
       ? [...(p['0700-1500'] || []), ...(p['1500-1900'] || [])]
       : [...(p['1900-0700'] || [])];
-    return uniqNames(rows.filter(x => x && x.role === 'RN'));
+
+    const allRNs = uniqNames(rows.filter(x => x && x.role === 'RN'));
+    return allRNs.filter(name => !assignedTo3C(dateKey, shiftName, name));
   }
 
   function isAgency(name) {
@@ -63,10 +86,8 @@ if (new URLSearchParams(location.search).get('vf')) {
 
   function isCharge(dateKey, shiftName, name) {
     if (typeof state === 'undefined') return false;
-    const keys = shiftName === 'DAY' ? ['0700-1500', '1500-1900'] : ['1900-0700'];
-    return keys.some(sk =>
-      (state.chargeNurses || {})[dateKey + '|' + sk] === name ||
-      (state.charge3C || {})[dateKey + '|' + sk] === name
+    return shiftKeysFor(shiftName).some(sk =>
+      (state.chargeNurses || {})[dateKey + '|' + sk] === name
     );
   }
 
@@ -137,6 +158,7 @@ if (new URLSearchParams(location.search).get('vf')) {
       const agLeadOrder = rotateGroup(agPool, dateKey, shiftName, true);
       const leader = agLeadOrder[0];
       order.push(leader);
+
       const remainingAgency = agency.filter(n => n !== leader);
       order.push(...rotateGroup(remainingAgency.filter(n => !isOrientee(n)), dateKey, shiftName, false));
       order.push(...rotateGroup(remainingAgency.filter(isOrientee), dateKey, shiftName, false));
@@ -144,6 +166,7 @@ if (new URLSearchParams(location.search).get('vf')) {
 
     order.push(...rotateGroup(staffIndependent, dateKey, shiftName, agency.length === 0));
     order.push(...rotateGroup(staffOrientee, dateKey, shiftName, false));
+
     order = uniqNames(order.map(name => ({ name })));
     all.forEach(n => { if (!order.includes(n)) order.push(n); });
 
@@ -156,12 +179,14 @@ if (new URLSearchParams(location.search).get('vf')) {
       if (typeof persistSave === 'function') persistSave();
       else localStorage.setItem('_3bTracker', JSON.stringify(state));
     } catch (e) { console.warn('Admission Order save:', e); }
+
     return order;
   }
 
   function orderCell(order) {
     const esc = s => String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    if (!order.length) return '<div style="padding:5px;color:#6b7280;font-style:italic;font-size:9pt;">No eligible RN assigned</div>';
+    if (!order.length) return '<div style="padding:5px;color:#6b7280;font-style:italic;font-size:9pt;">No eligible 3B RN assigned</div>';
+
     return order.map((name, i) => {
       const badge = isAgency(name)
         ? ' <span style="font-size:7pt;font-weight:800;color:#7c2d12;background:#ffedd5;border:1px solid #fdba74;padding:0 3px;border-radius:2px;">AGENCY</span>'
@@ -175,7 +200,7 @@ if (new URLSearchParams(location.search).get('vf')) {
   function assignmentHtml(dateKey) {
     const day = buildAdmissionOrder(dateKey, 'DAY');
     const night = buildAdmissionOrder(dateKey, 'NIGHT');
-    return `<div class="first-admission-print" style="margin:0 0 7px;padding:6px 8px;border:1.5px solid #0f4c81;border-radius:4px;background:#f8fbff;page-break-inside:avoid;">
+    return `<div class="first-admission-print" style="margin:7px 0 0;padding:6px 8px;border:1.5px solid #0f4c81;border-radius:4px;background:#f8fbff;page-break-inside:avoid;">
       <div style="font-size:10pt;font-weight:800;text-transform:uppercase;letter-spacing:.35px;color:#0f4c81;margin-bottom:4px;">RN Admission Order</div>
       <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
         <tr>
@@ -205,7 +230,7 @@ if (new URLSearchParams(location.search).get('vf')) {
         .ps-notes-label { font-size:8pt !important; }
         .ps-notes-text { font-size:8.5pt !important; line-height:1.12 !important; }
         .ps-footer { font-size:7.5pt !important; margin-top:5px !important; padding-top:3px !important; }
-        .first-admission-print { margin-bottom:6px !important; }
+        .first-admission-print { margin-top:6px !important; margin-bottom:0 !important; }
       }
     </style>`;
   }
@@ -236,6 +261,17 @@ if (new URLSearchParams(location.search).get('vf')) {
     <\/script>`;
   }
 
+  function injectAtBottom(html, inject) {
+    // Preferred placement: directly before the staffing footer.
+    if (/<div class=["']ps-footer["']/.test(html)) {
+      return html.replace(/(<div class=["']ps-footer["'][^>]*>)/, inject + '$1');
+    }
+
+    // Fallback: append immediately before </body>.
+    if (/<\/body>/i.test(html)) return html.replace(/<\/body>/i, inject + '</body>');
+    return html + inject;
+  }
+
   function wrapPrintFunction(fnName) {
     const original = window[fnName];
     if (typeof original !== 'function' || original.__admissionOrderWrapped) return false;
@@ -249,11 +285,13 @@ if (new URLSearchParams(location.search).get('vf')) {
       window.open = function () {
         const child = realOpen.apply(window, arguments);
         if (!child || !inject) return child;
+
         try {
           const realWrite = child.document.write.bind(child.document);
           child.document.write = function (html) {
             if (typeof html === 'string' && !html.includes('first-admission-print')) {
-              html = html.replace(/(<div class=["']ps-date["'][^>]*>.*?<\/div>)/s, '$1' + inject);
+              html = injectAtBottom(html, inject);
+
               if (forceOnePage) {
                 html = html.replace('</head>', compactPrintCss() + '</head>');
                 html = html.replace(/<script>window\.onload=function\(\)\{window\.print\(\);\}<\\\/script>/,
@@ -263,6 +301,7 @@ if (new URLSearchParams(location.search).get('vf')) {
             return realWrite(html);
           };
         } catch (e) { console.warn('Admission Order print injection:', e); }
+
         return child;
       };
 
@@ -273,9 +312,11 @@ if (new URLSearchParams(location.search).get('vf')) {
       if (result && typeof result.then === 'function') {
         return result.finally(() => { window.open = realOpen; });
       }
+
       window.open = realOpen;
       return result;
     };
+
     wrapped.__admissionOrderWrapped = true;
     wrapped.__admissionOrderOriginal = original;
     window[fnName] = wrapped;
