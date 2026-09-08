@@ -58,7 +58,6 @@ if (new URLSearchParams(location.search).get('vf')) {
     return shiftKeysFor(shiftName).some(sk => {
       const key = dateKey + '|' + sk;
       if (charge3C[key] === name) return true;
-
       const triad = staff3C[key] || {};
       return Object.keys(triad).some(roleKey => triad[roleKey] === name);
     });
@@ -70,7 +69,6 @@ if (new URLSearchParams(location.search).get('vf')) {
     const rows = shiftName === 'DAY'
       ? [...(p['0700-1500'] || []), ...(p['1500-1900'] || [])]
       : [...(p['1900-0700'] || [])];
-
     const allRNs = uniqNames(rows.filter(x => x && x.role === 'RN'));
     return allRNs.filter(name => !assignedTo3C(dateKey, shiftName, name));
   }
@@ -158,7 +156,6 @@ if (new URLSearchParams(location.search).get('vf')) {
       const agLeadOrder = rotateGroup(agPool, dateKey, shiftName, true);
       const leader = agLeadOrder[0];
       order.push(leader);
-
       const remainingAgency = agency.filter(n => n !== leader);
       order.push(...rotateGroup(remainingAgency.filter(n => !isOrientee(n)), dateKey, shiftName, false));
       order.push(...rotateGroup(remainingAgency.filter(isOrientee), dateKey, shiftName, false));
@@ -262,14 +259,15 @@ if (new URLSearchParams(location.search).get('vf')) {
   }
 
   function injectAtBottom(html, inject) {
-    // Preferred placement: directly before the staffing footer.
     if (/<div class=["']ps-footer["']/.test(html)) {
-      return html.replace(/(<div class=["']ps-footer["'][^>]*>)/, inject + '$1');
+      return { html: html.replace(/(<div class=["']ps-footer["'][^>]*>)/, inject + '$1'), injected: true };
     }
-
-    // Fallback: append immediately before </body>.
-    if (/<\/body>/i.test(html)) return html.replace(/<\/body>/i, inject + '</body>');
-    return html + inject;
+    if (/<\/body>/i.test(html)) {
+      return { html: html.replace(/<\/body>/i, inject + '</body>'), injected: true };
+    }
+    // document.write may be called in chunks. Do NOT inject into an early chunk;
+    // wait until the footer or final body chunk is written.
+    return { html: html, injected: false };
   }
 
   function wrapPrintFunction(fnName) {
@@ -288,9 +286,15 @@ if (new URLSearchParams(location.search).get('vf')) {
 
         try {
           const realWrite = child.document.write.bind(child.document);
+          let admissionInjected = false;
+
           child.document.write = function (html) {
-            if (typeof html === 'string' && !html.includes('first-admission-print')) {
-              html = injectAtBottom(html, inject);
+            if (typeof html === 'string') {
+              if (!admissionInjected && !html.includes('first-admission-print')) {
+                const placed = injectAtBottom(html, inject);
+                html = placed.html;
+                admissionInjected = placed.injected;
+              }
 
               if (forceOnePage) {
                 html = html.replace('</head>', compactPrintCss() + '</head>');
