@@ -24,7 +24,7 @@ if (new URLSearchParams(location.search).get('vf')) {
 // Updated 2026-09-08
 // Full RN order for Day and Night. Agency RNs remain first in the logic,
 // but no explanatory "agency staff are first" sentence is printed.
-// Staffing print is compacted and auto-scaled to one letter-size page.
+// Print sizing is optimized for readability and only shrinks if needed.
 // ════════════════════════════════════════════════════════════════
 (function () {
   const INSTALLED_FLAG = '__ccAdmissionOrderInstalled';
@@ -161,26 +161,26 @@ if (new URLSearchParams(location.search).get('vf')) {
 
   function orderCell(order) {
     const esc = s => String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    if (!order.length) return '<div style="padding:3px;color:#6b7280;font-style:italic;font-size:7.5pt;">No eligible RN assigned</div>';
+    if (!order.length) return '<div style="padding:5px;color:#6b7280;font-style:italic;font-size:9pt;">No eligible RN assigned</div>';
     return order.map((name, i) => {
       const badge = isAgency(name)
-        ? ' <span style="font-size:5.8pt;font-weight:800;color:#7c2d12;background:#ffedd5;border:1px solid #fdba74;padding:0 3px;border-radius:2px;">AGENCY</span>'
+        ? ' <span style="font-size:7pt;font-weight:800;color:#7c2d12;background:#ffedd5;border:1px solid #fdba74;padding:0 3px;border-radius:2px;">AGENCY</span>'
         : '';
       const firstStyle = i === 0 ? 'font-weight:800;color:#0f4c81;background:#e0f2fe;' : '';
       const suffix = i===0?'st':i===1?'nd':i===2?'rd':'th';
-      return `<div style="display:flex;align-items:center;gap:3px;padding:2px 4px;border-bottom:1px solid #dbe5ef;font-size:7.4pt;line-height:1.05;${firstStyle}"><span style="width:21px;font-weight:800;">${i + 1}${suffix}</span><span>${esc(name)}${badge}</span></div>`;
+      return `<div style="display:flex;align-items:center;gap:4px;padding:3px 5px;border-bottom:1px solid #dbe5ef;font-size:9pt;line-height:1.12;${firstStyle}"><span style="width:25px;font-weight:800;">${i + 1}${suffix}</span><span>${esc(name)}${badge}</span></div>`;
     }).join('');
   }
 
   function assignmentHtml(dateKey) {
     const day = buildAdmissionOrder(dateKey, 'DAY');
     const night = buildAdmissionOrder(dateKey, 'NIGHT');
-    return `<div class="first-admission-print" style="margin:0 0 5px;padding:4px 6px;border:1.5px solid #0f4c81;border-radius:4px;background:#f8fbff;page-break-inside:avoid;">
-      <div style="font-size:8.2pt;font-weight:800;text-transform:uppercase;letter-spacing:.35px;color:#0f4c81;margin-bottom:3px;">RN Admission Order</div>
+    return `<div class="first-admission-print" style="margin:0 0 7px;padding:6px 8px;border:1.5px solid #0f4c81;border-radius:4px;background:#f8fbff;page-break-inside:avoid;">
+      <div style="font-size:10pt;font-weight:800;text-transform:uppercase;letter-spacing:.35px;color:#0f4c81;margin-bottom:4px;">RN Admission Order</div>
       <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
         <tr>
-          <th style="width:50%;border:1px solid #9fbad0;padding:2px 4px;background:#eef6ff;font-size:7.3pt;">☀ Day Shift</th>
-          <th style="width:50%;border:1px solid #9fbad0;padding:2px 4px;background:#eef6ff;font-size:7.3pt;">🌙 Night Shift</th>
+          <th style="width:50%;border:1px solid #9fbad0;padding:3px 5px;background:#eef6ff;font-size:9pt;">☀ Day Shift</th>
+          <th style="width:50%;border:1px solid #9fbad0;padding:3px 5px;background:#eef6ff;font-size:9pt;">🌙 Night Shift</th>
         </tr>
         <tr>
           <td style="border:1px solid #9fbad0;vertical-align:top;padding:0;">${orderCell(day)}</td>
@@ -192,20 +192,20 @@ if (new URLSearchParams(location.search).get('vf')) {
 
   function compactPrintCss() {
     return `<style id="cc-one-page-print-fix">
-      @page { size: letter portrait !important; margin: .20in .24in !important; }
+      @page { size: letter portrait !important; margin: .22in .28in !important; }
       @media print {
         html,body { margin:0 !important; padding:0 !important; }
-        .ps-page { padding:0 !important; margin:0 auto !important; max-width:none !important; width:100% !important; }
-        .ps-title { font-size:14pt !important; margin:0 0 1px !important; line-height:1 !important; }
-        .ps-date { font-size:8.5pt !important; margin:0 0 4px !important; line-height:1 !important; }
-        .ps-section-label { font-size:8pt !important; margin:4px 0 1px !important; padding-bottom:1px !important; border-bottom-width:1px !important; line-height:1.05 !important; }
-        .ps-table { margin-bottom:1px !important; }
-        .ps-table th { font-size:7pt !important; padding:2px 3px !important; line-height:1 !important; }
-        .ps-table td { font-size:7.2pt !important; padding:2px 3px !important; line-height:1.05 !important; }
-        .ps-notes-label { font-size:6.5pt !important; }
-        .ps-notes-text { font-size:7pt !important; line-height:1.1 !important; }
-        .ps-footer { font-size:6.3pt !important; margin-top:4px !important; padding-top:2px !important; }
-        .first-admission-print { margin-bottom:4px !important; }
+        .ps-page { padding:0 !important; margin:0 auto !important; max-width:none !important; width:100% !important; min-height:0 !important; height:auto !important; }
+        .ps-title { font-size:18pt !important; margin:0 0 2px !important; line-height:1.05 !important; }
+        .ps-date { font-size:10pt !important; margin:0 0 6px !important; line-height:1.05 !important; }
+        .ps-section-label { font-size:10pt !important; margin:5px 0 2px !important; padding-bottom:2px !important; border-bottom-width:1px !important; line-height:1.08 !important; }
+        .ps-table { margin-bottom:2px !important; }
+        .ps-table th { font-size:9pt !important; padding:3px 4px !important; line-height:1.08 !important; }
+        .ps-table td { font-size:9.3pt !important; padding:3px 4px !important; line-height:1.12 !important; }
+        .ps-notes-label { font-size:8pt !important; }
+        .ps-notes-text { font-size:8.5pt !important; line-height:1.12 !important; }
+        .ps-footer { font-size:7.5pt !important; margin-top:5px !important; padding-top:3px !important; }
+        .first-admission-print { margin-bottom:6px !important; }
       }
     </style>`;
   }
@@ -216,17 +216,21 @@ if (new URLSearchParams(location.search).get('vf')) {
         function fit(){
           try{
             var page=document.querySelector('.ps-page')||document.body;
+            document.documentElement.style.zoom='1';
             document.body.style.zoom='1';
             var dpi=96;
-            var printableHeight=(11-.40)*dpi;
-            var h=Math.max(page.scrollHeight,page.getBoundingClientRect().height);
-            var scale=h>printableHeight?Math.max(.58,printableHeight/h):1;
-            document.body.style.zoom=String(scale);
+            var printableHeight=(11-.50)*dpi;
+            var rect=page.getBoundingClientRect();
+            var h=rect.height;
+            if(h>printableHeight){
+              var scale=Math.max(.82,Math.min(1,printableHeight/h));
+              document.body.style.zoom=String(scale);
+            }
           }catch(e){}
         }
         window.addEventListener('load',function(){
           fit();
-          setTimeout(function(){fit();window.print();},80);
+          setTimeout(function(){fit();window.print();},120);
         });
       })();
     <\/script>`;
