@@ -1,5 +1,5 @@
 // If this is a staff variance link, hide everything until the variance
-overlay itself is ready — prevents any flash of the unit dashboard.
+// overlay itself is ready — prevents any flash of the unit dashboard.
 if (new URLSearchParams(location.search).get('vf')) {
   document.documentElement.style.visibility = 'hidden';
   setTimeout(function(){ document.documentElement.style.visibility = 'visible'; }, 8000);
