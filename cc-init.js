@@ -26,11 +26,18 @@ if (new URLSearchParams(location.search).get('vf')) {
   document.head.appendChild(s);
 })();
 
-// UKG Attendance Review. Loads as a separate module so the large command-center
-// index does not need to be replaced for attendance updates.
+// UKG Attendance Review — source of truth.
 (function(){
   var s=document.createElement('script');
-  s.src='cc-attendance.js?v=20260908-2117';
+  s.src='cc-attendance.js?v=20260908-2358';
+  s.async=false;
+  document.head.appendChild(s);
+})();
+
+// Staff Absences — manager workflow linked to the UKG source data.
+(function(){
+  var s=document.createElement('script');
+  s.src='cc-attendance-workflow.js?v=20260908-2358';
   s.async=false;
   document.head.appendChild(s);
 })();
