@@ -17,7 +17,7 @@ function inject(){
  if(!document.getElementById('panel-attendance-review')){
   const p=document.createElement('div');p.className='tab-panel';p.id='panel-attendance-review';p.style.display='none';p.innerHTML=`
   <div class="section-header"><div><div class="section-title">⏰ UKG Attendance Review</div><div class="section-sub">Import Attendance Incident Detail · review one employee at a time · YTD + rolling 30 days</div></div>
-   <div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn btn-primary btn-sm" style="cursor:pointer">⬆ Import UKG Report<input id="att-file" type="file" accept=".xlsx,.xls" style="display:none"></label><button class="btn btn-ghost btn-sm" id="att-clear">Clear imported data</button></div></div>
+   <div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn btn-primary btn-sm" style="cursor:pointer">⬆ Import UKG Report<input id="att-file" type="file" accept=".xlsx,.xls,.xlsm,.xlsb,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/vnd.ms-excel.sheet.macroEnabled.12,text/csv" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden"></label><button class="btn btn-ghost btn-sm" id="att-clear">Clear imported data</button></div></div>
   <div id="att-status" class="card" style="padding:10px 14px;margin-bottom:12px;color:var(--text2);font-size:11px"></div>
   <div id="att-kpis" style="display:grid;grid-template-columns:repeat(5,minmax(120px,1fr));gap:10px;margin-bottom:14px"></div>
   <div style="display:grid;grid-template-columns:minmax(250px,.65fr) 1.35fr;gap:12px">
@@ -30,7 +30,15 @@ function inject(){
 }
 async function importFile(ev){
  const f=ev.target.files&&ev.target.files[0];if(!f)return;const st=document.getElementById('att-status');st.textContent='Reading '+f.name+'…';
- try{if(typeof XLSX==='undefined')throw new Error('Spreadsheet reader is still loading. Try again in a few seconds.');const ab=await f.arrayBuffer();const wb=XLSX.read(ab,{type:'array',cellDates:true});const ws=wb.Sheets['Report']||wb.Sheets[wb.SheetNames[0]];const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});let emp=null,date=null,out=[];
+ try{
+  if(typeof XLSX==='undefined')throw new Error('Spreadsheet reader is still loading. Try again in a few seconds.');
+  const ext=(f.name.split('.').pop()||'').toLowerCase();
+  if(!['xlsx','xls','xlsm','xlsb','csv'].includes(ext))throw new Error('Unsupported file type. Choose the UKG Excel export (.xlsx, .xls, .xlsm, .xlsb) or CSV.');
+  const ab=await f.arrayBuffer();
+  const wb=XLSX.read(ab,{type:'array',cellDates:true});
+  const ws=wb.Sheets['Report']||wb.Sheets[wb.SheetNames[0]];
+  if(!ws)throw new Error('No worksheet found in the selected file.');
+  const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});let emp=null,date=null,out=[];
   rows.slice(13).forEach(r=>{if(r[0]&&!r[3]&&!r[9]&&!r[10])emp=String(r[0]).trim();let d=excelDate(r[3]);if(d)date=d;if(r[9]==='Event'&&VALID.has(r[10])&&emp&&date)out.push({employee:emp,date:iso(date),event:r[10],code:r[13]||'',policy:r[17]||''})});
   if(!out.length)throw new Error('No attendance incidents found. Use UKG Attendance Incident Detail.');save(out);st.textContent=`Imported ${out.length} attendance incidents for ${new Set(out.map(x=>x.employee)).size} employees from ${f.name}. Data stays in this browser.`;render();
  }catch(e){st.textContent='Import failed: '+e.message}finally{ev.target.value=''}
