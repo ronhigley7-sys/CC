@@ -25,3 +25,12 @@ if (new URLSearchParams(location.search).get('vf')) {
   s.async=false;
   document.head.appendChild(s);
 })();
+
+// UKG Attendance Review. Loads as a separate module so the large command-center
+// index does not need to be replaced for attendance updates.
+(function(){
+  var s=document.createElement('script');
+  s.src='cc-attendance.js?v=20260908-2117';
+  s.async=false;
+  document.head.appendChild(s);
+})();
