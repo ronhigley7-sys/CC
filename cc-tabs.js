@@ -1896,7 +1896,11 @@ async function printStaffingSheet() {
   function getStaff(shift, role) { return (shifts[shift]||[]).filter(p=>p.role===role); }
   function chargeFor(shift) { return state.chargeNurses[`${dateKey}|${shift}`]||''; }
   function noteFor(k) { return state.notes[`${dateKey}|${k}`]||''; }
-  function nameCell(name, shift) {
+  function printFmtTime(t) {
+    if (typeof fmtShiftTime === 'function') return fmtShiftTime(t);
+    return t && String(t).length >= 4 ? String(t).slice(0,2) + ':' + String(t).slice(2,4) : (t || '');
+  }
+  function nameCell(name, shift, relatedShifts) {
     const items = state.pendingEdu[name]||[];
     const eduFlag = items.length ? ` <span style="font-size:8pt;color:#b45309;">[📚${items.length}]</span>` : '';
     let orientFlag = '';
@@ -1905,8 +1909,20 @@ async function printStaffingSheet() {
         ? state.orientAssign[`${dateKey}|${shift}|${name}`].split(',')[0].trim() : '';
       orientFlag = ` <span style="font-size:7pt;font-weight:700;color:#92400e;background:#fef3c7;padding:1px 4px;border-radius:3px;">ORIENT${prec ? ' → '+prec : ''}</span>`;
     }
-    const _p = shift ? ((state.placements[dateKey]||{})[shift]||[]).find(x=>x.name===name) : null;
-    return `${name}${eduFlag}${orientFlag}`;
+    const shiftList = Array.isArray(relatedShifts) && relatedShifts.length ? relatedShifts : (shift ? [shift] : []);
+    const entries = shiftList.flatMap(sk => ((state.placements[dateKey]||{})[sk]||[]).filter(x => x.name === name));
+    const _p = entries[0] || (shift ? ((state.placements[dateKey]||{})[shift]||[]).find(x=>x.name===name) : null);
+    const firstStart = entries.map(x => x.startTime || x.customStart || '').find(Boolean) || (_p && (_p.startTime || _p.customStart)) || '';
+    const scheduleHours = entries.reduce((sum, x) => {
+      const n = Number(x.scheduledHours);
+      return sum + (Number.isFinite(n) ? n : 0);
+    }, 0);
+    const hoursLabel = Number.isInteger(scheduleHours) ? String(scheduleHours) : scheduleHours.toFixed(1).replace(/\.0$/, '');
+    const startFlag = firstStart ? ` <span style="font-size:7pt;font-weight:700;color:#1d4ed8;background:#dbeafe;padding:1px 4px;border-radius:3px;">Start ${printFmtTime(firstStart)}</span>` : '';
+    const rnHoursFlag = _p && _p.role === 'RN' && scheduleHours > 0 && scheduleHours < 12
+      ? ` <span style="font-size:7pt;font-weight:700;color:#92400e;background:#fef3c7;padding:1px 4px;border-radius:3px;">${hoursLabel}h RN</span>`
+      : '';
+    return `${name}${startFlag}${rnHoursFlag}${eduFlag}${orientFlag}`;
   }
   function chargeTag3B(shift, name) {
     return state.chargeNurses[`${dateKey}|${shift}`]===name
@@ -1933,7 +1949,7 @@ async function printStaffingSheet() {
     const d=rnDayAll[i],n=rnN[i];
     const dSh=d&&rnD.some(x=>x.name===d.name)?'0700-1500':'1500-1900';
     rnRows+='<tr>'+
-      '<td>'+(d?nameCell(d.name,dSh)+chargeTag3B(dSh,d.name)+chargeTag3C(dSh,d.name):'')+'</td>'+
+      '<td>'+(d?nameCell(d.name,dSh,['0700-1500','1500-1900'])+chargeTag3B(dSh,d.name)+chargeTag3C(dSh,d.name):'')+'</td>'+
       '<td>'+(n?nameCell(n.name,'1900-0700')+chargeTag3B('1900-0700',n.name)+chargeTag3C('1900-0700',n.name):'')+'</td>'+
     '</tr>';
   }
@@ -1948,7 +1964,7 @@ async function printStaffingSheet() {
     const d=lpnDayAll[i],n=lpnN[i];
     const dSh=d&&lpnD.some(x=>x.name===d.name)?'0700-1500':'1500-1900';
     lpnRows+='<tr>'+
-      '<td>'+(d?nameCell(d.name,dSh):'')+'</td>'+
+      '<td>'+(d?nameCell(d.name,dSh,['0700-1500','1500-1900']):'')+'</td>'+
       '<td>'+(n?nameCell(n.name,'1900-0700'):'')+'</td>'+
     '</tr>';
   }
