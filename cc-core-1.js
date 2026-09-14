@@ -6144,13 +6144,33 @@ function renderBoard() {
           const isRNLPN = roleFilter === 'RN' || roleFilter === 'LPN';
           const isCA    = roleFilter === 'CA';
 
-          // RN/LPN: only show badge if actual start is 1100
-          // Only badge: CA in 2230-0630 who also appears in 1430-1830 (12hr shift, ends 0300)
+          const scheduleEntries = (mergedShifts || [actualShift]).flatMap(s =>
+            (shifts[s]||[]).filter(x => x.name === p.name && x.role === p.role)
+          );
+          if (!scheduleEntries.length) scheduleEntries.push(p);
+          const fmtStaffTime = (t) => {
+            if (typeof fmtShiftTime === 'function') return fmtShiftTime(t);
+            return t && String(t).length >= 4 ? String(t).slice(0,2) + ':' + String(t).slice(2,4) : (t || '');
+          };
+          const firstStart = scheduleEntries.map(x => x.startTime || x.customStart || '').find(Boolean);
+          const scheduleHours = scheduleEntries.reduce((sum, x) => {
+            const n = Number(x.scheduledHours);
+            return sum + (Number.isFinite(n) ? n : 0);
+          }, 0);
+          const hoursLabel = Number.isInteger(scheduleHours) ? String(scheduleHours) : scheduleHours.toFixed(1).replace(/\.0$/, '');
+          const startBadge = firstStart
+            ? `<span title="UKG scheduled start time" style="background:rgba(46,125,209,0.12);border:1px solid rgba(79,163,232,0.4);border-radius:10px;padding:1px 7px;font-size:9px;font-weight:700;color:var(--accent2);font-family:'IBM Plex Mono',monospace;flex-shrink:0;">Start ${fmtStaffTime(firstStart)}</span>`
+            : '';
+          const rnHoursBadge = roleFilter === 'RN' && scheduleHours > 0 && scheduleHours < 12
+            ? `<span title="RN scheduled ${hoursLabel} hours from UKG upload — less than 12 hours" style="background:rgba(245,158,11,0.16);border:1px solid rgba(245,158,11,0.5);border-radius:10px;padding:1px 7px;font-size:9px;font-weight:700;color:var(--amber2);font-family:'IBM Plex Mono',monospace;flex-shrink:0;">${hoursLabel}h RN</span>`
+            : '';
+          // Keep the existing CA alert for the 14:30 start that carries into night.
           const startsAt1430 = isCA && actualShift === '2230-0630'
             && (shifts['1430-1830']||[]).some(x => x.name === p.name && x.role === 'CA');
-          const timeBadge = startsAt1430
+          const caEndBadge = startsAt1430
             ? `<span title="Started 1430 — shift ends 03:00" style="background:rgba(14,116,144,0.15);border:1px solid rgba(14,116,144,0.4);border-radius:10px;padding:1px 7px;font-size:9px;font-weight:700;color:var(--teal2);font-family:'IBM Plex Mono',monospace;flex-shrink:0;">–03:00</span>`
             : '';
+          const timeBadge = `${startBadge}${rnHoursBadge}${caEndBadge}`;
           html += `<div class="staff-row${isOrient?' orient-row':''}">
             <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
               <span class="staff-name"${isOrient?' style="color:rgba(245,158,11,0.85);"':''}>${p.name}</span>
