@@ -1891,9 +1891,8 @@ function normalizeUKGTime(raw) {
 function resolveScheduledHours(section, role, shiftKey) {
   const r = String(role || '').toUpperCase();
   if (r === 'RN' || r === 'LPN') {
-    if (section === 'Day') return 8;
-    if (section === 'Eve1') return 4;
-    return 12;
+    if (section === 'Day' || section === 'Night') return 8;
+    if (section === 'Eve1' || section === 'Eve2') return 4;
   }
   if (r === 'CA') {
     if (section === 'Day' || section === 'Night') return 8;
@@ -1983,14 +1982,25 @@ function parseUKGRows(rows) {
       if (SKIP_NAMES.includes(name.toLowerCase())) return;
 
       const shift = resolveShift(section, job, start);
+      const role = job || (MASTER_STAFF.find(m=>m.name===name)||{}).job || 'RN';
+      const scheduledHours = resolveScheduledHours(section, role, shift);
       const dedupeKey = `${currentDate}|${shift}|${name}`;
-      if (seen[dedupeKey]) return;
+      if (!newPlacements[currentDate][shift]) newPlacements[currentDate][shift] = [];
+      if (seen[dedupeKey]) {
+        const existing = newPlacements[currentDate][shift].find(x => x.name === name && x.role === role);
+        if (existing) {
+          existing.scheduledHours = (Number(existing.scheduledHours) || 0) + scheduledHours;
+          existing.sourceSection = [existing.sourceSection, section].filter(Boolean).join('+');
+          if (existing.startTime) {
+            existing.endTime = computeEndTime(existing.startTime, existing.scheduledHours) || existing.endTime || '';
+            if (existing.customStart) existing.customEnd = existing.endTime;
+          }
+        }
+        return;
+      }
       seen[dedupeKey] = true;
 
-      const role = job || (MASTER_STAFF.find(m=>m.name===name)||{}).job || 'RN';
-      if (!newPlacements[currentDate][shift]) newPlacements[currentDate][shift] = [];
-
-      // Store raw start time; flag if non-standard for this shift key
+      // Store raw start time and scheduled hours from the UKG section
       const STANDARD_STARTS = {
         '0700-1500':'0700','1500-1900':'1500','1900-0700':'1900',
         '0630-1430':'0630','1430-1830':'1430','1830-2230':'1830','2230-0630':'2230',
@@ -2004,7 +2014,6 @@ function parseUKGRows(rows) {
       const startNorm = normalizeUKGTime(start);
       const stdStart  = STANDARD_STARTS[shift];
       const isNonStd  = startNorm && stdStart && startNorm !== stdStart;
-      const scheduledHours = resolveScheduledHours(section, role, shift);
       const endNorm   = startNorm && scheduledHours ? computeEndTime(startNorm, scheduledHours) : (SHIFT_END[shift] || null);
 
       const entry = {
