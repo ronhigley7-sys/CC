@@ -2061,16 +2061,19 @@ function logImport(msg) {
 //  EXPORT CSV
 // ════════════════════════════════════
 function exportCSV() {
-  let csv = 'Date,Shift,Role,Name,Start Time,Scheduled Hours,RN Less Than 12 Hours,Charge\n';
+  let csv = 'Date,Shift,Role,Name,Start Time,End Time,Scheduled Hours,RN Less Than 12 Hours,Charge\n';
   state.dates.forEach(d => {
     const shifts = state.placements[d] || {};
     Object.entries(shifts).forEach(([shift, placements]) => {
       placements.forEach(p => {
         const isCharge = state.chargeNurses[`${d}|${shift}`] === p.name ? 'YES' : '';
-        const startTime = p.startTime || p.customStart || '';
-        const scheduledHours = p.scheduledHours != null && p.scheduledHours !== '' ? p.scheduledHours : '';
+        const range = String(shift || '').match(/^(\d{4})-(\d{4})$/);
+        const startTime = p.startTime || p.customStart || (range ? range[1] : '');
+        const rawHours = p.scheduledHours != null && p.scheduledHours !== '' ? Number(p.scheduledHours) : shiftHours(shift);
+        const scheduledHours = Number.isFinite(rawHours) ? rawHours : '';
+        const endTime = p.endTime || p.customEnd || (startTime && scheduledHours ? computeEndTime(startTime, scheduledHours) : (range ? range[2] : ''));
         const rnShort = p.role === 'RN' && Number(scheduledHours) > 0 && Number(scheduledHours) < 12 ? 'YES' : '';
-        csv += `"${d}","${shift}","${p.role}","${p.name}","${startTime ? fmtShiftTime(startTime) : ''}","${scheduledHours}","${rnShort}","${isCharge}"\n`;
+        csv += `"${d}","${shift}","${p.role}","${p.name}","${startTime ? fmtShiftTime(startTime) : ''}","${endTime ? fmtShiftTime(endTime) : ''}","${scheduledHours}","${rnShort}","${isCharge}"\n`;
       });
     });
   });
