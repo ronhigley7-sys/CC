@@ -6041,6 +6041,41 @@ function selectBoardDate(d) {
   renderOpenShifts();
 }
 
+function ccFmtStaffTime(t) {
+  if (typeof fmtShiftTime === 'function') return fmtShiftTime(t);
+  return t && String(t).length >= 4 ? String(t).slice(0,2) + ':' + String(t).slice(2,4) : (t || '');
+}
+function ccShiftRange(shiftKey) {
+  const m = String(shiftKey || '').match(/^(\d{4})-(\d{4})$/);
+  return m ? { start:m[1], end:m[2] } : { start:'', end:'' };
+}
+function ccAddHours(startNorm, hours) {
+  if (!startNorm || !Number.isFinite(Number(hours))) return '';
+  if (typeof computeEndTime === 'function') return computeEndTime(startNorm, Number(hours));
+  const h = parseInt(String(startNorm).slice(0,2), 10);
+  const m = parseInt(String(startNorm).slice(2,4), 10);
+  const total = (h * 60 + m + Math.round(Number(hours) * 60)) % (24 * 60);
+  return String(Math.floor(total / 60)).padStart(2,'0') + String(total % 60).padStart(2,'0');
+}
+function ccScheduleInfo(entries, fallbackShift) {
+  const arr = (entries || []).filter(Boolean);
+  const fallback = ccShiftRange(fallbackShift);
+  const start = arr.map(x => x.startTime || x.customStart || '').find(Boolean) || fallback.start;
+  const hours = arr.reduce((sum, x) => {
+    const n = Number(x.scheduledHours);
+    return sum + (Number.isFinite(n) ? n : 0);
+  }, 0);
+  const explicitEnd = arr.map(x => x.endTime || x.customEnd || '').filter(Boolean).pop() || '';
+  const end = explicitEnd || (start && hours > 0 ? ccAddHours(start, hours) : fallback.end);
+  const hoursLabel = Number.isInteger(hours) ? String(hours) : hours.toFixed(1).replace(/\.0$/, '');
+  return { start, end, hours, hoursLabel };
+}
+function ccTimeRangeBadge(info) {
+  if (!info || !info.start) return '';
+  const label = info.end ? `${ccFmtStaffTime(info.start)}-${ccFmtStaffTime(info.end)}` : `Start ${ccFmtStaffTime(info.start)}`;
+  return `<span title="UKG scheduled start and end time" style="background:rgba(46,125,209,0.12);border:1px solid rgba(79,163,232,0.4);border-radius:10px;padding:1px 7px;font-size:9px;font-weight:700;color:var(--accent2);font-family:'IBM Plex Mono',monospace;flex-shrink:0;">${label}</span>`;
+}
+
 function renderBoard() {
   const dateKey = state.activeBoardDate;
   const bv = document.getElementById('board-view');
@@ -6148,29 +6183,14 @@ function renderBoard() {
             (shifts[s]||[]).filter(x => x.name === p.name && x.role === p.role)
           );
           if (!scheduleEntries.length) scheduleEntries.push(p);
-          const fmtStaffTime = (t) => {
-            if (typeof fmtShiftTime === 'function') return fmtShiftTime(t);
-            return t && String(t).length >= 4 ? String(t).slice(0,2) + ':' + String(t).slice(2,4) : (t || '');
-          };
-          const firstStart = scheduleEntries.map(x => x.startTime || x.customStart || '').find(Boolean);
-          const scheduleHours = scheduleEntries.reduce((sum, x) => {
-            const n = Number(x.scheduledHours);
-            return sum + (Number.isFinite(n) ? n : 0);
-          }, 0);
-          const hoursLabel = Number.isInteger(scheduleHours) ? String(scheduleHours) : scheduleHours.toFixed(1).replace(/\.0$/, '');
-          const startBadge = firstStart
-            ? `<span title="UKG scheduled start time" style="background:rgba(46,125,209,0.12);border:1px solid rgba(79,163,232,0.4);border-radius:10px;padding:1px 7px;font-size:9px;font-weight:700;color:var(--accent2);font-family:'IBM Plex Mono',monospace;flex-shrink:0;">Start ${fmtStaffTime(firstStart)}</span>`
-            : '';
+          const scheduleInfo = ccScheduleInfo(scheduleEntries, shift);
+          const scheduleHours = scheduleInfo.hours;
+          const hoursLabel = scheduleInfo.hoursLabel;
+          const rangeBadge = ccTimeRangeBadge(scheduleInfo);
           const rnHoursBadge = roleFilter === 'RN' && scheduleHours > 0 && scheduleHours < 12
             ? `<span title="RN scheduled ${hoursLabel} hours from UKG upload — less than 12 hours" style="background:rgba(245,158,11,0.16);border:1px solid rgba(245,158,11,0.5);border-radius:10px;padding:1px 7px;font-size:9px;font-weight:700;color:var(--amber2);font-family:'IBM Plex Mono',monospace;flex-shrink:0;">${hoursLabel}h RN</span>`
             : '';
-          // Keep the existing CA alert for the 14:30 start that carries into night.
-          const startsAt1430 = isCA && actualShift === '2230-0630'
-            && (shifts['1430-1830']||[]).some(x => x.name === p.name && x.role === 'CA');
-          const caEndBadge = startsAt1430
-            ? `<span title="Started 1430 — shift ends 03:00" style="background:rgba(14,116,144,0.15);border:1px solid rgba(14,116,144,0.4);border-radius:10px;padding:1px 7px;font-size:9px;font-weight:700;color:var(--teal2);font-family:'IBM Plex Mono',monospace;flex-shrink:0;">–03:00</span>`
-            : '';
-          const timeBadge = `${startBadge}${rnHoursBadge}${caEndBadge}`;
+          const timeBadge = `${rangeBadge}${rnHoursBadge}`;
           html += `<div class="staff-row${isOrient?' orient-row':''}">
             <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
               <span class="staff-name"${isOrient?' style="color:rgba(245,158,11,0.85);"':''}>${p.name}</span>
@@ -6230,10 +6250,16 @@ function renderTeamNursingSection(dateKey) {
       html += `<div style="padding:10px 0;font-size:11px;color:var(--text3);text-align:center;">— Not yet assigned —</div>`;
     } else {
       slots.forEach(s => {
+        const rolePool = s.slot === 'lpn' ? ['LPN'] : ['RN','LPN'];
+        const slotEntries = mergedShifts.flatMap(sk =>
+          ((state.placements[dateKey]||{})[sk]||[]).filter(p => p.name === s.name && rolePool.includes(p.role))
+        );
+        const slotTimeBadge = ccTimeRangeBadge(ccScheduleInfo(slotEntries, shift));
         html += `<div class="staff-row">
           <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
             <span class="staff-name">${s.name}</span>
             <span class="charge-badge" style="${s.badgeStyle}">${s.slot === 'charge' ? '⭐ ' : ''}${s.roleLabel}</span>
+            ${slotTimeBadge}
           </div>
           <div class="staff-actions">
             <button class="move-btn remove-btn" onclick="clearTeam3CSlot('${primaryKey}','${s.slot}')" title="Clear">✕</button>
