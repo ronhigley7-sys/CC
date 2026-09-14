@@ -1848,6 +1848,60 @@ function fmtShiftTime(t) {
   return t.slice(0,2) + ':' + t.slice(2,4);
 }
 
+function normalizeUKGTime(raw) {
+  if (raw === null || raw === undefined || raw === '') return '';
+
+  if (typeof raw === 'number' && Number.isFinite(raw)) {
+    if (raw > 0 && raw < 1) {
+      const mins = Math.round(raw * 24 * 60) % (24 * 60);
+      return String(Math.floor(mins / 60)).padStart(2,'0') + String(mins % 60).padStart(2,'0');
+    }
+    const whole = Math.trunc(raw);
+    const digits = String(whole);
+    const h = digits.length <= 2 ? whole : Math.floor(whole / 100);
+    const m = digits.length <= 2 ? 0 : whole % 100;
+    if (h >= 0 && h < 24 && m >= 0 && m < 60) return String(h).padStart(2,'0') + String(m).padStart(2,'0');
+  }
+
+  const rawStr = String(raw).trim();
+  if (!rawStr) return '';
+  const ampm = (rawStr.match(/\b(am|pm)\b/i) || [])[1];
+  const digits = rawStr.replace(/[^0-9]/g, '');
+  if (!digits) return '';
+
+  let h, m;
+  if (digits.length <= 2) {
+    h = parseInt(digits, 10);
+    m = 0;
+  } else {
+    m = parseInt(digits.slice(-2), 10);
+    h = parseInt(digits.slice(0, -2), 10);
+  }
+  if (!Number.isFinite(h) || !Number.isFinite(m) || m < 0 || m >= 60) return '';
+
+  if (ampm) {
+    const a = ampm.toLowerCase();
+    if (a === 'pm' && h < 12) h += 12;
+    if (a === 'am' && h === 12) h = 0;
+  }
+  h = ((h % 24) + 24) % 24;
+  return String(h).padStart(2,'0') + String(m).padStart(2,'0');
+}
+
+function resolveScheduledHours(section, role, shiftKey) {
+  const r = String(role || '').toUpperCase();
+  if (r === 'RN' || r === 'LPN') {
+    if (section === 'Day') return 8;
+    if (section === 'Eve1') return 4;
+    return 12;
+  }
+  if (r === 'CA') {
+    if (section === 'Day' || section === 'Night') return 8;
+    if (section === 'Eve1' || section === 'Eve2') return 4;
+  }
+  return shiftHours(shiftKey);
+}
+
 function parseUKGRows(rows) {
   logImport('Parsing ' + rows.length + ' rows...');
 
@@ -1947,13 +2001,21 @@ function parseUKGRows(rows) {
         '0630-1430':'1430','1430-1830':'1830','1830-2230':'2230','2230-0630':'0630',
         '1500-2300':'2300','2300-0700':'0700','1100-2300':'2300','1500-0300':'0300',
       };
-      const startNorm = String(start||'').replace(/[:\s]/g,'').replace(/^(\d{1,2})(\d{2}).*$/,
-        (_,h,m)=>h.padStart(2,'0')+m);
+      const startNorm = normalizeUKGTime(start);
       const stdStart  = STANDARD_STARTS[shift];
       const isNonStd  = startNorm && stdStart && startNorm !== stdStart;
-      const endNorm   = isNonStd ? computeEndTime(startNorm, shiftHours(shift)) : null;
+      const scheduledHours = resolveScheduledHours(section, role, shift);
+      const endNorm   = startNorm && scheduledHours ? computeEndTime(startNorm, scheduledHours) : (SHIFT_END[shift] || null);
 
-      const entry = {name, role};
+      const entry = {
+        name,
+        role,
+        startTime: startNorm || '',
+        startTimeRaw: String(start || '').trim(),
+        endTime: endNorm || '',
+        scheduledHours,
+        sourceSection: section
+      };
       if (isNonStd && startNorm) { entry.customStart = startNorm; entry.customEnd = endNorm; }
       newPlacements[currentDate][shift].push(entry);
     });
@@ -1990,13 +2052,16 @@ function logImport(msg) {
 //  EXPORT CSV
 // ════════════════════════════════════
 function exportCSV() {
-  let csv = 'Date,Shift,Role,Name,Charge\n';
+  let csv = 'Date,Shift,Role,Name,Start Time,Scheduled Hours,RN Less Than 12 Hours,Charge\n';
   state.dates.forEach(d => {
     const shifts = state.placements[d] || {};
     Object.entries(shifts).forEach(([shift, placements]) => {
       placements.forEach(p => {
         const isCharge = state.chargeNurses[`${d}|${shift}`] === p.name ? 'YES' : '';
-        csv += `"${d}","${shift}","${p.role}","${p.name}","${isCharge}"\n`;
+        const startTime = p.startTime || p.customStart || '';
+        const scheduledHours = p.scheduledHours != null && p.scheduledHours !== '' ? p.scheduledHours : '';
+        const rnShort = p.role === 'RN' && Number(scheduledHours) > 0 && Number(scheduledHours) < 12 ? 'YES' : '';
+        csv += `"${d}","${shift}","${p.role}","${p.name}","${startTime ? fmtShiftTime(startTime) : ''}","${scheduledHours}","${rnShort}","${isCharge}"\n`;
       });
     });
   });
