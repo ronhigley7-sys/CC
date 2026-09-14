@@ -1673,19 +1673,31 @@ function printNursingServices() {
     }
     const shiftList = expandContinuousPrintShiftsNS(name, Array.isArray(relatedShifts) && relatedShifts.length ? relatedShifts : (shift ? [shift] : []));
     const entries = shiftList.flatMap(sk => ((state.placements[dateKey]||{})[sk]||[]).filter(x => x.name === name));
+    const allEntries = Object.values(state.placements[dateKey]||{}).flat().filter(x => x.name === name);
     const fallbackRange = printShiftRangeNS(shiftList);
     const dataStart = entries.map(x => x.startTime || x.customStart || '').find(Boolean) || '';
     const dataEnd = entries.map(x => x.endTime || x.customEnd || '').filter(Boolean).pop() || '';
     const firstStart = fallbackRange.start || dataStart;
-    const firstEnd = fallbackRange.end || dataEnd;
-    const rangeHours = printHoursNS(firstStart, firstEnd);
+    let firstEnd = fallbackRange.end || dataEnd;
+    let rangeHours = printHoursNS(firstStart, firstEnd);
     const rawHours = entries.reduce((sum, x) => {
       const n = Number(x.scheduledHours);
       return sum + (Number.isFinite(n) ? n : 0);
     }, 0);
-    const hours = rangeHours || rawHours;
+    const dailyRawHours = allEntries.reduce((sum, x) => {
+      const n = Number(x.scheduledHours);
+      return sum + (Number.isFinite(n) ? n : 0);
+    }, 0);
+    const role = String((allEntries[0]||{}).role||'').toUpperCase();
+    const preferredHours = role === 'CA' && String((state.empCAHours||{})[name]||'') === '12' ? 12 : 0;
+    const hours = Math.max(rangeHours, rawHours, dailyRawHours, preferredHours);
+    if (preferredHours && dailyRawHours < preferredHours && firstStart && hours > rangeHours) {
+      firstEnd = typeof computeEndTime === 'function' ? computeEndTime(firstStart, hours) : firstEnd;
+      rangeHours = printHoursNS(firstStart, firstEnd);
+    }
+    const isDailyTotal = dailyRawHours > rangeHours;
     const timeFlag = firstStart
-      ? ` <span style="font-size:7.5pt;font-weight:700;color:#1d4ed8;background:#dbeafe;padding:1px 5px;border-radius:3px;letter-spacing:0.2px;">${printFmtTimeNS(firstStart)}${firstEnd ? '-'+printFmtTimeNS(firstEnd) : ''}${hours ? ' · '+printHoursLabelNS(hours)+'h' : ''}</span>`
+      ? ` <span style="font-size:7.5pt;font-weight:700;color:#1d4ed8;background:#dbeafe;padding:1px 5px;border-radius:3px;letter-spacing:0.2px;">${printFmtTimeNS(firstStart)}${firstEnd ? '-'+printFmtTimeNS(firstEnd) : ''}${hours ? ' · '+printHoursLabelNS(hours)+'h'+(isDailyTotal?' total':'') : ''}</span>`
       : '';
     return `${name}${timeFlag}${eduFlag}${orientFlag}`;
   }
@@ -2013,6 +2025,7 @@ async function printStaffingSheet() {
     }
     const shiftList = expandContinuousPrintShifts(name, Array.isArray(relatedShifts) && relatedShifts.length ? relatedShifts : (shift ? [shift] : []));
     const entries = shiftList.flatMap(sk => ((state.placements[dateKey]||{})[sk]||[]).filter(x => x.name === name));
+    const allEntries = Object.values(state.placements[dateKey]||{}).flat().filter(x => x.name === name);
     const _p = entries[0] || (shift ? ((state.placements[dateKey]||{})[shift]||[]).find(x=>x.name===name) : null);
     const fallbackRange = printShiftRange(shiftList);
     const dataStart = entries.map(x => x.startTime || x.customStart || '').find(Boolean) || (_p && (_p.startTime || _p.customStart)) || '';
@@ -2020,12 +2033,24 @@ async function printStaffingSheet() {
       const n = Number(x.scheduledHours);
       return sum + (Number.isFinite(n) ? n : 0);
     }, 0);
+    const dailyRawHours = allEntries.reduce((sum, x) => {
+      const n = Number(x.scheduledHours);
+      return sum + (Number.isFinite(n) ? n : 0);
+    }, 0);
     const explicitEnd = entries.map(x => x.endTime || x.customEnd || '').filter(Boolean).pop() || (_p && (_p.endTime || _p.customEnd)) || '';
     const firstStart = fallbackRange.start || dataStart;
-    const firstEnd = fallbackRange.end || explicitEnd || (dataStart && rawHours > 0 ? printAddHours(dataStart, rawHours) : '');
-    const displayHours = printRangeHours(firstStart, firstEnd) || rawHours;
+    let firstEnd = fallbackRange.end || explicitEnd || (dataStart && rawHours > 0 ? printAddHours(dataStart, rawHours) : '');
+    let rangeHours = printRangeHours(firstStart, firstEnd);
+    const role = String((_p||allEntries[0]||{}).role||'').toUpperCase();
+    const preferredHours = role === 'CA' && String((state.empCAHours||{})[name]||'') === '12' ? 12 : 0;
+    const displayHours = Math.max(rangeHours, rawHours, dailyRawHours, preferredHours);
+    if (preferredHours && dailyRawHours < preferredHours && firstStart && displayHours > rangeHours) {
+      firstEnd = printAddHours(firstStart, displayHours);
+      rangeHours = printRangeHours(firstStart, firstEnd);
+    }
     const hoursLabel = Number.isInteger(displayHours) ? String(displayHours) : displayHours.toFixed(1).replace(/\.0$/, '');
-    const timeFlag = firstStart ? ` <span style="font-size:7pt;font-weight:700;color:#1d4ed8;background:#dbeafe;padding:1px 4px;border-radius:3px;">${printFmtTime(firstStart)}${firstEnd ? '-'+printFmtTime(firstEnd) : ''}${displayHours ? ' · '+hoursLabel+'h' : ''}</span>` : '';
+    const isDailyTotal = dailyRawHours > rangeHours;
+    const timeFlag = firstStart ? ` <span style="font-size:7pt;font-weight:700;color:#1d4ed8;background:#dbeafe;padding:1px 4px;border-radius:3px;">${printFmtTime(firstStart)}${firstEnd ? '-'+printFmtTime(firstEnd) : ''}${displayHours ? ' · '+hoursLabel+'h'+(isDailyTotal?' total':'') : ''}</span>` : '';
     const rnHoursFlag = _p && _p.role === 'RN' && displayHours > 0 && displayHours < 12
       ? ` <span style="font-size:7pt;font-weight:700;color:#92400e;background:#fef3c7;padding:1px 4px;border-radius:3px;">SHORT RN</span>`
       : '';
