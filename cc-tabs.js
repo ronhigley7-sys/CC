@@ -1634,6 +1634,23 @@ function printNursingServices() {
     const last = String(list[list.length - 1] || '').match(/^(\d{4})-(\d{4})$/);
     return { start:first ? first[1] : '', end:last ? last[2] : '' };
   }
+  function expandContinuousPrintShiftsNS(name, shiftList) {
+    const initial = (shiftList || []).filter(Boolean);
+    if (!initial.length) return initial;
+    const groups = [
+      ['0630-1430','1430-1830','1830-2230','2230-0630'],
+      ['0700-1500','1500-1900','1900-0700'],
+      ['0700-1500','1500-2300','2300-0700']
+    ];
+    const order = groups.find(g => initial.some(sk => g.includes(sk)));
+    if (!order) return initial;
+    const hasName = sk => ((state.placements[dateKey]||{})[sk]||[]).some(x => x.name === name);
+    let lo = Math.min(...initial.map(sk => order.indexOf(sk)).filter(i => i >= 0));
+    let hi = Math.max(...initial.map(sk => order.indexOf(sk)).filter(i => i >= 0));
+    while (lo > 0 && hasName(order[lo - 1])) lo--;
+    while (hi < order.length - 1 && hasName(order[hi + 1])) hi++;
+    return order.slice(lo, hi + 1);
+  }
   function printHoursNS(start, end) {
     if (!start || !end) return 0;
     const s = parseInt(String(start).slice(0,2),10) * 60 + parseInt(String(start).slice(2,4),10);
@@ -1654,7 +1671,7 @@ function printNursingServices() {
         ? state.orientAssign[`${dateKey}|${shift}|${name}`].split(',')[0].trim() : '';
       orientFlag = ` <span style="font-size:7.5pt;font-weight:700;color:#92400e;background:#fef3c7;padding:1px 5px;border-radius:3px;letter-spacing:0.2px;">ORIENT${prec ? ' → '+prec : ''}</span>`;
     }
-    const shiftList = Array.isArray(relatedShifts) && relatedShifts.length ? relatedShifts : (shift ? [shift] : []);
+    const shiftList = expandContinuousPrintShiftsNS(name, Array.isArray(relatedShifts) && relatedShifts.length ? relatedShifts : (shift ? [shift] : []));
     const entries = shiftList.flatMap(sk => ((state.placements[dateKey]||{})[sk]||[]).filter(x => x.name === name));
     const fallbackRange = printShiftRangeNS(shiftList);
     const dataStart = entries.map(x => x.startTime || x.customStart || '').find(Boolean) || '';
@@ -1952,6 +1969,23 @@ async function printStaffingSheet() {
     const last = String(list[list.length - 1] || '').match(/^(\d{4})-(\d{4})$/);
     return { start:first ? first[1] : '', end:last ? last[2] : '' };
   }
+  function expandContinuousPrintShifts(name, shiftList) {
+    const initial = (shiftList || []).filter(Boolean);
+    if (!initial.length) return initial;
+    const groups = [
+      ['0630-1430','1430-1830','1830-2230','2230-0630'],
+      ['0700-1500','1500-1900','1900-0700'],
+      ['0700-1500','1500-2300','2300-0700']
+    ];
+    const order = groups.find(g => initial.some(sk => g.includes(sk)));
+    if (!order) return initial;
+    const hasName = sk => ((state.placements[dateKey]||{})[sk]||[]).some(x => x.name === name);
+    let lo = Math.min(...initial.map(sk => order.indexOf(sk)).filter(i => i >= 0));
+    let hi = Math.max(...initial.map(sk => order.indexOf(sk)).filter(i => i >= 0));
+    while (lo > 0 && hasName(order[lo - 1])) lo--;
+    while (hi < order.length - 1 && hasName(order[hi + 1])) hi++;
+    return order.slice(lo, hi + 1);
+  }
   function printRangeHours(start, end) {
     if (!start || !end) return 0;
     const s = parseInt(String(start).slice(0,2),10) * 60 + parseInt(String(start).slice(2,4),10);
@@ -1977,7 +2011,7 @@ async function printStaffingSheet() {
         ? state.orientAssign[`${dateKey}|${shift}|${name}`].split(',')[0].trim() : '';
       orientFlag = ` <span style="font-size:7pt;font-weight:700;color:#92400e;background:#fef3c7;padding:1px 4px;border-radius:3px;">ORIENT${prec ? ' → '+prec : ''}</span>`;
     }
-    const shiftList = Array.isArray(relatedShifts) && relatedShifts.length ? relatedShifts : (shift ? [shift] : []);
+    const shiftList = expandContinuousPrintShifts(name, Array.isArray(relatedShifts) && relatedShifts.length ? relatedShifts : (shift ? [shift] : []));
     const entries = shiftList.flatMap(sk => ((state.placements[dateKey]||{})[sk]||[]).filter(x => x.name === name));
     const _p = entries[0] || (shift ? ((state.placements[dateKey]||{})[shift]||[]).find(x=>x.name===name) : null);
     const fallbackRange = printShiftRange(shiftList);
