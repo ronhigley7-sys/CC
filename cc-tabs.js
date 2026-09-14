@@ -1117,8 +1117,34 @@ function printUnitDailyReport() {
         ? state.orientAssign[`${dateKey}|${shift}|${name}`].split(',')[0].trim() : '';
       orientFlag = ` <span style="font-size:7pt;font-weight:700;color:#92400e;background:#fef3c7;padding:1px 4px;border-radius:3px;">ORIENT${prec ? ' → '+prec : ''}</span>`;
     }
-    const _p = shift ? ((state.placements[dateKey]||{})[shift]||[]).find(x=>x.name===name) : null;
-    return `${name}${eduFlag}${orientFlag}`;
+    const allEntries = Object.values(state.placements[dateKey]||{}).flat().filter(x => x.name === name);
+    const _p = shift ? ((state.placements[dateKey]||{})[shift]||[]).find(x=>x.name===name) : allEntries[0];
+    if (!_p) return `${name}${eduFlag}${orientFlag}`;
+
+    const role = String(_p.role||'').toUpperCase();
+    const start = _p.startTime || _p.customStart || (String(shift||'').match(/^(\\d{4})-/)||[])[1] || '';
+    const segmentHours = Number(_p.scheduledHours) || (typeof shiftHours === 'function' ? shiftHours(shift) : 0);
+    const dailyHours = allEntries.reduce((sum,x) => {
+      const n = Number(x.scheduledHours);
+      return sum + (Number.isFinite(n) ? n : 0);
+    }, 0);
+    const preferredCAHours = role === 'CA' ? Number((state.empCAHours||{})[name]||0) : 0;
+    const fullHours = role === 'RN' || role === 'LPN'
+      ? Math.max(12, dailyHours)
+      : role === 'CA'
+        ? Math.max(segmentHours, dailyHours, preferredCAHours)
+        : Math.max(segmentHours, dailyHours);
+
+    const multiSegment = allEntries.length > 1 && dailyHours > segmentHours;
+    let end = _p.endTime || _p.customEnd || '';
+    if (!multiSegment || (preferredCAHours === 12 && dailyHours < 12) || role === 'RN' || role === 'LPN') {
+      end = start && fullHours && typeof computeEndTime === 'function' ? computeEndTime(start, fullHours) : end;
+    }
+    const fmt = t => typeof fmtShiftTime === 'function' ? fmtShiftTime(t) : (t ? String(t).slice(0,2)+':'+String(t).slice(2,4) : '');
+    const hLabel = Number.isInteger(fullHours) ? String(fullHours) : Number(fullHours).toFixed(1).replace(/\\.0$/,'');
+    const totalWord = multiSegment ? ' total' : '';
+    const timeFlag = start ? ` <span style="font-size:7pt;font-weight:700;color:#1d4ed8;background:#dbeafe;padding:1px 4px;border-radius:3px;white-space:nowrap;">${fmt(start)}${end?'-'+fmt(end):''} · ${hLabel}h${totalWord}</span>` : '';
+    return `${name}${timeFlag}${eduFlag}${orientFlag}`;
   }
   function chargeTag(shift, name) {
     return state.chargeNurses[`${dateKey}|${shift}`] === name
