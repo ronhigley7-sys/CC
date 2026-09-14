@@ -1900,6 +1900,20 @@ async function printStaffingSheet() {
     if (typeof fmtShiftTime === 'function') return fmtShiftTime(t);
     return t && String(t).length >= 4 ? String(t).slice(0,2) + ':' + String(t).slice(2,4) : (t || '');
   }
+  function printShiftRange(shiftList) {
+    const list = (shiftList || []).filter(Boolean);
+    const first = String(list[0] || '').match(/^(\d{4})-(\d{4})$/);
+    const last = String(list[list.length - 1] || '').match(/^(\d{4})-(\d{4})$/);
+    return { start:first ? first[1] : '', end:last ? last[2] : '' };
+  }
+  function printAddHours(startNorm, hours) {
+    if (!startNorm || !Number.isFinite(Number(hours))) return '';
+    if (typeof computeEndTime === 'function') return computeEndTime(startNorm, Number(hours));
+    const h = parseInt(String(startNorm).slice(0,2), 10);
+    const m = parseInt(String(startNorm).slice(2,4), 10);
+    const total = (h * 60 + m + Math.round(Number(hours) * 60)) % (24 * 60);
+    return String(Math.floor(total / 60)).padStart(2,'0') + String(total % 60).padStart(2,'0');
+  }
   function nameCell(name, shift, relatedShifts) {
     const items = state.pendingEdu[name]||[];
     const eduFlag = items.length ? ` <span style="font-size:8pt;color:#b45309;">[📚${items.length}]</span>` : '';
@@ -1912,17 +1926,20 @@ async function printStaffingSheet() {
     const shiftList = Array.isArray(relatedShifts) && relatedShifts.length ? relatedShifts : (shift ? [shift] : []);
     const entries = shiftList.flatMap(sk => ((state.placements[dateKey]||{})[sk]||[]).filter(x => x.name === name));
     const _p = entries[0] || (shift ? ((state.placements[dateKey]||{})[shift]||[]).find(x=>x.name===name) : null);
-    const firstStart = entries.map(x => x.startTime || x.customStart || '').find(Boolean) || (_p && (_p.startTime || _p.customStart)) || '';
+    const fallbackRange = printShiftRange(shiftList);
+    const firstStart = entries.map(x => x.startTime || x.customStart || '').find(Boolean) || (_p && (_p.startTime || _p.customStart)) || fallbackRange.start;
     const scheduleHours = entries.reduce((sum, x) => {
       const n = Number(x.scheduledHours);
       return sum + (Number.isFinite(n) ? n : 0);
     }, 0);
+    const explicitEnd = entries.map(x => x.endTime || x.customEnd || '').filter(Boolean).pop() || (_p && (_p.endTime || _p.customEnd)) || '';
+    const firstEnd = explicitEnd || (firstStart && scheduleHours > 0 ? printAddHours(firstStart, scheduleHours) : fallbackRange.end);
     const hoursLabel = Number.isInteger(scheduleHours) ? String(scheduleHours) : scheduleHours.toFixed(1).replace(/\.0$/, '');
-    const startFlag = firstStart ? ` <span style="font-size:7pt;font-weight:700;color:#1d4ed8;background:#dbeafe;padding:1px 4px;border-radius:3px;">Start ${printFmtTime(firstStart)}</span>` : '';
+    const timeFlag = firstStart ? ` <span style="font-size:7pt;font-weight:700;color:#1d4ed8;background:#dbeafe;padding:1px 4px;border-radius:3px;">${printFmtTime(firstStart)}${firstEnd ? '-'+printFmtTime(firstEnd) : ''}</span>` : '';
     const rnHoursFlag = _p && _p.role === 'RN' && scheduleHours > 0 && scheduleHours < 12
       ? ` <span style="font-size:7pt;font-weight:700;color:#92400e;background:#fef3c7;padding:1px 4px;border-radius:3px;">${hoursLabel}h RN</span>`
       : '';
-    return `${name}${startFlag}${rnHoursFlag}${eduFlag}${orientFlag}`;
+    return `${name}${timeFlag}${rnHoursFlag}${eduFlag}${orientFlag}`;
   }
   function chargeTag3B(shift, name) {
     return state.chargeNurses[`${dateKey}|${shift}`]===name
