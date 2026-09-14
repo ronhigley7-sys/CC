@@ -6049,6 +6049,34 @@ function ccShiftRange(shiftKey) {
   const m = String(shiftKey || '').match(/^(\d{4})-(\d{4})$/);
   return m ? { start:m[1], end:m[2] } : { start:'', end:'' };
 }
+function ccTimeToMinutes(t) {
+  if (!t || String(t).length < 4) return null;
+  const h = parseInt(String(t).slice(0,2), 10);
+  const m = parseInt(String(t).slice(2,4), 10);
+  return Number.isFinite(h) && Number.isFinite(m) ? h * 60 + m : null;
+}
+function ccExpectedShiftFromStart(role, startNorm) {
+  const mins = ccTimeToMinutes(startNorm);
+  if (mins === null) return '';
+  const r = String(role || '').toUpperCase();
+  if (r === 'CA') {
+    if (mins >= 5 * 60 && mins < 12 * 60) return '0630-1430';
+    if (mins >= 12 * 60 && mins < 17 * 60) return '1430-1830';
+    if (mins >= 17 * 60 && mins < 21 * 60) return '1830-2230';
+    return '2230-0630';
+  }
+  if (r === 'RN' || r === 'LPN') {
+    if (mins >= 5 * 60 && mins < 12 * 60) return '0700-1500';
+    if (mins >= 12 * 60 && mins < 18 * 60) return '1500-1900';
+    return '1900-0700';
+  }
+  return '';
+}
+function ccPlacementBelongsInShift(p, shiftKey, role) {
+  const start = p && (p.startTime || p.customStart || '');
+  const expected = ccExpectedShiftFromStart(role || (p && p.role), start);
+  return !expected || expected === shiftKey;
+}
 function ccAddHours(startNorm, hours) {
   if (!startNorm || !Number.isFinite(Number(hours))) return '';
   if (typeof computeEndTime === 'function') return computeEndTime(startNorm, Number(hours));
@@ -6060,13 +6088,16 @@ function ccAddHours(startNorm, hours) {
 function ccScheduleInfo(entries, fallbackShift) {
   const arr = (entries || []).filter(Boolean);
   const fallback = ccShiftRange(fallbackShift);
-  const start = arr.map(x => x.startTime || x.customStart || '').find(Boolean) || fallback.start;
   const hours = arr.reduce((sum, x) => {
     const n = Number(x.scheduledHours);
     return sum + (Number.isFinite(n) ? n : 0);
   }, 0);
+  const dataStart = arr.map(x => x.startTime || x.customStart || '').find(Boolean) || '';
   const explicitEnd = arr.map(x => x.endTime || x.customEnd || '').filter(Boolean).pop() || '';
-  const end = explicitEnd || (start && hours > 0 ? ccAddHours(start, hours) : fallback.end);
+  // The visible badge should match the board column. Raw UKG fragments can be
+  // 4-hour pieces, which made 0700-1900 staff appear as 0700-1100.
+  const start = fallback.start || dataStart;
+  const end = fallback.end || explicitEnd || (dataStart && hours > 0 ? ccAddHours(dataStart, hours) : '');
   const hoursLabel = Number.isInteger(hours) ? String(hours) : hours.toFixed(1).replace(/\.0$/, '');
   return { start, end, hours, hoursLabel };
 }
@@ -6121,7 +6152,7 @@ function renderBoard() {
         ? ['0700-1500', '1500-1900']
         : [shift];
 
-      const allPlaced = mergedShifts.flatMap(s => (shifts[s]||[]).filter(p => p.role === roleFilter));
+      const allPlaced = mergedShifts.flatMap(s => (shifts[s]||[]).filter(p => p.role === roleFilter && ccPlacementBelongsInShift(p, s, roleFilter)));
       // Deduplicate by name — keep first occurrence
       const seenNames = new Set();
       const dedupedPlaced = allPlaced.filter(p => {
@@ -6139,7 +6170,7 @@ function renderBoard() {
       if (placements.length === 0 && !alwaysShow) return;
       // For remove button we need the actual shift key each person is in
       const placementShiftMap = new Map();
-      mergedShifts.forEach(s => (shifts[s]||[]).filter(p => p.role === roleFilter)
+      mergedShifts.forEach(s => (shifts[s]||[]).filter(p => p.role === roleFilter && ccPlacementBelongsInShift(p, s, roleFilter))
         .forEach(p => { if (!placementShiftMap.has(p.name)) placementShiftMap.set(p.name, s); }));
       const chargeKey = `${dateKey}|${shift}`;
       const chargeNurse = state.chargeNurses[chargeKey] || null;
@@ -6252,7 +6283,7 @@ function renderTeamNursingSection(dateKey) {
       slots.forEach(s => {
         const rolePool = s.slot === 'lpn' ? ['LPN'] : ['RN','LPN'];
         const slotEntries = mergedShifts.flatMap(sk =>
-          ((state.placements[dateKey]||{})[sk]||[]).filter(p => p.name === s.name && rolePool.includes(p.role))
+          ((state.placements[dateKey]||{})[sk]||[]).filter(p => p.name === s.name && rolePool.includes(p.role) && ccPlacementBelongsInShift(p, sk, p.role))
         );
         const slotTimeBadge = ccTimeRangeBadge(ccScheduleInfo(slotEntries, shift));
         html += `<div class="staff-row">
