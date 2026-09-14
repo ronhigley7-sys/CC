@@ -1921,9 +1921,17 @@ function parseUKGRows(rows) {
 
   // Map UKG job title + shift section → internal shift key
   function resolveShift(section, job, startRaw) {
-    const start = String(startRaw||'').replace(/[:\s]/g,'').replace(/^(\d{1,2})(\d{2}).*$/,'$1$2');
+    const start = normalizeUKGTime(startRaw);
+    const mins = start ? (parseInt(start.slice(0,2),10) * 60 + parseInt(start.slice(2,4),10)) : null;
     const j = String(job||'').toUpperCase();
+
     if (j === 'CA') {
+      if (mins !== null) {
+        if (mins >= 5 * 60 && mins < 12 * 60) return '0630-1430';
+        if (mins >= 12 * 60 && mins < 17 * 60) return '1430-1830';
+        if (mins >= 17 * 60 && mins < 21 * 60) return '1830-2230';
+        return '2230-0630';
+      }
       if (section==='Day')   return '0630-1430';
       if (section==='Eve1')  return '1430-1830';
       if (section==='Eve2')  return '1830-2230';
@@ -1934,10 +1942,14 @@ function parseUKGRows(rows) {
       if (section==='Eve1' || section==='Eve2') return '1500-2300';
       if (section==='Night') return '2300-0700';
     }
-    // RN / LPN
+    // RN / LPN: use the start when UKG repeats a 12-hour nurse in a 4-hour grid section.
+    if (mins !== null) {
+      if (mins >= 5 * 60 && mins < 12 * 60) return '0700-1500';
+      if (mins >= 12 * 60 && mins < 18 * 60) return '1500-1900';
+      return '1900-0700';
+    }
     if (section==='Day')   return '0700-1500';
     if (section==='Eve1')  return '1500-1900';
-    // Eve2 and Night: both go 1900-0700 regardless of start
     return '1900-0700';
   }
 
