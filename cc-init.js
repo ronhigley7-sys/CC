@@ -21,7 +21,7 @@ if (new URLSearchParams(location.search).get('vf')) {
 // Admission rotation + 3C CA assignment patch.
 (function(){
   var s=document.createElement('script');
-  s.src='cc-admission-rotation.js?v=20260908-2024';
+  s.src='cc-admission-rotation.js?v=20260915-compact-one-page';
   s.async=false;
   document.head.appendChild(s);
 })();
