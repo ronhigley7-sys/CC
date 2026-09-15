@@ -283,6 +283,18 @@ function switchTab(el) {
   updateNavGroupActive();
 
   if (el.dataset.panel === 'home')       renderManagerHome();
+  // Charge assignments must always render expanded whenever the Charge page is opened.
+  if (el.dataset.panel === 'charge') {
+    if (!state.activeChargeDate) state.activeChargeDate = state.activeBoardDate || state.dates[0] || null;
+    renderChargeDateTabs();
+    renderCharge();
+    const chargeHost = document.getElementById('charge-assignments');
+    if (chargeHost) {
+      chargeHost.style.display = 'block';
+      chargeHost.removeAttribute('hidden');
+      chargeHost.setAttribute('aria-expanded', 'true');
+    }
+  }
   if (el.dataset.panel === 'vacancy')    { loadVacancyBudgets(); loadPnlBudget(); }
   if (el.dataset.panel === 'overtime')   loadOtYtd();
   if (el.dataset.panel === 'schedule')   { renderSchedule(); renderBlockedDays(); renderVacationList(); populateVacStaffSelect(); renderShiftTargets(); }
