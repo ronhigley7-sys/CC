@@ -4900,6 +4900,8 @@ const VARIANCE_TYPES = [
   { id:'care-plan',   label:'Nurse Care Plans',          icon:'📋', showCP: true  },
   { id:'med-scan',    label:'Medication Scanning',        icon:'💊', showCP: false },
   { id:'fall',        label:'Fall / Fall Prevention',     icon:'🚨', showCP: false },
+  { id:'plato-fall',  label:'PLATO Round Variance - Falls', icon:'🔄', showCP: false },
+  { id:'plato-hapi',  label:'PLATO Round Variance - HAPI',  icon:'🩹', showCP: false },
   { id:'blood-tx',    label:'Blood Transfusion',             icon:'🩸', showCP: false },
   { id:'pain-reass',  label:'Pain Reassessment',          icon:'💔', showCP: false },
   { id:'skin',        label:'Skin / Pressure Injury',     icon:'🩹', showCP: false },
@@ -4956,17 +4958,31 @@ function onVarTypeChange() {
   const careplanChecked   = document.querySelector('#var-type-grid input[value="care-plan"]')?.checked;
   const painChecked       = document.querySelector('#var-type-grid input[value="pain-reass"]')?.checked;
   const transfusionChecked= document.querySelector('#var-type-grid input[value="blood-tx"]')?.checked;
+  const platoFallChecked  = document.querySelector('#var-type-grid input[value="plato-fall"]')?.checked;
+  const platoHapiChecked  = document.querySelector('#var-type-grid input[value="plato-hapi"]')?.checked;
   const cpSection  = document.getElementById('var-careplan-section');
   const prSection  = document.getElementById('var-painreass-section');
   const txSection  = document.getElementById('var-transfusion-section');
+  const platoSection = document.getElementById('var-plato-section');
+  const platoFallBlock = document.getElementById('var-plato-fall-block');
+  const platoHapiBlock = document.getElementById('var-plato-hapi-block');
   if (cpSection) cpSection.style.display  = careplanChecked    ? 'block' : 'none';
   if (prSection) prSection.style.display  = painChecked        ? 'block' : 'none';
   if (txSection) txSection.style.display  = transfusionChecked ? 'block' : 'none';
+  if (platoSection) platoSection.style.display = (platoFallChecked || platoHapiChecked) ? 'block' : 'none';
+  if (platoFallBlock) platoFallBlock.style.display = platoFallChecked ? 'block' : 'none';
+  if (platoHapiBlock) platoHapiBlock.style.display = platoHapiChecked ? 'block' : 'none';
 }
 
 // Sync dropdown selection into the correction textarea
 function syncVarianceDropdown(type) {
-  const idMap = { careplan:'var-careplan-issue', pain:'var-pain-issue', transfusion:'var-transfusion-issue' };
+  const idMap = {
+    careplan:'var-careplan-issue',
+    pain:'var-pain-issue',
+    transfusion:'var-transfusion-issue',
+    platoFall:'var-plato-fall-issue',
+    platoHapi:'var-plato-hapi-issue'
+  };
   const sel = document.getElementById(idMap[type]);
   if (!sel || !sel.value) return;
   const corr = document.getElementById('var-correction');
@@ -5106,6 +5122,20 @@ function getVarFormData() {
   const txReactionYN   = document.getElementById('tx-reaction-yn')?.value   || 'no';
   const txReactionDesc = document.getElementById('tx-reaction-desc')?.value  || '';
 
+  // PLATO round variance checkboxes
+  const platoChecks = {
+    fallRisk:         document.getElementById('plato-fall-risk')?.checked          || false,
+    fallRounds:       document.getElementById('plato-fall-rounds')?.checked        || false,
+    fallInterventions:document.getElementById('plato-fall-interventions')?.checked || false,
+    fallEscalation:   document.getElementById('plato-fall-escalation')?.checked    || false,
+    hapiBraden:       document.getElementById('plato-hapi-braden')?.checked        || false,
+    hapiRounds:       document.getElementById('plato-hapi-rounds')?.checked        || false,
+    hapiInterventions:document.getElementById('plato-hapi-interventions')?.checked || false,
+    hapiEscalation:   document.getElementById('plato-hapi-escalation')?.checked    || false,
+  };
+  const platoFallIssue = document.getElementById('var-plato-fall-issue')?.value || '';
+  const platoHapiIssue = document.getElementById('var-plato-hapi-issue')?.value || '';
+
   // Pain reassessment specific issue
   const painIssue = document.getElementById('var-pain-issue')?.value || '';
 
@@ -5115,7 +5145,7 @@ function getVarFormData() {
   // Care plan specific issue
   const cpIssue = document.getElementById('var-careplan-issue')?.value || '';
 
-  return { name, date, time, mrid, types: checkedTypes, correction, returnBy, manager, notes, cpChecks, painIssue, txIssue, cpIssue, painChecks, painResponse, txChecks, txReactionYN, txReactionDesc };
+  return { name, date, time, mrid, types: checkedTypes, correction, returnBy, manager, notes, cpChecks, painIssue, txIssue, cpIssue, painChecks, painResponse, txChecks, txReactionYN, txReactionDesc, platoChecks, platoFallIssue, platoHapiIssue };
 }
 
 function saveVarianceToNotes() {
@@ -5158,6 +5188,16 @@ const VAR_TX_LABELS = {
   fourHr:'Product infused within 4-hour policy window', rate:'Rate of infusion verified per provider order',
   rxProto:'Transfusion reaction protocol followed if applicable', postDoc:'Post-transfusion vitals and documentation complete',
   label:'Blood product label matched to patient wristband', notify:'Provider notified of transfusion completion'
+};
+const VAR_PLATO_LABELS = {
+  fallRisk:'Fall-risk/Morse score current in PLATO',
+  fallRounds:'PLATO fall round completed and documented',
+  fallInterventions:'Fall-prevention bundle verified during round',
+  fallEscalation:'Missed fall-prevention finding escalated to RN/charge nurse',
+  hapiBraden:'Braden/skin risk current in PLATO',
+  hapiRounds:'PLATO HAPI round completed and documented',
+  hapiInterventions:'HAPI-prevention interventions verified during round',
+  hapiEscalation:'New skin concern escalated appropriately'
 };
 
 // Generate a mobile-friendly standalone page for the involved staff member:
@@ -5226,7 +5266,7 @@ async function sendVarianceToStaff() {
     name: v.name, ts,
     date: entry.date, time: entry.time,
     types: entry.types, correction: entry.correction,
-    cpChecks: entry.cpChecks, painChecks: entry.painChecks, txChecks: entry.txChecks
+    cpChecks: entry.cpChecks, painChecks: entry.painChecks, txChecks: entry.txChecks, platoChecks: entry.platoChecks
   };
 
   const cfg = getSBConfig();
@@ -5284,7 +5324,19 @@ function clearVarianceForm() {
   document.getElementById('var-type-custom').value = '';
   document.querySelectorAll('#var-type-grid input').forEach(cb => cb.checked = false);
   document.querySelectorAll('#var-careplan-section input[type=checkbox]').forEach(cb => cb.checked = false);
+  document.querySelectorAll('#var-painreass-section input[type=checkbox]').forEach(cb => cb.checked = false);
+  document.querySelectorAll('#var-transfusion-section input[type=checkbox]').forEach(cb => cb.checked = false);
+  document.querySelectorAll('#var-plato-section input[type=checkbox]').forEach(cb => cb.checked = false);
+  ['var-careplan-issue','var-pain-issue','var-transfusion-issue','var-plato-fall-issue','var-plato-hapi-issue','tx-reaction-yn','tx-reaction-desc','var-pain-response'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = id === 'tx-reaction-yn' ? 'no' : '';
+  });
   document.getElementById('var-careplan-section').style.display = 'none';
+  document.getElementById('var-painreass-section').style.display = 'none';
+  document.getElementById('var-transfusion-section').style.display = 'none';
+  document.getElementById('var-plato-section').style.display = 'none';
+  document.getElementById('var-plato-fall-block').style.display = 'none';
+  document.getElementById('var-plato-hapi-block').style.display = 'none';
   renderVarHistory();
 }
 
@@ -5295,6 +5347,8 @@ function printVarianceForm() {
   const hasCPVariance   = v.types.some(t => t.includes('Care Plan'));
   const hasPainVariance = v.types.some(t => t.includes('Pain'));
   const hasTxVariance   = v.types.some(t => t.includes('Transfusion') || t.includes('Blood'));
+  const hasPlatoFallVariance = v.types.some(t => t.includes('PLATO') && t.includes('Fall'));
+  const hasPlatoHapiVariance = v.types.some(t => t.includes('PLATO') && t.includes('HAPI'));
   const cpChecks = v.cpChecks;
 
   function chk(checked) {
@@ -5405,6 +5459,28 @@ function printVarianceForm() {
     <label style="font-size:8pt;font-weight:bold;color:#555;text-transform:uppercase;">Reaction / Adverse Event? &nbsp; <span style="display:inline-block;width:13px;height:13px;border:1.5px solid #333;border-radius:2px;vertical-align:middle;"></span> Yes &nbsp; <span style="display:inline-block;width:13px;height:13px;border:1.5px solid #333;border-radius:2px;vertical-align:middle;"></span> No</label>
     <div style="border:1px solid #aaa;border-radius:4px;min-height:40px;margin-top:4px;padding:6px;font-size:9.5pt;">If yes, describe:</div>
   </div>` : ''}
+
+  ${(hasPlatoFallVariance || hasPlatoHapiVariance) ? `
+  <h2>PLATO Round Variance</h2>
+  ${hasPlatoFallVariance ? `
+  <div style="font-weight:bold;margin-bottom:4px;">Fall PLATO Round</div>
+  ${v.platoFallIssue ? `<div style="margin-bottom:8px;padding:6px 10px;background:#fff8e8;border-left:3px solid #b7791f;font-size:9.5pt;"><strong>Specific Issue:</strong> ${v.platoFallIssue}</div>` : ''}
+  <div class="check-grid">
+    <div class="check-item">${chk(v.platoChecks.fallRisk)} Fall-risk/Morse score current in PLATO</div>
+    <div class="check-item">${chk(v.platoChecks.fallRounds)} PLATO fall round completed and documented</div>
+    <div class="check-item">${chk(v.platoChecks.fallInterventions)} Fall-prevention bundle verified during round</div>
+    <div class="check-item">${chk(v.platoChecks.fallEscalation)} Missed finding escalated to RN/charge nurse</div>
+  </div>` : ''}
+  ${hasPlatoHapiVariance ? `
+  <div style="font-weight:bold;margin:8px 0 4px;">HAPI PLATO Round</div>
+  ${v.platoHapiIssue ? `<div style="margin-bottom:8px;padding:6px 10px;background:#fff0f2;border-left:3px solid #c0392b;font-size:9.5pt;"><strong>Specific Issue:</strong> ${v.platoHapiIssue}</div>` : ''}
+  <div class="check-grid">
+    <div class="check-item">${chk(v.platoChecks.hapiBraden)} Braden/skin risk current in PLATO</div>
+    <div class="check-item">${chk(v.platoChecks.hapiRounds)} PLATO HAPI round completed and documented</div>
+    <div class="check-item">${chk(v.platoChecks.hapiInterventions)} HAPI-prevention interventions verified during round</div>
+    <div class="check-item">${chk(v.platoChecks.hapiEscalation)} New skin concern escalated appropriately</div>
+  </div>` : ''}
+  ` : ''}
 
   <h2>Plan for Correction</h2>
   <div class="correction-lines">${v.correction || ''}</div>

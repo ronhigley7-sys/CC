@@ -1800,7 +1800,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--white);
     <div class="header-badge">3B</div>
     <div>
       <div class="header-title">Tele Med Surg — Staff Command Center</div>
-      <div class="header-sub">AOMC Nursing Operations · UKG Integration <span id="cc-build-tag" style="opacity:0.55;margin-left:6px;" title="Build version — helps confirm this tab is running the latest CA section import fix">· build 2026-09-16-ca-shift-sections</span></div>
+      <div class="header-sub">AOMC Nursing Operations · UKG Integration <span id="cc-build-tag" style="opacity:0.55;margin-left:6px;" title="Build version — helps confirm this tab is running the latest PLATO variance form update">· build 2026-09-16-plato-variance</span></div>
     </div>
   </div>
   <div class="header-right">
@@ -3044,6 +3044,46 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--white);
         </div>
         <div style="margin-top:6px;">
           <textarea id="tx-reaction-desc" rows="2" placeholder="If yes, describe reaction and actions taken..." style="width:100%;background:var(--slate);border:1px solid var(--border);color:var(--white);padding:6px 8px;border-radius:4px;font-size:10px;resize:vertical;"></textarea>
+        </div>
+      </div>
+
+      <div id="var-plato-section" style="display:none;margin-bottom:14px;background:rgba(46,125,209,0.08);border:1px solid rgba(46,125,209,0.3);border-radius:8px;padding:12px;">
+        <div style="font-size:10px;font-weight:700;color:var(--accent2);margin-bottom:8px;">🔄 PLATO Round Variance — Falls / HAPI</div>
+
+        <div id="var-plato-fall-block" style="display:none;margin-bottom:10px;">
+          <div style="font-size:10px;font-weight:700;color:var(--amber2);margin-bottom:6px;">Fall PLATO Round Variance</div>
+          <select id="var-plato-fall-issue" onchange="syncVarianceDropdown('platoFall')" style="width:100%;background:var(--slate);border:1px solid var(--border);color:var(--white);padding:5px 8px;border-radius:4px;font-size:10px;margin-bottom:8px;">
+            <option value="">— Select specific fall PLATO issue (optional) —</option>
+            <option>PLATO fall round not completed or not documented</option>
+            <option>Fall-risk/Morse score missing, outdated, or not verified in PLATO</option>
+            <option>High-risk fall interventions not marked complete in PLATO</option>
+            <option>Bed/chair alarm, call light, bed low/locked, or nonskid footwear not verified during PLATO round</option>
+            <option>Missed fall-prevention finding not escalated to RN/charge nurse</option>
+          </select>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:10px;">
+            <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;padding:4px 6px;border:1px solid rgba(245,158,11,0.22);border-radius:4px;"><input type="checkbox" id="plato-fall-risk" style="accent-color:var(--amber2);width:12px;height:12px;margin-top:1px;flex-shrink:0;"> Fall-risk/Morse score current in PLATO</label>
+            <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;padding:4px 6px;border:1px solid rgba(245,158,11,0.22);border-radius:4px;"><input type="checkbox" id="plato-fall-rounds" style="accent-color:var(--amber2);width:12px;height:12px;margin-top:1px;flex-shrink:0;"> PLATO fall round completed and documented</label>
+            <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;padding:4px 6px;border:1px solid rgba(245,158,11,0.22);border-radius:4px;"><input type="checkbox" id="plato-fall-interventions" style="accent-color:var(--amber2);width:12px;height:12px;margin-top:1px;flex-shrink:0;"> Fall-prevention bundle verified during round</label>
+            <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;padding:4px 6px;border:1px solid rgba(245,158,11,0.22);border-radius:4px;"><input type="checkbox" id="plato-fall-escalation" style="accent-color:var(--amber2);width:12px;height:12px;margin-top:1px;flex-shrink:0;"> Missed finding escalated to RN/charge nurse</label>
+          </div>
+        </div>
+
+        <div id="var-plato-hapi-block" style="display:none;">
+          <div style="font-size:10px;font-weight:700;color:var(--red2);margin-bottom:6px;">HAPI PLATO Round Variance</div>
+          <select id="var-plato-hapi-issue" onchange="syncVarianceDropdown('platoHapi')" style="width:100%;background:var(--slate);border:1px solid var(--border);color:var(--white);padding:5px 8px;border-radius:4px;font-size:10px;margin-bottom:8px;">
+            <option value="">— Select specific HAPI PLATO issue (optional) —</option>
+            <option>PLATO HAPI round not completed or not documented</option>
+            <option>Braden score or skin-risk status missing, outdated, or not verified in PLATO</option>
+            <option>Turn/reposition or offloading intervention not documented during PLATO round</option>
+            <option>Heel/sacrum offloading, Mepilex/foam, waffle cushion, or specialty bed not verified in PLATO</option>
+            <option>New skin concern not escalated to RN/charge nurse/provider as appropriate</option>
+          </select>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:10px;">
+            <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;padding:4px 6px;border:1px solid rgba(239,68,68,0.22);border-radius:4px;"><input type="checkbox" id="plato-hapi-braden" style="accent-color:var(--red2);width:12px;height:12px;margin-top:1px;flex-shrink:0;"> Braden/skin risk current in PLATO</label>
+            <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;padding:4px 6px;border:1px solid rgba(239,68,68,0.22);border-radius:4px;"><input type="checkbox" id="plato-hapi-rounds" style="accent-color:var(--red2);width:12px;height:12px;margin-top:1px;flex-shrink:0;"> PLATO HAPI round completed and documented</label>
+            <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;padding:4px 6px;border:1px solid rgba(239,68,68,0.22);border-radius:4px;"><input type="checkbox" id="plato-hapi-interventions" style="accent-color:var(--red2);width:12px;height:12px;margin-top:1px;flex-shrink:0;"> HAPI-prevention interventions verified during round</label>
+            <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;padding:4px 6px;border:1px solid rgba(239,68,68,0.22);border-radius:4px;"><input type="checkbox" id="plato-hapi-escalation" style="accent-color:var(--red2);width:12px;height:12px;margin-top:1px;flex-shrink:0;"> New skin concern escalated appropriately</label>
+          </div>
         </div>
       </div>
 
@@ -6063,8 +6103,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--white);
   </div>
 </div>
 
-<script src="cc-core-1.js?v=2026-09-16-ca-shift-sections"></script>
-<script src="cc-core-2.js?v=2026-09-16-ca-shift-sections"></script>
+<script src="cc-core-1.js?v=2026-09-16-plato-variance"></script>
+<script src="cc-core-2.js?v=2026-09-16-plato-variance"></script>
 <script src="cc-core-3.js?v=2026-09-15-fill-full-page"></script>
 
 <!-- PRINT SHEET (hidden, rendered on demand) -->

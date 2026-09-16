@@ -912,6 +912,7 @@ function renderStaffVarianceOverlay(name, ts, entry) {
   Object.entries(VAR_CP_LABELS).forEach(([k,label]) => { if (entry.cpChecks && entry.cpChecks[k]) initItems.push({key:'cp_'+k, label}); });
   Object.entries(VAR_PAIN_LABELS).forEach(([k,label]) => { if (entry.painChecks && entry.painChecks[k]) initItems.push({key:'pr_'+k, label}); });
   Object.entries(VAR_TX_LABELS).forEach(([k,label]) => { if (entry.txChecks && entry.txChecks[k]) initItems.push({key:'tx_'+k, label}); });
+  Object.entries(VAR_PLATO_LABELS).forEach(([k,label]) => { if (entry.platoChecks && entry.platoChecks[k]) initItems.push({key:'plato_'+k, label}); });
 
   const displayDate = entry.date ? new Date(entry.date+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}) : '—';
   const typesHtml = (entry.types && entry.types.length) ? entry.types.map(t => `<span style="display:inline-block;border:1px solid #1e3a5f;color:#1e3a5f;border-radius:4px;padding:1px 8px;font-size:11px;margin:2px 4px 2px 0;">${t}</span>`).join('') : '<span style="color:#999;">Not specified</span>';
