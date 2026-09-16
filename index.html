@@ -8132,7 +8132,95 @@ function recogPrint(){recogUpdate();const src=document.getElementById('recog-cer
 document.addEventListener('click',e=>{if(!e.target.closest('.recog-field'))document.getElementById('recog-suggest')?.classList.remove('open');});
 </script>
 
-\n<!-- Charge date switching + agency comments patch (2026-09-07) -->\n<style>\n  .agency-comment-wrap{margin-top:8px;}\n  .agency-comment-wrap textarea{width:100%;min-height:58px;background:var(--slate);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:7px 8px;font:12px 'IBM Plex Sans',sans-serif;resize:vertical;box-sizing:border-box;}\n  .agency-comment-wrap textarea:focus{border-color:var(--purple2);outline:none;}\n</style>\n<script>\n(function(){\n  // Replace the shared date-tab helper with direct click handlers.\n  // This fixes Charge Board date tabs and keeps Board/Notes date tabs consistent.\n  function fixedBuildDateTabs(containerId, activeKey, setter, renderFn){\n    const cont=document.getElementById(containerId);\n    if(!cont || typeof state==='undefined') return;\n    if(!Array.isArray(state.dates) || !state.dates.length){\n      cont.innerHTML='<span style="color:var(--text3);font-size:12px;">No data loaded — use Import tab</span>';\n      return;\n    }\n    cont.innerHTML='';\n    state.dates.forEach(d=>{\n      const btn=document.createElement('button');\n      btn.type='button';\n      btn.className='date-tab'+(d===activeKey?' active':'');\n      btn.textContent=new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'numeric',day:'numeric'});\n      btn.dataset.date=d;\n      btn.addEventListener('click',function(ev){\n        ev.preventDefault();\n        ev.stopPropagation();\n        const fn=(typeof setter==='function')?setter:window[setter];\n        if(typeof fn==='function'){ fn(d); return; }\n        // Safe fallback for the three date-driven panels.\n        if(containerId==='charge-date-tabs') state.activeChargeDate=d;\n        else if(containerId==='date-tabs') state.activeBoardDate=d;\n        else if(containerId==='notes-date-tabs') state.activeNotesDate=d;\n        fixedBuildDateTabs(containerId,d,setter,renderFn);\n        if(typeof renderFn==='function') renderFn();\n      });\n      cont.appendChild(btn);\n    });\n  }\n\n  function installDateFix(){\n    try{ buildDateTabs=fixedBuildDateTabs; }catch(e){ window.buildDateTabs=fixedBuildDateTabs; }\n    if(typeof renderChargeDateTabs==='function') renderChargeDateTabs();\n    if(typeof renderCharge==='function') renderCharge();\n  }\n\n  function agencyCommentKey(name){ return String(name||'').trim(); }\n  function saveAgencyComment(name,value){\n    if(typeof state==='undefined') return;\n    state.agencyDates=state.agencyDates||{};\n    state.agencyDates[name]=state.agencyDates[name]||{};\n    state.agencyDates[name].comment=value;\n    if(typeof persistSave==='function') persistSave();\n  }\n\n  function addAgencyCommentBoxes(){\n    if(typeof state==='undefined') return;\n    document.querySelectorAll('.edu-card').forEach(card=>{\n      const name=agencyCommentKey(card.querySelector('.edu-name')?.textContent);\n      if(!name) return;\n      const blocks=[...card.querySelectorAll('.edu-body > div')];\n      const agencyBlock=blocks.find(el=>/Agency\s*\/\s*Contract/i.test(el.textContent||''));\n      if(!agencyBlock || agencyBlock.querySelector('.agency-comment-wrap')) return;\n      const ag=(state.agencyDates||{})[name]||{};\n      const wrap=document.createElement('div');\n      wrap.className='agency-comment-wrap';\n      const label=document.createElement('div');\n      label.className='cert-label';\n      label.style.marginBottom='4px';\n      label.textContent='Agency Comment / Notes';\n      const ta=document.createElement('textarea');\n      ta.placeholder='Add agency staff comments, contract notes, schedule needs, follow-up, etc.';\n      ta.value=ag.comment||'';\n      ta.addEventListener('input',()=>saveAgencyComment(name,ta.value));\n      ta.addEventListener('blur',()=>saveAgencyComment(name,ta.value));\n      wrap.append(label,ta);\n      agencyBlock.appendChild(wrap);\n    });\n  }\n\n  document.addEventListener('DOMContentLoaded',()=>{\n    setTimeout(()=>{ installDateFix(); addAgencyCommentBoxes(); },500);\n    const target=document.getElementById('panel-education');\n    if(target) new MutationObserver(addAgencyCommentBoxes).observe(target,{childList:true,subtree:true});\n  });\n})();\n</script>\n
+
+<!-- Charge date switching + agency comments patch (2026-09-07) -->
+<style>
+  .agency-comment-wrap{margin-top:8px;}
+  .agency-comment-wrap textarea{width:100%;min-height:58px;background:var(--slate);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:7px 8px;font:12px 'IBM Plex Sans',sans-serif;resize:vertical;box-sizing:border-box;}
+  .agency-comment-wrap textarea:focus{border-color:var(--purple2);outline:none;}
+</style>
+<script>
+(function(){
+  // Replace the shared date-tab helper with direct click handlers.
+  // This fixes Charge Board date tabs and keeps Board/Notes date tabs consistent.
+  function fixedBuildDateTabs(containerId, activeKey, setter, renderFn){
+    const cont=document.getElementById(containerId);
+    if(!cont || typeof state==='undefined') return;
+    if(!Array.isArray(state.dates) || !state.dates.length){
+      cont.innerHTML='<span style="color:var(--text3);font-size:12px;">No data loaded — use Import tab</span>';
+      return;
+    }
+    cont.innerHTML='';
+    state.dates.forEach(d=>{
+      const btn=document.createElement('button');
+      btn.type='button';
+      btn.className='date-tab'+(d===activeKey?' active':'');
+      btn.textContent=new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'numeric',day:'numeric'});
+      btn.dataset.date=d;
+      btn.addEventListener('click',function(ev){
+        ev.preventDefault();
+        ev.stopPropagation();
+        const fn=(typeof setter==='function')?setter:window[setter];
+        if(typeof fn==='function'){ fn(d); return; }
+        // Safe fallback for the three date-driven panels.
+        if(containerId==='charge-date-tabs') state.activeChargeDate=d;
+        else if(containerId==='date-tabs') state.activeBoardDate=d;
+        else if(containerId==='notes-date-tabs') state.activeNotesDate=d;
+        fixedBuildDateTabs(containerId,d,setter,renderFn);
+        if(typeof renderFn==='function') renderFn();
+      });
+      cont.appendChild(btn);
+    });
+  }
+
+  function installDateFix(){
+    try{ buildDateTabs=fixedBuildDateTabs; }catch(e){ window.buildDateTabs=fixedBuildDateTabs; }
+    if(typeof renderChargeDateTabs==='function') renderChargeDateTabs();
+    if(typeof renderCharge==='function') renderCharge();
+  }
+
+  function agencyCommentKey(name){ return String(name||'').trim(); }
+  function saveAgencyComment(name,value){
+    if(typeof state==='undefined') return;
+    state.agencyDates=state.agencyDates||{};
+    state.agencyDates[name]=state.agencyDates[name]||{};
+    state.agencyDates[name].comment=value;
+    if(typeof persistSave==='function') persistSave();
+  }
+
+  function addAgencyCommentBoxes(){
+    if(typeof state==='undefined') return;
+    document.querySelectorAll('.edu-card').forEach(card=>{
+      const name=agencyCommentKey(card.querySelector('.edu-name')?.textContent);
+      if(!name) return;
+      const blocks=[...card.querySelectorAll('.edu-body > div')];
+      const agencyBlock=blocks.find(el=>/Agency\s*\/\s*Contract/i.test(el.textContent||''));
+      if(!agencyBlock || agencyBlock.querySelector('.agency-comment-wrap')) return;
+      const ag=(state.agencyDates||{})[name]||{};
+      const wrap=document.createElement('div');
+      wrap.className='agency-comment-wrap';
+      const label=document.createElement('div');
+      label.className='cert-label';
+      label.style.marginBottom='4px';
+      label.textContent='Agency Comment / Notes';
+      const ta=document.createElement('textarea');
+      ta.placeholder='Add agency staff comments, contract notes, schedule needs, follow-up, etc.';
+      ta.value=ag.comment||'';
+      ta.addEventListener('input',()=>saveAgencyComment(name,ta.value));
+      ta.addEventListener('blur',()=>saveAgencyComment(name,ta.value));
+      wrap.append(label,ta);
+      agencyBlock.appendChild(wrap);
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded',()=>{
+    setTimeout(()=>{ installDateFix(); addAgencyCommentBoxes(); },500);
+    const target=document.getElementById('panel-education');
+    if(target) new MutationObserver(addAgencyCommentBoxes).observe(target,{childList:true,subtree:true});
+  });
+})();
+</script>
+
 </body>
 </html>
 
