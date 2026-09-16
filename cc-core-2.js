@@ -1919,6 +1919,14 @@ function parseUKGRows(rows) {
   const SKIP_JOBS = ['NURSE MGR','NURSE MGR.'];
   const SKIP_NAMES = ['higley, ronald'];
 
+  function caShiftFromSection(section) {
+    if (section === 'Day')   return '0630-1430';
+    if (section === 'Eve1')  return '1430-1830';
+    if (section === 'Eve2')  return '1830-2230';
+    if (section === 'Night') return '2230-0630';
+    return '';
+  }
+
   // Map UKG job title + shift section → internal shift key
   function resolveShift(section, job, startRaw) {
     const start = normalizeUKGTime(startRaw);
@@ -1926,16 +1934,17 @@ function parseUKGRows(rows) {
     const j = String(job||'').toUpperCase();
 
     if (j === 'CA') {
+      // UKG repeats long-shift CAs in each covered section. Use the section
+      // column for CA coverage so 0630 CAs also show in Eve1, and 1830 CAs
+      // also show in Night when UKG lists them there.
+      const caSectionShift = caShiftFromSection(section);
+      if (caSectionShift) return caSectionShift;
       if (mins !== null) {
         if (mins >= 5 * 60 && mins < 12 * 60) return '0630-1430';
         if (mins >= 12 * 60 && mins < 17 * 60) return '1430-1830';
         if (mins >= 17 * 60 && mins < 21 * 60) return '1830-2230';
         return '2230-0630';
       }
-      if (section==='Day')   return '0630-1430';
-      if (section==='Eve1')  return '1430-1830';
-      if (section==='Eve2')  return '1830-2230';
-      if (section==='Night') return '2230-0630';
     }
     if (j === 'UC') {
       if (section==='Day')   return '0700-1500';
@@ -2026,7 +2035,9 @@ function parseUKGRows(rows) {
       const startNorm = normalizeUKGTime(start);
       const stdStart  = STANDARD_STARTS[shift];
       const isNonStd  = startNorm && stdStart && startNorm !== stdStart;
-      const endNorm   = startNorm && scheduledHours ? computeEndTime(startNorm, scheduledHours) : (SHIFT_END[shift] || null);
+      const endNorm   = role === 'CA'
+        ? (SHIFT_END[shift] || (startNorm && scheduledHours ? computeEndTime(startNorm, scheduledHours) : null))
+        : (startNorm && scheduledHours ? computeEndTime(startNorm, scheduledHours) : (SHIFT_END[shift] || null));
 
       const entry = {
         name,
@@ -7895,4 +7906,3 @@ function renderOtTab(){
   if(!rows.length){tEl.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3);">No overtime logged for this pay period.</div>';return;}
   tEl.innerHTML='<div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;overflow:hidden;"><table style="width:100%;border-collapse:collapse;"><thead><tr style="background:rgba(255,255,255,0.05);"><th style="padding:10px;text-align:left;font-size:10px;color:var(--text3);">Staff</th><th style="padding:10px;text-align:left;font-size:10px;color:var(--text3);">Role</th><th style="padding:10px;text-align:right;font-size:10px;color:var(--text3);">Regular Hrs</th><th style="padding:10px;text-align:right;font-size:10px;color:var(--text3);">OT Hrs</th><th style="padding:10px;text-align:left;font-size:10px;color:var(--text3);">Type</th><th style="padding:10px;text-align:left;font-size:10px;color:var(--text3);">Approved</th><th style="padding:10px;text-align:left;font-size:10px;color:var(--text3);">Notes</th><th style="padding:10px;"></th></tr></thead><tbody>'+rows.map(r=>{const rCol=IV_ROLE_COLOR[r.job]||'var(--text2)';return`<tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:10px;font-size:12px;font-weight:600;color:var(--white);">${r.name}</td><td style="padding:10px;font-size:11px;color:${rCol};">${r.job}</td><td style="padding:10px;text-align:right;font-size:12px;color:var(--text2);">${r.entry.regularHrs}</td><td style="padding:10px;text-align:right;font-size:13px;font-weight:700;color:var(--red2);">${r.entry.otHrs}</td><td style="padding:10px;font-size:11px;color:var(--text2);">${r.entry.premiumType}</td><td style="padding:10px;">${r.entry.approved?'<span style="color:var(--green2);font-size:11px;">✓ Yes</span>':'<span style="color:var(--text3);font-size:11px;">Pending</span>'}</td><td style="padding:10px;font-size:10px;color:var(--text3);max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.entry.notes||'—'}</td><td style="padding:10px;"><button onclick="deleteOtEntry('${r.name.replace(/'/g,"\\'")}','${r.entry.payPeriod}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px;" onmouseover="this.style.color='var(--red2)'" onmouseout="this.style.color='var(--text3)'">✕</button></td></tr>`;}).join('')+'</tbody></table></div>';
 }
-

@@ -6084,7 +6084,19 @@ function ccExpectedShiftFromStart(role, startNorm) {
   }
   return '';
 }
+function ccShiftFromSourceSection(role, section) {
+  const r = String(role || '').toUpperCase();
+  const s = String(section || '');
+  if (r !== 'CA') return '';
+  if (s === 'Day')   return '0630-1430';
+  if (s === 'Eve1')  return '1430-1830';
+  if (s === 'Eve2')  return '1830-2230';
+  if (s === 'Night') return '2230-0630';
+  return '';
+}
 function ccPlacementBelongsInShift(p, shiftKey, role) {
+  const sourceShift = ccShiftFromSourceSection(role || (p && p.role), p && p.sourceSection);
+  if (sourceShift) return sourceShift === shiftKey;
   const start = p && (p.startTime || p.customStart || '');
   const expected = ccExpectedShiftFromStart(role || (p && p.role), start);
   return !expected || expected === shiftKey;
@@ -6106,10 +6118,10 @@ function ccScheduleInfo(entries, fallbackShift) {
   }, 0);
   const dataStart = arr.map(x => x.startTime || x.customStart || '').find(Boolean) || '';
   const explicitEnd = arr.map(x => x.endTime || x.customEnd || '').filter(Boolean).pop() || '';
-  // The visible badge should match the board column. Raw UKG fragments can be
-  // 4-hour pieces, which made 0700-1900 staff appear as 0700-1100.
-  const start = fallback.start || dataStart;
-  const end = fallback.end || explicitEnd || (dataStart && hours > 0 ? ccAddHours(dataStart, hours) : '');
+  // Prefer UKG's actual schedule span when the import provides it; fall back
+  // to the board column for hand-entered placements.
+  const start = dataStart || fallback.start;
+  const end = explicitEnd || (dataStart && hours > 0 ? ccAddHours(dataStart, hours) : '') || fallback.end;
   const hoursLabel = Number.isInteger(hours) ? String(hours) : hours.toFixed(1).replace(/\.0$/, '');
   return { start, end, hours, hoursLabel };
 }
@@ -6222,9 +6234,11 @@ function renderBoard() {
           const isRNLPN = roleFilter === 'RN' || roleFilter === 'LPN';
           const isCA    = roleFilter === 'CA';
 
-          const scheduleEntries = (mergedShifts || [actualShift]).flatMap(s =>
-            (shifts[s]||[]).filter(x => x.name === p.name && x.role === p.role)
-          );
+          const scheduleEntries = isCA
+            ? Object.values(shifts).flat().filter(x => x.name === p.name && x.role === p.role)
+            : (mergedShifts || [actualShift]).flatMap(s =>
+                (shifts[s]||[]).filter(x => x.name === p.name && x.role === p.role)
+              );
           if (!scheduleEntries.length) scheduleEntries.push(p);
           const scheduleInfo = ccScheduleInfo(scheduleEntries, shift);
           const scheduleHours = scheduleInfo.hours;
@@ -8037,4 +8051,3 @@ function certLabel(dateStr) {
 function getEduItems(name) {
   return state.pendingEdu[name] || [];
 }
-
