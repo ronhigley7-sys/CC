@@ -5124,14 +5124,20 @@ function getVarFormData() {
 
   // PLATO round variance checkboxes
   const platoChecks = {
-    fallRisk:         document.getElementById('plato-fall-risk')?.checked          || false,
-    fallRounds:       document.getElementById('plato-fall-rounds')?.checked        || false,
-    fallInterventions:document.getElementById('plato-fall-interventions')?.checked || false,
-    fallEscalation:   document.getElementById('plato-fall-escalation')?.checked    || false,
-    hapiBraden:       document.getElementById('plato-hapi-braden')?.checked        || false,
-    hapiRounds:       document.getElementById('plato-hapi-rounds')?.checked        || false,
-    hapiInterventions:document.getElementById('plato-hapi-interventions')?.checked || false,
-    hapiEscalation:   document.getElementById('plato-hapi-escalation')?.checked    || false,
+    fallLights:       document.getElementById('plato-fall-lights')?.checked        || false,
+    fallBracelet:     document.getElementById('plato-fall-bracelet')?.checked      || false,
+    fallNonskid:      document.getElementById('plato-fall-nonskid')?.checked       || false,
+    fallAlarm:        document.getElementById('plato-fall-alarm')?.checked         || false,
+    fallBedLow:       document.getElementById('plato-fall-bedlow')?.checked        || false,
+    fallCallBell:     document.getElementById('plato-fall-callbell')?.checked      || false,
+    fallGaitBelt:     document.getElementById('plato-fall-gaitbelt')?.checked      || false,
+    fallClutter:      document.getElementById('plato-fall-clutter')?.checked       || false,
+    hapiMepilex:      document.getElementById('plato-hapi-mepilex')?.checked       || false,
+    hapiHeels:        document.getElementById('plato-hapi-heels')?.checked         || false,
+    hapiSacrum:       document.getElementById('plato-hapi-sacrum')?.checked        || false,
+    hapiWaffle:       document.getElementById('plato-hapi-waffle')?.checked        || false,
+    hapiSpecialty:    document.getElementById('plato-hapi-specialty')?.checked     || false,
+    hapiHob:          document.getElementById('plato-hapi-hob')?.checked           || false,
   };
   const platoFallIssue = document.getElementById('var-plato-fall-issue')?.value || '';
   const platoHapiIssue = document.getElementById('var-plato-hapi-issue')?.value || '';
@@ -5190,6 +5196,21 @@ const VAR_TX_LABELS = {
   label:'Blood product label matched to patient wristband', notify:'Provider notified of transfusion completion'
 };
 const VAR_PLATO_LABELS = {
+  fallLights:'Missing fall lights & signs',
+  fallBracelet:'Missing fall bracelet',
+  fallNonskid:'Missing nonskid sock',
+  fallAlarm:'Missing bed alarm & bed cord',
+  fallBedLow:'Bed not in lowest position',
+  fallCallBell:'Call bell not in reach',
+  fallGaitBelt:'Missing gait belt & ambulation aid',
+  fallClutter:'Room not free of clutter',
+  hapiMepilex:'Missing Mepilex',
+  hapiHeels:'Heels not offloaded (boots or pillows)',
+  hapiSacrum:'Sacrum not offloaded / position clock missing',
+  hapiWaffle:'Missing waffle cushion',
+  hapiSpecialty:'Missing specialty bed',
+  hapiHob:'HOB not <= 30 degrees',
+  // Legacy keys kept so reports created before this update still display if selected.
   fallRisk:'Fall-risk/Morse score current in PLATO',
   fallRounds:'PLATO fall round completed and documented',
   fallInterventions:'Fall-prevention bundle verified during round',
@@ -5465,20 +5486,28 @@ function printVarianceForm() {
   ${hasPlatoFallVariance ? `
   <div style="font-weight:bold;margin-bottom:4px;">Fall PLATO Round</div>
   ${v.platoFallIssue ? `<div style="margin-bottom:8px;padding:6px 10px;background:#fff8e8;border-left:3px solid #b7791f;font-size:9.5pt;"><strong>Specific Issue:</strong> ${v.platoFallIssue}</div>` : ''}
+  <div style="font-size:8pt;font-weight:bold;color:#555;text-transform:uppercase;margin:4px 0 2px;">Missing Fall Interventions</div>
   <div class="check-grid">
-    <div class="check-item">${chk(v.platoChecks.fallRisk)} Fall-risk/Morse score current in PLATO</div>
-    <div class="check-item">${chk(v.platoChecks.fallRounds)} PLATO fall round completed and documented</div>
-    <div class="check-item">${chk(v.platoChecks.fallInterventions)} Fall-prevention bundle verified during round</div>
-    <div class="check-item">${chk(v.platoChecks.fallEscalation)} Missed finding escalated to RN/charge nurse</div>
+    <div class="check-item">${chk(v.platoChecks.fallLights)} Fall lights & signs missing</div>
+    <div class="check-item">${chk(v.platoChecks.fallBracelet)} Fall bracelet missing</div>
+    <div class="check-item">${chk(v.platoChecks.fallNonskid)} Nonskid sock missing</div>
+    <div class="check-item">${chk(v.platoChecks.fallAlarm)} Bed alarm & bed cord missing</div>
+    <div class="check-item">${chk(v.platoChecks.fallBedLow)} Bed not in lowest position</div>
+    <div class="check-item">${chk(v.platoChecks.fallCallBell)} Call bell not in reach</div>
+    <div class="check-item">${chk(v.platoChecks.fallGaitBelt)} Gait belt & ambulation aid missing</div>
+    <div class="check-item">${chk(v.platoChecks.fallClutter)} Room not free of clutter</div>
   </div>` : ''}
   ${hasPlatoHapiVariance ? `
   <div style="font-weight:bold;margin:8px 0 4px;">HAPI PLATO Round</div>
   ${v.platoHapiIssue ? `<div style="margin-bottom:8px;padding:6px 10px;background:#fff0f2;border-left:3px solid #c0392b;font-size:9.5pt;"><strong>Specific Issue:</strong> ${v.platoHapiIssue}</div>` : ''}
+  <div style="font-size:8pt;font-weight:bold;color:#555;text-transform:uppercase;margin:4px 0 2px;">Missing Skin Interventions</div>
   <div class="check-grid">
-    <div class="check-item">${chk(v.platoChecks.hapiBraden)} Braden/skin risk current in PLATO</div>
-    <div class="check-item">${chk(v.platoChecks.hapiRounds)} PLATO HAPI round completed and documented</div>
-    <div class="check-item">${chk(v.platoChecks.hapiInterventions)} HAPI-prevention interventions verified during round</div>
-    <div class="check-item">${chk(v.platoChecks.hapiEscalation)} New skin concern escalated appropriately</div>
+    <div class="check-item">${chk(v.platoChecks.hapiMepilex)} Mepilex missing</div>
+    <div class="check-item">${chk(v.platoChecks.hapiHeels)} Heels not offloaded (boots or pillows)</div>
+    <div class="check-item">${chk(v.platoChecks.hapiSacrum)} Sacrum not offloaded / position clock missing</div>
+    <div class="check-item">${chk(v.platoChecks.hapiWaffle)} Waffle cushion missing</div>
+    <div class="check-item">${chk(v.platoChecks.hapiSpecialty)} Specialty bed missing</div>
+    <div class="check-item">${chk(v.platoChecks.hapiHob)} HOB not <= 30 degrees</div>
   </div>` : ''}
   ` : ''}
 

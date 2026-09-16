@@ -1800,7 +1800,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--white);
     <div class="header-badge">3B</div>
     <div>
       <div class="header-title">Tele Med Surg — Staff Command Center</div>
-      <div class="header-sub">AOMC Nursing Operations · UKG Integration <span id="cc-build-tag" style="opacity:0.55;margin-left:6px;" title="Build version — helps confirm this tab is running the latest PLATO variance form update">· build 2026-09-16-plato-variance</span></div>
+      <div class="header-sub">AOMC Nursing Operations · UKG Integration <span id="cc-build-tag" style="opacity:0.55;margin-left:6px;" title="Build version — helps confirm this tab is running the latest PLATO missing-interventions update">· build 2026-09-16-plato-missing-interventions</span></div>
     </div>
   </div>
   <div class="header-right">
@@ -3060,11 +3060,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--white);
             <option>Bed/chair alarm, call light, bed low/locked, or nonskid footwear not verified during PLATO round</option>
             <option>Missed fall-prevention finding not escalated to RN/charge nurse</option>
           </select>
+          <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:4px 0 5px;">Check missing fall interventions</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:10px;">
-            <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;padding:4px 6px;border:1px solid rgba(245,158,11,0.22);border-radius:4px;"><input type="checkbox" id="plato-fall-risk" style="accent-color:var(--amber2);width:12px;height:12px;margin-top:1px;flex-shrink:0;"> Fall-risk/Morse score current in PLATO</label>
-            <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;padding:4px 6px;border:1px solid rgba(245,158,11,0.22);border-radius:4px;"><input type="checkbox" id="plato-fall-rounds" style="accent-color:var(--amber2);width:12px;height:12px;margin-top:1px;flex-shrink:0;"> PLATO fall round completed and documented</label>
-            <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;padding:4px 6px;border:1px solid rgba(245,158,11,0.22);border-radius:4px;"><input type="checkbox" id="plato-fall-interventions" style="accent-color:var(--amber2);width:12px;height:12px;margin-top:1px;flex-shrink:0;"> Fall-prevention bundle verified during round</label>
-            <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;padding:4px 6px;border:1px solid rgba(245,158,11,0.22);border-radius:4px;"><input type="checkbox" id="plato-fall-escalation" style="accent-color:var(--amber2);width:12px;height:12px;margin-top:1px;flex-shrink:0;"> Missed finding escalated to RN/charge nurse</label>
+            <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;padding:4px 6px;border:1px solid rgba(245,158,11,0.22);border-radius:4px;"><input type="checkbox" id="plato-fall-lights" style="accent-color:var(--amber2);width:12px;height:12px;margin-top:1px;flex-shrink:0;"> Fall lights & signs missing</label>
+            <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;padding:4px 6px;border:1px solid rgba(245,158,11,0.22);border-radius:4px;"><input type="checkbox" id="plato-fall-bracelet" style="accent-color:var(--amber2);width:12px;height:12px;margin-top:1px;flex-shrink:0;"> Fall bracelet missing</label>
+            <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;padding:4px 6px;border:1px solid rgba(245,158,11,0.22);border-radius:4px;"><input type="checkbox" id="plato-fall-nonskid" style="accent-color:var(--amber2);width:12px;height:12px;margin-top:1px;flex-shrink:0;"> Nonskid sock missing</label>
+            <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;padding:4px 6px;border:1px solid rgba(245,158,11,0.22);border-radius:4px;"><input type="checkbox" id="plato-fall-alarm" style="accent-color:var(--amber2);width:12px;height:12px;margin-top:1px;flex-shrink:0;"> Bed alarm & bed cord missing</label>
+            <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;padding:4px 6px;border:1px solid rgba(245,158,11,0.22);border-radius:4px;"><input type="checkbox" id="plato-fall-bedlow" style="accent-color:var(--amber2);width:12px;height:12px;margin-top:1px;flex-shrink:0;"> Bed not in lowest position</label>
+            <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;padding:4px 6px;border:1px solid rgba(245,158,11,0.22);border-radius:4px;"><input type="checkbox" id="plato-fall-callbell" style="accent-color:var(--amber2);width:12px;height:12px;margin-top:1px;flex-shrink:0;"> Call bell not in reach</label>
+            <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;padding:4px 6px;border:1px solid rgba(245,158,11,0.22);border-radius:4px;"><input type="checkbox" id="plato-fall-gaitbelt" style="accent-color:var(--amber2);width:12px;height:12px;margin-top:1px;flex-shrink:0;"> Gait belt & ambulation aid missing</label>
+            <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;padding:4px 6px;border:1px solid rgba(245,158,11,0.22);border-radius:4px;"><input type="checkbox" id="plato-fall-clutter" style="accent-color:var(--amber2);width:12px;height:12px;margin-top:1px;flex-shrink:0;"> Room not free of clutter</label>
           </div>
         </div>
 
@@ -3078,11 +3083,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--white);
             <option>Heel/sacrum offloading, Mepilex/foam, waffle cushion, or specialty bed not verified in PLATO</option>
             <option>New skin concern not escalated to RN/charge nurse/provider as appropriate</option>
           </select>
+          <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:4px 0 5px;">Check missing skin interventions</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:10px;">
-            <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;padding:4px 6px;border:1px solid rgba(239,68,68,0.22);border-radius:4px;"><input type="checkbox" id="plato-hapi-braden" style="accent-color:var(--red2);width:12px;height:12px;margin-top:1px;flex-shrink:0;"> Braden/skin risk current in PLATO</label>
-            <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;padding:4px 6px;border:1px solid rgba(239,68,68,0.22);border-radius:4px;"><input type="checkbox" id="plato-hapi-rounds" style="accent-color:var(--red2);width:12px;height:12px;margin-top:1px;flex-shrink:0;"> PLATO HAPI round completed and documented</label>
-            <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;padding:4px 6px;border:1px solid rgba(239,68,68,0.22);border-radius:4px;"><input type="checkbox" id="plato-hapi-interventions" style="accent-color:var(--red2);width:12px;height:12px;margin-top:1px;flex-shrink:0;"> HAPI-prevention interventions verified during round</label>
-            <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;padding:4px 6px;border:1px solid rgba(239,68,68,0.22);border-radius:4px;"><input type="checkbox" id="plato-hapi-escalation" style="accent-color:var(--red2);width:12px;height:12px;margin-top:1px;flex-shrink:0;"> New skin concern escalated appropriately</label>
+            <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;padding:4px 6px;border:1px solid rgba(239,68,68,0.22);border-radius:4px;"><input type="checkbox" id="plato-hapi-mepilex" style="accent-color:var(--red2);width:12px;height:12px;margin-top:1px;flex-shrink:0;"> Mepilex missing</label>
+            <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;padding:4px 6px;border:1px solid rgba(239,68,68,0.22);border-radius:4px;"><input type="checkbox" id="plato-hapi-heels" style="accent-color:var(--red2);width:12px;height:12px;margin-top:1px;flex-shrink:0;"> Heels not offloaded (boots or pillows)</label>
+            <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;padding:4px 6px;border:1px solid rgba(239,68,68,0.22);border-radius:4px;"><input type="checkbox" id="plato-hapi-sacrum" style="accent-color:var(--red2);width:12px;height:12px;margin-top:1px;flex-shrink:0;"> Sacrum not offloaded / position clock missing</label>
+            <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;padding:4px 6px;border:1px solid rgba(239,68,68,0.22);border-radius:4px;"><input type="checkbox" id="plato-hapi-waffle" style="accent-color:var(--red2);width:12px;height:12px;margin-top:1px;flex-shrink:0;"> Waffle cushion missing</label>
+            <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;padding:4px 6px;border:1px solid rgba(239,68,68,0.22);border-radius:4px;"><input type="checkbox" id="plato-hapi-specialty" style="accent-color:var(--red2);width:12px;height:12px;margin-top:1px;flex-shrink:0;"> Specialty bed missing</label>
+            <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;padding:4px 6px;border:1px solid rgba(239,68,68,0.22);border-radius:4px;"><input type="checkbox" id="plato-hapi-hob" style="accent-color:var(--red2);width:12px;height:12px;margin-top:1px;flex-shrink:0;"> HOB not ≤ 30 degrees</label>
           </div>
         </div>
       </div>
@@ -6103,8 +6111,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--white);
   </div>
 </div>
 
-<script src="cc-core-1.js?v=2026-09-16-plato-variance"></script>
-<script src="cc-core-2.js?v=2026-09-16-plato-variance"></script>
+<script src="cc-core-1.js?v=2026-09-16-plato-missing-interventions"></script>
+<script src="cc-core-2.js?v=2026-09-16-plato-missing-interventions"></script>
 <script src="cc-core-3.js?v=2026-09-15-fill-full-page"></script>
 
 <!-- PRINT SHEET (hidden, rendered on demand) -->
