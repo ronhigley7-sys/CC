@@ -1830,7 +1830,9 @@ function shiftHours(shiftKey) {
   const h = {
     '0700-1500':8,'1500-1900':4,'1900-0700':12,
     '0630-1430':8,'1430-1830':4,'1830-2230':4,'2230-0630':8,
-    '1500-2300':8,'2300-0700':8,'1100-2300':12,'1500-0300':12,
+    '0630-1830':12,'1430-0300':12.5,'1830-0630':12,
+    '0300-1100':8,'0700-1100':4,'1030-1830':8,'1030-2230':12,
+    '1500-2300':8,'1900-1100':16,'2300-0700':8,'1100-2300':12,'1500-0300':12,
   };
   return h[shiftKey] || 8;
 }
@@ -4340,12 +4342,34 @@ setCharge = function(key, name) {
 addStaffManual = function() {
   const name = document.getElementById('add-name')?.value?.trim();
   const role = document.getElementById('add-role')?.value || 'RN';
-  const shift = document.getElementById('add-shift')?.value || '0700-1500';
+  const selectedShift = document.getElementById('add-shift')?.value || '0700-1500';
   const dateKey = state.activeBoardDate;
   if (!name || !dateKey) return;
+
+  let shift = selectedShift;
+  const entry = {name, role};
+  const range = String(selectedShift).match(/^(\d{4})-(\d{4})$/);
+  if (range) {
+    const start = range[1], end = range[2];
+    const hours = shiftHours(selectedShift);
+    const displayShift = typeof ccExpectedShiftFromStart === 'function'
+      ? ccExpectedShiftFromStart(role, start)
+      : selectedShift;
+    const standardKeys = new Set(['0700-1500','1500-1900','1900-0700','0630-1430','1430-1830','1830-2230','2230-0630','1500-2300','2300-0700']);
+    if (!standardKeys.has(selectedShift) && displayShift) shift = displayShift;
+    Object.assign(entry, {
+      startTime: start,
+      endTime: end,
+      scheduledHours: hours,
+      customStart: start,
+      customEnd: end,
+      sourceSection: 'Manual'
+    });
+  }
+
   if (!state.placements[dateKey]) state.placements[dateKey] = {};
   if (!state.placements[dateKey][shift]) state.placements[dateKey][shift] = [];
-  state.placements[dateKey][shift].push({name, role});
+  state.placements[dateKey][shift].push(entry);
   const inp = document.getElementById('add-name');
   if (inp) inp.value = '';
   renderBoard();
