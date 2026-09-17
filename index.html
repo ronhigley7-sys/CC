@@ -247,6 +247,7 @@
   /* ── MAIN ── */
   main { padding: 16px 20px; }
   .tab-panel { display: none; }
+  .board-only-hidden { display: none !important; }
 
   /* ── Sticky column headers ── */
   /* Nav bar is ~44px tall; census bar ~46px; total offset ~90px */
@@ -1800,7 +1801,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--white);
     <div class="header-badge">3B</div>
     <div>
       <div class="header-title">Tele Med Surg — Staff Command Center</div>
-      <div class="header-sub">AOMC Nursing Operations · UKG Integration <span id="cc-build-tag" style="opacity:0.55;margin-left:6px;" title="Build version — helps confirm this tab is running the latest Nursing Services print time update">· build 2026-09-16-print-times</span></div>
+      <div class="header-sub">AOMC Nursing Operations · UKG Integration <span id="cc-build-tag" style="opacity:0.55;margin-left:6px;" title="Build version — helps confirm this tab is running the latest Board-only and custom-shift update">· build 2026-09-17-board-shifts</span></div>
     </div>
   </div>
   <div class="header-right">
@@ -2200,11 +2201,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--white);
       <label class="form-label">Shift</label>
       <select class="form-select" id="add-shift">
         <option value="0700-1500">0700-1500</option>
+        <option value="0700-1100">0700-1100</option>
         <option value="1500-1900">1500-1900</option>
         <option value="1900-0700">1900-0700</option>
+        <option value="0300-1100">0300-1100</option>
+        <option value="1900-1100">1900-1100</option>
         <option value="0630-1430">0630-1430</option>
+        <option value="1030-1830">1030-1830</option>
         <option value="1430-1830">1430-1830</option>
         <option value="1830-2230">1830-2230</option>
+        <option value="1030-2230">1030-2230</option>
         <option value="2230-0630">2230-0630</option>
         <option value="0630-1830">0630-1830 (12hr Day CA)</option>
         <option value="1430-0300">1430-0300 (13hr Eve CA)</option>
@@ -2219,7 +2225,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--white);
   <div id="board-view"></div>
 
   <!-- ── Documentation Opportunities ── -->
-  <div class="card" style="margin-top:14px;padding:14px;" id="doc-opps-panel">
+  <div class="card board-only-hidden" style="margin-top:14px;padding:14px;" id="doc-opps-panel">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
       <div>
         <div style="font-size:13px;font-weight:700;color:var(--accent2);">📋 Documentation Opportunities</div>
@@ -2229,7 +2235,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--white);
     </div>
     <div id="doc-opps-list"></div>
   </div>
-  <div class="card" style="margin-top:14px;padding:14px;" id="board-cert-alerts">
+  <div class="card board-only-hidden" style="margin-top:14px;padding:14px;" id="board-cert-alerts">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
       <div style="font-size:13px;font-weight:700;color:var(--amber2);">🏅 Expiring Certifications (90 days)</div>
       <button onclick="checkAgencyContractExpirations()" style="font-size:10px;padding:3px 10px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:4px;color:var(--amber2);cursor:pointer;" title="Check agency contract expirations within 45 days">📅 Agency Contracts</button>
@@ -2240,7 +2246,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--white);
 
   <!-- ── PENDING COMPETENCIES ── -->
   <!-- Weekend Summary -->
-  <div class="card" style="margin-top:14px;padding:14px;">
+  <div class="card board-only-hidden" style="margin-top:14px;padding:14px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
       <div style="font-size:13px;font-weight:700;color:var(--amber2);">📅 Weekend Summary — Last 3 Weekends</div>
       <button onclick="renderWeekendSummary('board-weekend-summary')" class="btn btn-ghost btn-sm" style="font-size:9px;">↻</button>
@@ -2248,7 +2254,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--white);
     <div id="board-weekend-summary" style="font-size:11px;color:var(--text3);">Loading...</div>
   </div>
 
-  <div class="card" style="margin-top:14px;padding:14px;" id="board-comp-alerts">
+  <div class="card board-only-hidden" style="margin-top:14px;padding:14px;" id="board-comp-alerts">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px;">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         <div style="font-size:13px;font-weight:700;color:var(--purple2);">📋 Pending Competencies (Scheduled Staff)</div>
@@ -2264,11 +2270,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--white);
 
 
   <!-- ── UNSIGNED POLICIES ── -->
-  <div class="card" style="margin-top:14px;padding:14px;display:none;" id="board-policy-alerts">
+  <div class="card board-only-hidden" style="margin-top:14px;padding:14px;display:none;" id="board-policy-alerts">
   </div>
 
   <!-- ── RECENT MESSAGES ── -->
-  <div class="card" style="margin-top:14px;padding:14px;" id="board-messages-widget">
+  <div class="card board-only-hidden" style="margin-top:14px;padding:14px;" id="board-messages-widget">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
       <div style="font-size:13px;font-weight:700;color:var(--accent2);">📢 Staff Messages</div>
       <a onclick="switchTab(document.querySelector('[data-panel=broadcast]'))" style="font-size:10px;color:var(--text3);cursor:pointer;text-decoration:underline;">View all / Compose →</a>
@@ -2277,7 +2283,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--white);
   </div>
 
   <!-- ── FLOAT / SITTER / CALLOFF TRACKING GRID ── -->
-  <div style="margin-top:28px;padding-top:16px;border-top:2px solid var(--accent);">
+  <div class="board-only-hidden" style="margin-top:28px;padding-top:16px;border-top:2px solid var(--accent);">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
       <div style="font-size:15px;font-weight:700;color:var(--accent2);">📊 Float · Sitter · Call-Off Tracking</div>
       <button onclick="showFloatSheetSetup()" style="font-size:10px;padding:3px 9px;background:rgba(46,125,209,0.1);border:1px solid rgba(46,125,209,0.3);border-radius:4px;color:var(--accent2);cursor:pointer;" title="Configure Google Sheet URL and columns">⚙️ Sheet Setup</button>
@@ -2287,7 +2293,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--white);
   </div>
 
   <!-- ── Board Legend ── -->
-  <div class="card" style="margin-top:14px;padding:10px 14px;">
+  <div class="card board-only-hidden" style="margin-top:14px;padding:10px 14px;">
     <div style="display:flex;flex-wrap:wrap;gap:14px;font-size:10px;align-items:center;">
       <span style="font-size:10px;font-weight:700;color:var(--text3);">📖 Legend:</span>
       <div style="display:flex;align-items:center;gap:5px;"><span style="color:gold;font-size:13px;">⭐</span><span style="color:var(--text2);">Charge Nurse (3B)</span></div>
@@ -2296,7 +2302,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--white);
   </div>
 
     <!-- ── Weekly Education ── -->
-  <div class="card" style="margin-top:14px;padding:14px;" id="board-weekly-edu">
+  <div class="card board-only-hidden" style="margin-top:14px;padding:14px;" id="board-weekly-edu">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
       <div>
         <div style="font-size:13px;font-weight:700;color:var(--white);">📚 Weekly Education</div>
@@ -2395,11 +2401,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--white);
           <div class="form-label" style="margin-bottom:3px;">Shift</div>
           <select id="ci-caller-shift" onchange="findCoverage()" style="width:100%;background:var(--slate);border:1px solid var(--border);border-radius:4px;padding:6px 8px;color:var(--white);font-size:12px;outline:none;">
             <option value="0700-1500">☀️ 0700–1500</option>
+            <option value="0700-1100">☀️ 0700–1100</option>
             <option value="1500-1900">🌆 1500–1900</option>
             <option value="1900-0700">🌙 1900–0700</option>
+            <option value="0300-1100">🌙 0300–1100</option>
+            <option value="1900-1100">🌙 1900–1100</option>
             <option value="0630-1430">CA 0630–1430</option>
+            <option value="1030-1830">CA 1030–1830</option>
             <option value="1430-1830">CA 1430–1830</option>
             <option value="1830-2230">CA 1830–2230</option>
+            <option value="1030-2230">CA 1030–2230</option>
             <option value="2230-0630">CA 2230–0630</option>
           </select>
         </div>
@@ -5058,7 +5069,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--white);
   <div class="card">
     <div class="card-header"><span class="card-title">Parser Info</span></div>
     <p style="font-size:11px;color:var(--text2);line-height:1.6;">
-      Parser rule: UKG Day/Eve1/Eve2/Night grid is read directly.<br>
+      Parser rule: UKG Day/Eve1/Eve2/Night grid is read directly and keeps actual start/end badges when staff work nonstandard shifts.<br>
       RN/LPN 07:00 in Day = 0700-1500 · RN/LPN 07:00 in Eve1 = 1500-1900<br>
       Only RN/LPN 19:00 in Eve2/Night = 1900-0700<br>
       Higley/Nurse Mgr rows are removed automatically.
@@ -6112,13 +6123,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--white);
 </div>
 
 <script src="cc-core-1.js?v=2026-09-16-plato-missing-interventions"></script>
-<script src="cc-core-2.js?v=2026-09-16-plato-missing-interventions"></script>
+<script src="cc-core-2.js?v=2026-09-17-board-shifts"></script>
 <script src="cc-core-3.js?v=2026-09-15-fill-full-page"></script>
 
 <!-- PRINT SHEET (hidden, rendered on demand) -->
 <div id="print-sheet"></div>
 
-<script src="cc-tabs.js?v=2026-09-16-print-times"></script>
+<script src="cc-tabs.js?v=2026-09-17-board-shifts"></script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <!-- QR Code canvas library -->
