@@ -1238,3 +1238,110 @@ function renderDataImportCenter(){
 }
 function openDataImportCenter(){const m=document.getElementById('mgr-data-import-modal');if(!m)return;m.style.display='flex';renderDataImportCenter();}
 function closeDataImportCenter(){const m=document.getElementById('mgr-data-import-modal');if(m)m.style.display='none';}
+
+
+/* Interview printable packets patch — 2026-09-18 */
+(function(){
+  const IV_PRINT_COMPETENCIES = [
+    'Customer-Centered Focus','Self-Awareness','Communication','Collaboration / Team Player',
+    'Adaptability / Resiliency','Informed Judgment','Resourcefulness',
+    'Passion for the Mission','Accountability / Ownership','Trust / Integrity'
+  ];
+
+  const IV_PRINT_QUESTIONS = {
+    NURSE: [
+      ['Customer-Centered Focus','Tell us about a time you adapted your care plan around what mattered most to a patient or family. What did you do and what was the outcome?'],
+      ['Self-Awareness','Describe a clinical situation that did not go as planned. What did you learn about yourself, and what would you do differently now?'],
+      ['Communication','How do you explain a change in condition, treatment plan, or delay to an anxious patient or family while keeping the care team informed?'],
+      ['Collaboration / Team Player','Tell us about a busy shift when you worked with RNs, LPNs, CAs, providers, or other departments to safely meet patient needs.'],
+      ['Adaptability / Resiliency','Describe how you respond when your assignment, census, staffing, or priorities change unexpectedly during a shift.'],
+      ['Informed Judgment','You have five patients: one has a new neurological change, one requests pain medication, and one is waiting for discharge. Walk us through your priorities and why.'],
+      ['Resourcefulness','Tell us about a time you lacked a needed resource, order, or immediate answer. How did you safely move care forward?'],
+      ['Passion for the Mission','Why do you want to work on a Med/Surg Stroke-Telemetry unit, and how will you contribute to safe, compassionate care?'],
+      ['Accountability / Ownership','Describe a mistake, near miss, or missed task you identified. What actions did you take, who did you notify, and how did you prevent recurrence?'],
+      ['Trust / Integrity','Tell us about a time you raised a patient-safety concern or spoke up when it was uncomfortable to do so.'],
+      ['Informed Judgment','A telemetry patient develops sudden weakness, facial droop, or speech difficulty. What are your immediate actions and communication steps?'],
+      ['Accountability / Ownership','How do you ensure timely pain reassessment, accurate documentation, medication scanning, fall prevention, and completion of required care plans?']
+    ],
+    CA: [
+      ['Customer-Centered Focus','Tell us how you preserve dignity, privacy, comfort, and choice while helping a patient with bathing, toileting, feeding, or mobility.'],
+      ['Self-Awareness','Describe feedback you received about your patient care or teamwork. How did you respond, and what did you change?'],
+      ['Communication','What changes in vital signs, behavior, breathing, pain, intake/output, or mobility would you report immediately, and how would you report them?'],
+      ['Collaboration / Team Player','Tell us about a time you helped an overwhelmed nurse or coworker while still keeping your assigned patients safe.'],
+      ['Adaptability / Resiliency','How do you stay calm and organized when call lights, vital signs, toileting, admissions, and patient requests occur at the same time?'],
+      ['Informed Judgment','While assisting one patient, you see another high-fall-risk patient trying to get out of bed. What would you do first and why?'],
+      ['Resourcefulness','A patient needs assistance, but the equipment or second staff member required for a safe transfer is not immediately available. What do you do?'],
+      ['Passion for the Mission','Why do you want to work as a Care Associate on a Med/Surg Stroke-Telemetry unit, and what does excellent patient care mean to you?'],
+      ['Accountability / Ownership','How do you track and complete vital signs, intake/output, blood glucose checks, rounding, turning, and other assigned tasks on time?'],
+      ['Trust / Integrity','Tell us about a time you reported an error, missed task, unsafe situation, or patient concern even though it was difficult.'],
+      ['Communication','You notice a patient is newly confused, weaker, short of breath, or difficult to awaken. What would you do and what information would you give the nurse?'],
+      ['Accountability / Ownership','Explain the responsibilities of a sitter or 1:1 observer, including line of sight, documentation, distractions, and when to call for help.']
+    ]
+  };
+
+  function ivPrintEscape(value){
+    return String(value == null ? '' : value).replace(/[&<>"']/g,function(ch){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];
+    });
+  }
+
+  window.printInterviewPacket = function(kind){
+    kind = kind === 'CA' ? 'CA' : 'NURSE';
+    const title = kind === 'CA' ? 'Care Associate Interview Packet' : 'Nurse (RN / LPN) Interview Packet';
+    const position = kind === 'CA' ? 'CA' : 'RN / LPN';
+    const questions = IV_PRINT_QUESTIONS[kind];
+    const rows = questions.map(function(item,index){
+      return '<section class="question">' +
+        '<div class="qhead"><span class="qnum">' + (index+1) + '</span><div><div class="competency">' + ivPrintEscape(item[0]) + '</div>' +
+        '<div class="qtext">' + ivPrintEscape(item[1]) + '</div></div></div>' +
+        '<div class="score"><strong>Score:</strong> <span>1 □</span><span>2 □</span><span>3 □</span><span>4 □</span><span>5 □</span></div>' +
+        '<div class="evidence"><strong>Notes / Evidence:</strong><div></div><div></div></div>' +
+      '</section>';
+    }).join('');
+
+    const summary = IV_PRINT_COMPETENCIES.map(function(name){
+      return '<tr><td>' + ivPrintEscape(name) + '</td><td class="blank"></td><td class="blank wide"></td></tr>';
+    }).join('');
+
+    const w=window.open('','_blank','width=1000,height=900');
+    if(!w){ alert('Please allow pop-ups to print the interview packet.'); return; }
+    w.document.write(
+      '<!doctype html><html><head><meta charset="utf-8"><title>' + title + '</title><style>' +
+      '@page{size:letter;margin:.45in}*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#111827;margin:0;font-size:10pt}' +
+      '.header{border:2px solid #0b2a4a;border-top:10px solid #c9a227;padding:13px 16px;margin-bottom:12px}.org{color:#0b2a4a;font-weight:800;font-size:11pt;letter-spacing:.4px}.title{font-size:20pt;font-weight:800;color:#0b2a4a;margin:3px 0}.subtitle{font-size:9pt;color:#4b5563}' +
+      '.meta{display:grid;grid-template-columns:2fr 1fr;gap:9px 18px;margin:12px 0}.line{border-bottom:1px solid #374151;min-height:22px;padding:4px 2px}.line b{font-size:8pt;text-transform:uppercase;color:#4b5563;margin-right:6px}' +
+      '.scale{border:1px solid #9ca3af;background:#f3f4f6;padding:7px 10px;margin-bottom:10px;font-size:9pt}.question{border:1px solid #9ca3af;border-left:5px solid #0b2a4a;padding:9px 10px;margin:0 0 9px;break-inside:avoid}.qhead{display:flex;gap:9px}.qnum{background:#0b2a4a;color:white;border-radius:50%;width:22px;height:22px;line-height:22px;text-align:center;font-weight:800;flex:none}.competency{font-size:8pt;font-weight:800;text-transform:uppercase;color:#8a6a00;letter-spacing:.4px}.qtext{font-size:10.5pt;font-weight:700;line-height:1.35;margin-top:2px}.score{display:flex;gap:17px;margin:8px 0 6px 31px}.evidence{margin-left:31px;font-size:8.5pt;color:#374151}.evidence div{border-bottom:1px solid #c4c9d0;height:18px}' +
+      '.summary{page-break-before:always}.summary h2{color:#0b2a4a;border-bottom:3px solid #c9a227;padding-bottom:5px}.summary table{width:100%;border-collapse:collapse;margin:8px 0 14px}.summary th,.summary td{border:1px solid #6b7280;padding:6px}.summary th{background:#0b2a4a;color:#fff}.blank{width:70px;height:28px}.wide{width:45%}.box{border:1px solid #6b7280;min-height:70px;margin:6px 0 12px;padding:7px}.recommend{border:2px solid #0b2a4a;padding:10px;margin-top:10px;display:flex;gap:22px;flex-wrap:wrap}.sign{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:24px}.footer{margin-top:12px;font-size:8pt;color:#6b7280;text-align:center}' +
+      '@media print{.no-print{display:none}.question{break-inside:avoid}button{display:none}}</style></head><body>' +
+      '<div class="header"><div class="org">ARNOT OGDEN MEDICAL CENTER · 3B/3C STROKE TELEMETRY</div><div class="title">' + title + '</div><div class="subtitle">Structured questions aligned to the employee evaluation rubric</div></div>' +
+      '<div class="meta"><div class="line"><b>Candidate Name</b></div><div class="line"><b>Position</b> ' + position + '</div><div class="line"><b>Interview Date</b></div><div class="line"><b>Interviewer(s)</b></div></div>' +
+      '<div class="scale"><strong>Rating scale:</strong> 1 = Poor / No evidence · 2 = Below expectations · 3 = Meets expectations · 4 = Strong · 5 = Exceptional. Record specific evidence for each score.</div>' +
+      rows +
+      '<div class="summary"><h2>Competency Summary</h2><table><thead><tr><th>Rubric Competency</th><th>Score 1–5</th><th>Evidence / Comments</th></tr></thead><tbody>' + summary + '</tbody></table>' +
+      '<strong>Overall Average:</strong> ______ / 5' +
+      '<h3>Top Strengths</h3><div class="box"></div><h3>Concerns / Follow-Up Needed</h3><div class="box"></div>' +
+      '<div class="recommend"><strong>Final Recommendation:</strong><span>□ Recommend</span><span>□ Consider</span><span>□ Do Not Recommend</span></div>' +
+      '<div class="sign"><div class="line"><b>Interviewer Signature</b></div><div class="line"><b>Date</b></div></div>' +
+      '<div class="footer">3B/3C Stroke Telemetry · AOMC Nursing Operations</div></div>' +
+      '<script>window.onload=function(){setTimeout(function(){window.print();},150)};<\/script></body></html>'
+    );
+    w.document.close();
+  };
+
+  function addInterviewPrintButtons(){
+    const panel=document.getElementById('panel-interview');
+    if(!panel || document.getElementById('iv-print-packets')) return;
+    const newBtn=panel.querySelector('button[onclick="openInterviewModal()"]');
+    if(!newBtn || !newBtn.parentElement) return;
+    const wrap=document.createElement('div');
+    wrap.id='iv-print-packets';
+    wrap.style.cssText='display:flex;flex-direction:column;gap:6px;margin-top:8px;';
+    wrap.innerHTML=
+      '<button type="button" class="btn btn-ghost" onclick="printInterviewPacket(\'NURSE\')" style="width:100%;justify-content:center;font-size:11px;">🖨 Print Nurse Interview</button>'+
+      '<button type="button" class="btn btn-ghost" onclick="printInterviewPacket(\'CA\')" style="width:100%;justify-content:center;font-size:11px;">🖨 Print CA Interview</button>';
+    newBtn.insertAdjacentElement('afterend',wrap);
+  }
+
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',function(){setTimeout(addInterviewPrintButtons,400);});
+  else setTimeout(addInterviewPrintButtons,400);
+})();
