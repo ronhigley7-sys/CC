@@ -1250,18 +1250,18 @@ function closeDataImportCenter(){const m=document.getElementById('mgr-data-impor
 
   const IV_PRINT_QUESTIONS = {
     CA: [
-      ['Customer-Centered Focus','Tell us how you preserve dignity, privacy, comfort, and choice while helping a patient with bathing, toileting, feeding, or mobility.'],
-      ['Self-Awareness','Describe feedback you received about your patient care or teamwork. How did you respond, and what did you change?'],
-      ['Communication','What changes in vital signs, behavior, breathing, pain, intake/output, or mobility would you report immediately, and how would you report them?'],
-      ['Collaboration / Team Player','Tell us about a time you helped an overwhelmed nurse or coworker while still keeping your assigned patients safe.'],
-      ['Adaptability / Resiliency','How do you stay calm and organized when call lights, vital signs, toileting, admissions, and patient requests occur at the same time?'],
-      ['Informed Judgment','While assisting one patient, you see another high-fall-risk patient trying to get out of bed. What would you do first and why?'],
-      ['Resourcefulness','A patient needs assistance, but the equipment or second staff member required for a safe transfer is not immediately available. What do you do?'],
-      ['Passion for the Mission','Why do you want to work as a Care Associate on a Med/Surg Stroke-Telemetry unit, and what does excellent patient care mean to you?'],
-      ['Accountability / Ownership','How do you track and complete vital signs, intake/output, blood glucose checks, rounding, turning, and other assigned tasks on time?'],
-      ['Trust / Integrity','Tell us about a time you reported an error, missed task, unsafe situation, or patient concern even though it was difficult.'],
-      ['Communication','You notice a patient is newly confused, weaker, short of breath, or difficult to awaken. What would you do and what information would you give the nurse?'],
-      ['Accountability / Ownership','Explain the responsibilities of a sitter or 1:1 observer, including line of sight, documentation, distractions, and when to call for help.']
+      ['Customer-Centered Focus','Tell us about a time you helped someone feel comfortable, respected, or cared for. This may be from work, school, volunteering, or your personal life.'],
+      ['Self-Awareness','What is one strength you would bring to this job, and what is one area where you would need training or support?'],
+      ['Communication','If a patient or family member asks you a question and you do not know the answer, what would you do?'],
+      ['Collaboration / Team Player','Tell us about a time you worked with other people to complete a task. What part did you play?'],
+      ['Adaptability / Resiliency','Describe a time plans changed unexpectedly at work, school, or home. How did you adjust?'],
+      ['Informed Judgment','You are helping one person when you notice another person may be in danger of falling. What would you do first?'],
+      ['Resourcefulness','If you are asked to do something you have never done before, what steps would you take before starting?'],
+      ['Passion for the Mission','Why are you interested in helping patients and working in a hospital, even if you have not worked in healthcare before?'],
+      ['Accountability / Ownership','Tell us about a time you made a mistake or forgot an important task. What did you do after you realized it?'],
+      ['Trust / Integrity','What would you do if you saw someone ignore a safety rule or treat another person disrespectfully?'],
+      ['Communication','If you notice that a patient looks uncomfortable, confused, upset, or different than before, what would you do?'],
+      ['Accountability / Ownership','This job requires arriving on time, answering call lights, helping with personal care, learning new skills, and asking for help when needed. Which part may be most challenging for you, and how would you handle it?']
     ],
     EXPERIENCED_CA: [
       ['Customer-Centered Focus','Tell us about a time your observation or personal attention changed the outcome or experience for a patient or family.'],
@@ -1329,7 +1329,7 @@ function closeDataImportCenter(){const m=document.getElementById('mgr-data-impor
 
   window.printInterviewPacket = function(kind){
     const packetMeta = {
-      CA: { title:'New CA Candidate Interview Packet', position:'New / Inexperienced Care Associate' },
+      CA: { title:'Entry-Level CA Interview Packet', position:'Entry-Level Care Associate — No Healthcare Experience Required' },
       EXPERIENCED_CA: { title:'Experienced CA Interview Packet', position:'Experienced Care Associate' },
       NEW_GRAD_RN: { title:'New Graduate RN Interview Packet', position:'New Graduate RN' },
       EXPERIENCED_RN: { title:'Experienced RN Interview Packet', position:'Experienced RN' },
@@ -1386,7 +1386,7 @@ function closeDataImportCenter(){const m=document.getElementById('mgr-data-impor
     wrap.id='iv-print-packets';
     wrap.style.cssText='display:flex;flex-direction:column;gap:6px;margin-top:8px;';
     wrap.innerHTML=
-      '<button type="button" class="btn btn-ghost" onclick="printInterviewPacket(\'CA\')" style="width:100%;justify-content:center;font-size:11px;">🖨 New CA Candidate</button>'+
+      '<button type="button" class="btn btn-ghost" onclick="printInterviewPacket(\'CA\')" style="width:100%;justify-content:center;font-size:11px;">🖨 Entry-Level CA</button>'+
       '<button type="button" class="btn btn-ghost" onclick="printInterviewPacket(\'EXPERIENCED_CA\')" style="width:100%;justify-content:center;font-size:11px;">🖨 Experienced CA</button>'+
       '<button type="button" class="btn btn-ghost" onclick="printInterviewPacket(\'NEW_GRAD_RN\')" style="width:100%;justify-content:center;font-size:11px;">🖨 New Graduate RN</button>'+
       '<button type="button" class="btn btn-ghost" onclick="printInterviewPacket(\'EXPERIENCED_RN\')" style="width:100%;justify-content:center;font-size:11px;">🖨 Experienced RN</button>'+
