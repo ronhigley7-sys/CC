@@ -1249,20 +1249,6 @@ function closeDataImportCenter(){const m=document.getElementById('mgr-data-impor
   ];
 
   const IV_PRINT_QUESTIONS = {
-    NURSE: [
-      ['Customer-Centered Focus','Tell us about a time you adapted your care plan around what mattered most to a patient or family. What did you do and what was the outcome?'],
-      ['Self-Awareness','Describe a clinical situation that did not go as planned. What did you learn about yourself, and what would you do differently now?'],
-      ['Communication','How do you explain a change in condition, treatment plan, or delay to an anxious patient or family while keeping the care team informed?'],
-      ['Collaboration / Team Player','Tell us about a busy shift when you worked with RNs, LPNs, CAs, providers, or other departments to safely meet patient needs.'],
-      ['Adaptability / Resiliency','Describe how you respond when your assignment, census, staffing, or priorities change unexpectedly during a shift.'],
-      ['Informed Judgment','You have five patients: one has a new neurological change, one requests pain medication, and one is waiting for discharge. Walk us through your priorities and why.'],
-      ['Resourcefulness','Tell us about a time you lacked a needed resource, order, or immediate answer. How did you safely move care forward?'],
-      ['Passion for the Mission','Why do you want to work on a Med/Surg Stroke-Telemetry unit, and how will you contribute to safe, compassionate care?'],
-      ['Accountability / Ownership','Describe a mistake, near miss, or missed task you identified. What actions did you take, who did you notify, and how did you prevent recurrence?'],
-      ['Trust / Integrity','Tell us about a time you raised a patient-safety concern or spoke up when it was uncomfortable to do so.'],
-      ['Informed Judgment','A telemetry patient develops sudden weakness, facial droop, or speech difficulty. What are your immediate actions and communication steps?'],
-      ['Accountability / Ownership','How do you ensure timely pain reassessment, accurate documentation, medication scanning, fall prevention, and completion of required care plans?']
-    ],
     CA: [
       ['Customer-Centered Focus','Tell us how you preserve dignity, privacy, comfort, and choice while helping a patient with bathing, toileting, feeding, or mobility.'],
       ['Self-Awareness','Describe feedback you received about your patient care or teamwork. How did you respond, and what did you change?'],
@@ -1276,6 +1262,34 @@ function closeDataImportCenter(){const m=document.getElementById('mgr-data-impor
       ['Trust / Integrity','Tell us about a time you reported an error, missed task, unsafe situation, or patient concern even though it was difficult.'],
       ['Communication','You notice a patient is newly confused, weaker, short of breath, or difficult to awaken. What would you do and what information would you give the nurse?'],
       ['Accountability / Ownership','Explain the responsibilities of a sitter or 1:1 observer, including line of sight, documentation, distractions, and when to call for help.']
+    ],
+    NEW_GRAD_RN: [
+      ['Customer-Centered Focus','During clinicals, tell us about a time you learned what mattered most to a patient and adjusted your approach to care.'],
+      ['Self-Awareness','What clinical skill or nursing responsibility do you feel most confident about, and where will you need the most support as a new graduate?'],
+      ['Communication','Give an example of how you used SBAR to report a patient concern to an instructor, nurse, or provider.'],
+      ['Collaboration / Team Player','Tell us about a clinical day when you worked with nurses, CAs, instructors, or other disciplines to complete safe patient care.'],
+      ['Adaptability / Resiliency','Describe a stressful clinical experience. How did you manage your emotions, reorganize your work, and continue providing safe care?'],
+      ['Informed Judgment','You have five patients: one develops a new neurological change, one requests pain medication, and one is waiting for discharge. Walk us through your priorities and who you would notify.'],
+      ['Resourcefulness','If you are unsure how to perform a skill, use equipment, or carry out an order, what steps will you take before proceeding?'],
+      ['Passion for the Mission','Why are you interested in beginning your nursing career on a Med/Surg Stroke-Telemetry unit?'],
+      ['Accountability / Ownership','Tell us about a mistake or near miss during school or clinicals. How did you disclose it, correct it, and learn from it?'],
+      ['Trust / Integrity','What would you do if you saw a peer or coworker skip a safety step, document something not completed, or act outside policy?'],
+      ['Informed Judgment','A telemetry patient develops sudden facial droop, weakness, or speech difficulty. What are your immediate nursing actions?'],
+      ['Accountability / Ownership','How will you build habits for medication scanning, pain reassessment, care plans, fall prevention, timely documentation, and asking for help?']
+    ],
+    AGENCY_RN: [
+      ['Customer-Centered Focus','Tell us how you quickly establish trust with patients and families when you are new to a unit or organization.'],
+      ['Self-Awareness','What unit processes or clinical situations require the most orientation or clarification for you before accepting an independent assignment?'],
+      ['Communication','How do you clarify unfamiliar orders, policies, or workflows and communicate urgent changes in condition to the charge nurse and provider?'],
+      ['Collaboration / Team Player','Describe how you integrate with permanent staff, LPNs, CAs, and providers without disrupting established team workflows.'],
+      ['Adaptability / Resiliency','Give an example of safely adapting to a new facility, documentation system, patient population, or rapidly changing assignment.'],
+      ['Informed Judgment','You receive a full telemetry assignment and one patient develops an acute neurological change while another has abnormal vital signs. Walk us through your priorities.'],
+      ['Resourcefulness','What do you do when you cannot access Pyxis, the glucometer, Epic functions, policies, supplies, or required equipment at the start of a shift?'],
+      ['Passion for the Mission','Why are you interested in this Stroke-Telemetry assignment, and what will you contribute during your contract?'],
+      ['Accountability / Ownership','How do you ensure full compliance with pain reassessment, scanning, turning/repositioning, fall prevention, hourly rounding, and required documentation?'],
+      ['Trust / Integrity','Tell us about a time you raised a safety concern or declined an assignment or task until you had the information or competency needed to proceed safely.'],
+      ['Informed Judgment','Explain your immediate response to a telemetry alarm, suspected stroke, blood transfusion reaction, or rapidly deteriorating patient.'],
+      ['Accountability / Ownership','Before your first independent shift, how will you confirm Epic, Pyxis, glucometer, emergency response, blood administration, and unit policy readiness?']
     ]
   };
 
@@ -1286,9 +1300,14 @@ function closeDataImportCenter(){const m=document.getElementById('mgr-data-impor
   }
 
   window.printInterviewPacket = function(kind){
-    kind = kind === 'CA' ? 'CA' : 'NURSE';
-    const title = kind === 'CA' ? 'Care Associate Interview Packet' : 'Nurse (RN / LPN) Interview Packet';
-    const position = kind === 'CA' ? 'CA' : 'RN / LPN';
+    const packetMeta = {
+      CA: { title:'New CA Candidate Interview Packet', position:'Care Associate' },
+      NEW_GRAD_RN: { title:'New Graduate RN Interview Packet', position:'New Graduate RN' },
+      AGENCY_RN: { title:'Agency RN Interview Packet', position:'Agency RN' }
+    };
+    kind = packetMeta[kind] ? kind : 'CA';
+    const title = packetMeta[kind].title;
+    const position = packetMeta[kind].position;
     const questions = IV_PRINT_QUESTIONS[kind];
     const rows = questions.map(function(item,index){
       return '<section class="question">' +
@@ -1337,8 +1356,9 @@ function closeDataImportCenter(){const m=document.getElementById('mgr-data-impor
     wrap.id='iv-print-packets';
     wrap.style.cssText='display:flex;flex-direction:column;gap:6px;margin-top:8px;';
     wrap.innerHTML=
-      '<button type="button" class="btn btn-ghost" onclick="printInterviewPacket(\'NURSE\')" style="width:100%;justify-content:center;font-size:11px;">🖨 Print Nurse Interview</button>'+
-      '<button type="button" class="btn btn-ghost" onclick="printInterviewPacket(\'CA\')" style="width:100%;justify-content:center;font-size:11px;">🖨 Print CA Interview</button>';
+      '<button type="button" class="btn btn-ghost" onclick="printInterviewPacket(\'CA\')" style="width:100%;justify-content:center;font-size:11px;">🖨 New CA Candidate</button>'+
+      '<button type="button" class="btn btn-ghost" onclick="printInterviewPacket(\'NEW_GRAD_RN\')" style="width:100%;justify-content:center;font-size:11px;">🖨 New Graduate RN</button>'+
+      '<button type="button" class="btn btn-ghost" onclick="printInterviewPacket(\'AGENCY_RN\')" style="width:100%;justify-content:center;font-size:11px;">🖨 Agency RN</button>';
     newBtn.insertAdjacentElement('afterend',wrap);
   }
 
