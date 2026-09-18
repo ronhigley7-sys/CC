@@ -1263,6 +1263,34 @@ function closeDataImportCenter(){const m=document.getElementById('mgr-data-impor
       ['Communication','You notice a patient is newly confused, weaker, short of breath, or difficult to awaken. What would you do and what information would you give the nurse?'],
       ['Accountability / Ownership','Explain the responsibilities of a sitter or 1:1 observer, including line of sight, documentation, distractions, and when to call for help.']
     ],
+    EXPERIENCED_CA: [
+      ['Customer-Centered Focus','Tell us about a time your observation or personal attention changed the outcome or experience for a patient or family.'],
+      ['Self-Awareness','Based on your prior CA experience, what is your strongest contribution to a nursing team and what skill are you still working to improve?'],
+      ['Communication','Give an example of a subtle change in a patient that you recognized and escalated. What did you report and what happened next?'],
+      ['Collaboration / Team Player','Describe a demanding shift when you coordinated closely with multiple nurses and other CAs. How did you keep work balanced and patients safe?'],
+      ['Adaptability / Resiliency','Tell us about a time staffing, assignments, or patient acuity changed unexpectedly. How did you adjust your priorities?'],
+      ['Informed Judgment','You are completing vital signs when one patient becomes confused and another high-fall-risk patient attempts to stand. Walk us through your immediate actions.'],
+      ['Resourcefulness','Describe how you handled a situation when needed equipment, supplies, or staff assistance were not immediately available.'],
+      ['Passion for the Mission','What keeps you motivated in the CA role, and how would your experience strengthen a Med/Surg Stroke-Telemetry team?'],
+      ['Accountability / Ownership','Give an example of how you identified and corrected an incomplete task, documentation issue, or safety concern before the end of your shift.'],
+      ['Trust / Integrity','Tell us about a time you had to report an uncomfortable concern involving patient care, a coworker, or unit practice.'],
+      ['Collaboration / Team Player','How have you coached or supported a newer CA without stepping outside your role or neglecting your own assignment?'],
+      ['Accountability / Ownership','Explain how you ensure reliable rounding, turning, intake/output, vital signs, glucose checks, mobility, sitter documentation, and end-of-shift handoff.']
+    ],
+    EXPERIENCED_RN: [
+      ['Customer-Centered Focus','Tell us about a complex patient or family situation where you balanced clinical priorities with the patient’s goals and preferences.'],
+      ['Self-Awareness','What pattern have you identified in your own nursing practice that you deliberately worked to improve? What evidence showed improvement?'],
+      ['Communication','Describe a time you escalated a serious concern to a provider or leader who initially disagreed. How did you communicate and what was the outcome?'],
+      ['Collaboration / Team Player','Give an example of how you coordinated care across nursing, providers, therapy, pharmacy, case management, or another department during a difficult shift.'],
+      ['Adaptability / Resiliency','Tell us about a high-acuity or short-staffed shift. How did you reorganize care, protect safety, and support the team?'],
+      ['Informed Judgment','You have five telemetry patients: one has an acute neurological change, one has chest pain, and another is due for discharge. Walk us through your priorities, delegation, and escalation.'],
+      ['Resourcefulness','Describe a barrier to care you solved using policy, chain of command, available resources, or creative coordination without compromising safety.'],
+      ['Passion for the Mission','Why are you interested in bringing your experience to a Med/Surg Stroke-Telemetry unit, and what improvement could you help lead?'],
+      ['Accountability / Ownership','Tell us about a medication error, near miss, documentation lapse, or other adverse event you owned. What corrective actions followed?'],
+      ['Trust / Integrity','Describe a time you advocated for patient safety or professional standards despite pressure to remain silent or take a shortcut.'],
+      ['Collaboration / Team Player','What experience do you have precepting, charging, coaching, or giving feedback to RNs, LPNs, or CAs? Give a specific example.'],
+      ['Accountability / Ownership','How do you maintain reliable BCMA, pain reassessment, care plans, fall/HAPI prevention, telemetry orders, blood administration, and shift handoff during a demanding assignment?']
+    ],
     NEW_GRAD_RN: [
       ['Customer-Centered Focus','During clinicals, tell us about a time you learned what mattered most to a patient and adjusted your approach to care.'],
       ['Self-Awareness','What clinical skill or nursing responsibility do you feel most confident about, and where will you need the most support as a new graduate?'],
@@ -1301,8 +1329,10 @@ function closeDataImportCenter(){const m=document.getElementById('mgr-data-impor
 
   window.printInterviewPacket = function(kind){
     const packetMeta = {
-      CA: { title:'New CA Candidate Interview Packet', position:'Care Associate' },
+      CA: { title:'New CA Candidate Interview Packet', position:'New / Inexperienced Care Associate' },
+      EXPERIENCED_CA: { title:'Experienced CA Interview Packet', position:'Experienced Care Associate' },
       NEW_GRAD_RN: { title:'New Graduate RN Interview Packet', position:'New Graduate RN' },
+      EXPERIENCED_RN: { title:'Experienced RN Interview Packet', position:'Experienced RN' },
       AGENCY_RN: { title:'Agency RN Interview Packet', position:'Agency RN' }
     };
     kind = packetMeta[kind] ? kind : 'CA';
@@ -1357,7 +1387,9 @@ function closeDataImportCenter(){const m=document.getElementById('mgr-data-impor
     wrap.style.cssText='display:flex;flex-direction:column;gap:6px;margin-top:8px;';
     wrap.innerHTML=
       '<button type="button" class="btn btn-ghost" onclick="printInterviewPacket(\'CA\')" style="width:100%;justify-content:center;font-size:11px;">🖨 New CA Candidate</button>'+
+      '<button type="button" class="btn btn-ghost" onclick="printInterviewPacket(\'EXPERIENCED_CA\')" style="width:100%;justify-content:center;font-size:11px;">🖨 Experienced CA</button>'+
       '<button type="button" class="btn btn-ghost" onclick="printInterviewPacket(\'NEW_GRAD_RN\')" style="width:100%;justify-content:center;font-size:11px;">🖨 New Graduate RN</button>'+
+      '<button type="button" class="btn btn-ghost" onclick="printInterviewPacket(\'EXPERIENCED_RN\')" style="width:100%;justify-content:center;font-size:11px;">🖨 Experienced RN</button>'+
       '<button type="button" class="btn btn-ghost" onclick="printInterviewPacket(\'AGENCY_RN\')" style="width:100%;justify-content:center;font-size:11px;">🖨 Agency RN</button>';
     newBtn.insertAdjacentElement('afterend',wrap);
   }
