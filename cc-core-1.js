@@ -4714,7 +4714,10 @@ function importVarianceFromAudit() {
   // Pre-fill staff
   if (staff) {
     const sel = document.getElementById('var-staff');
-    if (sel) [...sel.options].forEach(o => { if (o.value.toLowerCase().includes(staff.split(',')[0].toLowerCase())) sel.value = o.value; });
+    if (sel) {
+      sel.dataset.requestedStaff = staff;
+      [...sel.options].forEach(o => { if (o.value.toLowerCase().includes(staff.split(',')[0].toLowerCase())) sel.value = o.value; });
+    }
   }
   if (mrn)  { const el = document.getElementById('var-mrid'); if (el) el.value = mrn; }
   if (date) { const el = document.getElementById('var-date'); if (el) el.value = date; }
@@ -4917,17 +4920,48 @@ const VARIANCE_TYPES = [
   { id:'cauti',       label:'CAUTI Bundle Compliance',    icon:'🏥', showCP: false },
 ];
 
-function initVarianceTab() {
-  // Populate staff dropdown
+function populateVarianceStaffDropdown(staff) {
   const sel = document.getElementById('var-staff');
-  if (sel && sel.options.length <= 1) {
-    MASTER_STAFF.filter(s => s.job !== 'NURSE MGR').forEach(s => {
-      const opt = document.createElement('option');
-      opt.value = s.name;
-      opt.textContent = s.name + ' (' + s.job + ')';
-      sel.appendChild(opt);
-    });
+  if (!sel) return;
+  const preferred = sel.value || sel.dataset.requestedStaff || '';
+  const rows = (staff || [])
+    .filter(s => s && s.name && !['NURSE MGR','NM'].includes(String(s.job || '').toUpperCase()))
+    .sort((a,b) => a.name.localeCompare(b.name));
+  sel.innerHTML = '<option value="">— Select Staff Member —</option>' + rows.map(s =>
+    `<option value="${s.name}">${s.name}${s.job ? ' (' + s.job + ')' : ''}</option>`
+  ).join('');
+  if (preferred) {
+    const needle = preferred.split(',')[0].trim().toLowerCase();
+    const match = [...sel.options].find(o => o.value === preferred) ||
+      [...sel.options].find(o => o.value.toLowerCase().includes(needle));
+    if (match) sel.value = match.value;
   }
+}
+
+async function refreshVarianceStaffFromDirectory() {
+  const sel = document.getElementById('var-staff');
+  if (!sel) return;
+  try {
+    const cfg = getSBConfig();
+    const r = await fetch(`${cfg.url}/rest/v1/employee_directory_roster?select=display_name,role,status&order=display_name.asc`, {
+      headers: { apikey: cfg.key, Authorization: `Bearer ${cfg.key}` }
+    });
+    if (!r.ok) throw new Error('Directory request failed');
+    const rows = await r.json();
+    const activeStaff = rows
+      .filter(row => String(row.status || '').toLowerCase() === 'active')
+      .map(row => ({ name: row.display_name, job: row.role || '' }));
+    populateVarianceStaffDropdown(activeStaff);
+  } catch (e) {
+    if (sel.options.length <= 1) populateVarianceStaffDropdown(MASTER_STAFF);
+  }
+}
+
+function initVarianceTab() {
+  // Show the current roster immediately, then replace it with the live active directory.
+  const sel = document.getElementById('var-staff');
+  if (sel && sel.options.length <= 1) populateVarianceStaffDropdown(MASTER_STAFF);
+  refreshVarianceStaffFromDirectory();
   // Auto-fill today's date and current time
   const now = new Date();
   const dateEl = document.getElementById('var-date');
