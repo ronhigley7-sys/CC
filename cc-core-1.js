@@ -6713,22 +6713,33 @@ function renderCharge() {
       const assignKey = `${dateKey}|${shift}|${orientee}`;
       const current   = (state.orientAssign || {})[assignKey] || '';
 
-      // Preceptor pool: same shift, role-appropriate, not on orientation themselves.
-      const sameShift = (shifts[shift] || []).filter(p =>
-        !state.empOrientation[p.name] &&
-        p.name !== orientee
-      );
-      const primaryRoles = role === 'CA' ? ['CA'] : ['RN', 'LPN'];
-      const primaryPool = sameShift.filter(p => primaryRoles.includes(p.role));
-      const fallbackPool = sameShift.filter(p => ['RN', 'LPN', 'CA'].includes(p.role));
-      const preceptorPool = primaryPool.length ? primaryPool : fallbackPool;
+      // Preceptor pool: only staff working today in the matching shift pool.
+      // CA orientees use the overlapping CA shift, even if the orientee row came in under a nursing display shift.
+      const preceptorShiftKeys = role === 'CA'
+        ? (shift === '0700-1500' ? ['0630-1430']
+          : shift === '1500-1900' ? ['1430-1830', '1830-2230']
+          : shift === '1900-0700' ? ['2230-0630']
+          : [shift])
+        : [shift];
+      const allowedRoles = role === 'CA' ? ['CA'] : ['RN', 'LPN'];
+      const seenPreceptors = new Set();
+      const preceptorPool = preceptorShiftKeys.flatMap(sk => shifts[sk] || [])
+        .filter(p =>
+          allowedRoles.includes(p.role) &&
+          !state.empOrientation[p.name] &&
+          p.name !== orientee &&
+          !seenPreceptors.has(p.name) &&
+          seenPreceptors.add(p.name)
+        );
 
       // Highlight certified preceptors
-      const poolHtml = preceptorPool.map(p => {
-        const isCert = !!(state.empPreceptor && state.empPreceptor[p.name]);
-        const label  = isCert ? `${p.name} (${p.role}) 🎓` : `${p.name} (${p.role})`;
-        return `<option value="${p.name}" ${p.name === current ? 'selected' : ''}>${label}</option>`;
-      }).join('');
+      const poolHtml = preceptorPool.length
+        ? preceptorPool.map(p => {
+            const isCert = !!(state.empPreceptor && state.empPreceptor[p.name]);
+            const label  = isCert ? `${p.name} (${p.role}) 🎓` : `${p.name} (${p.role})`;
+            return `<option value="${p.name}" ${p.name === current ? 'selected' : ''}>${label}</option>`;
+          }).join('')
+        : `<option disabled>No working ${role === 'CA' ? 'CA' : 'RN/LPN'} on this shift</option>`;
 
       const shiftLabel = orientationShiftDefs.find(s => s.key === shift)?.label || shift;
 
