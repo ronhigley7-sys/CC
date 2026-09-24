@@ -6360,7 +6360,7 @@ function renderBoard() {
                 style="background:rgba(245,158,11,0.2);border:1px solid rgba(245,158,11,0.5);border-radius:10px;padding:1px 6px;font-size:10px;font-weight:700;color:var(--amber2);font-family:'IBM Plex Mono',monospace;cursor:help;flex-shrink:0;">📚 ${eduCount}</span>`
             : '';
           const isOrient = state.empOrientation[p.name] || false;
-          const orientAssignKey = `${dateKey}|${shift}|${p.name}`;
+          const orientAssignKey = `${dateKey}|${actualShift}|${p.name}`;
           const orientPreceptor = isOrient && state.orientAssign && state.orientAssign[orientAssignKey]
             ? state.orientAssign[orientAssignKey].split(',')[0].trim() : '';
           const orientBadge = isOrient
@@ -6682,11 +6682,18 @@ function renderCharge() {
   });
 
   // ── ORIENTATION ASSIGNMENTS SECTION ──────────────────────────
-  // Collect all orientation staff scheduled today across all nursing shifts
+  // Collect all RN/LPN/CA orientation staff scheduled today.
+  const orientationShiftDefs = [
+    ...nursingShifts,
+    { key: '0630-1430', label: '0630–1430', name: 'CA Day' },
+    { key: '1430-1830', label: '1430–1830', name: 'CA Eve 1' },
+    { key: '1830-2230', label: '1830–2230', name: 'CA Eve 2' },
+    { key: '2230-0630', label: '2230–0630', name: 'CA Night' }
+  ];
   const allOrientees = [];
-  nursingShifts.forEach(({key: shift}) => {
+  orientationShiftDefs.forEach(({key: shift}) => {
     const placed = (shifts[shift] || []).filter(p =>
-      (p.role === 'RN' || p.role === 'LPN') && state.empOrientation[p.name]
+      ['RN', 'LPN', 'CA'].includes(p.role) && state.empOrientation[p.name]
     );
     placed.forEach(p => {
       if (!allOrientees.find(o => o.name === p.name && o.shift === shift)) {
@@ -6706,12 +6713,15 @@ function renderCharge() {
       const assignKey = `${dateKey}|${shift}|${orientee}`;
       const current   = (state.orientAssign || {})[assignKey] || '';
 
-      // Preceptor pool: same-shift RN/LPN, not on orientation themselves, exclude the orientee
-      const preceptorPool = (shifts[shift] || []).filter(p =>
-        (p.role === 'RN' || p.role === 'LPN') &&
+      // Preceptor pool: same shift, role-appropriate, not on orientation themselves.
+      const sameShift = (shifts[shift] || []).filter(p =>
         !state.empOrientation[p.name] &&
         p.name !== orientee
       );
+      const primaryRoles = role === 'CA' ? ['CA'] : ['RN', 'LPN'];
+      const primaryPool = sameShift.filter(p => primaryRoles.includes(p.role));
+      const fallbackPool = sameShift.filter(p => ['RN', 'LPN', 'CA'].includes(p.role));
+      const preceptorPool = primaryPool.length ? primaryPool : fallbackPool;
 
       // Highlight certified preceptors
       const poolHtml = preceptorPool.map(p => {
@@ -6720,7 +6730,7 @@ function renderCharge() {
         return `<option value="${p.name}" ${p.name === current ? 'selected' : ''}>${label}</option>`;
       }).join('');
 
-      const shiftLabel = nursingShifts.find(s => s.key === shift)?.label || shift;
+      const shiftLabel = orientationShiftDefs.find(s => s.key === shift)?.label || shift;
 
       html += `
         <div style="display:grid;grid-template-columns:1fr 24px 1fr;align-items:center;gap:10px;padding:8px 14px;margin-bottom:6px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.25);border-radius:8px;">
