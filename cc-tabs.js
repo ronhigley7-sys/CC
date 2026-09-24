@@ -1207,13 +1207,19 @@ function printUnitDailyReport() {
 
   // ── Helpers ──────────────────────────────────────────────────
   function getStaff(shift, role) { return (shifts[shift] || []).filter(p => p.role === role); }
-  function nameCell(name, shift) {
+  function nameCell(name, shift, relatedShifts) {
     const items = state.pendingEdu[name] || [];
     const eduFlag = items.length > 0 ? ` <span style="font-size:8pt;color:#b45309;font-weight:700;">[📚${items.length}]</span>` : '';
     let orientFlag = '';
     if (state.empOrientation[name]) {
-      const prec = shift && state.orientAssign && state.orientAssign[`${dateKey}|${shift}|${name}`]
-        ? state.orientAssign[`${dateKey}|${shift}|${name}`].split(',')[0].trim() : '';
+      const lookupShifts = [shift, ...(relatedShifts || [])].filter(Boolean);
+      let prec = '';
+      if (state.orientAssign) {
+        for (const sk of lookupShifts) {
+          const hit = state.orientAssign[`${dateKey}|${sk}|${name}`];
+          if (hit) { prec = hit.split(',')[0].trim(); break; }
+        }
+      }
       orientFlag = ` <span style="font-size:7pt;font-weight:700;color:#92400e;background:#fef3c7;padding:1px 4px;border-radius:3px;">ORIENT${prec ? ' → '+prec : ''}</span>`;
     }
     const info = ccPrintScheduleInfo(dateKey, name, shift);
@@ -1282,22 +1288,28 @@ function printUnitDailyReport() {
   const teamRows = `<tr><td>${tnCellForKey(`${dateKey}|0700-1500`)}</td><td>${tnCellForKey(`${dateKey}|1900-0700`)}</td></tr>`;
 
   // CA
-  const caD=getStaff('0630-1430','CA'), caE1=getStaff('1430-1830','CA'), caE2=getStaff('1830-2230','CA'), caN=getStaff('2230-0630','CA');
+  function addCAOrientees(base, sourceShifts) {
+    const seen = new Set(base.map(p => p.name));
+    const extras = sourceShifts.flatMap(sk => getStaff(sk, 'CA').filter(p => state.empOrientation[p.name]));
+    extras.forEach(p => { if (!seen.has(p.name)) { seen.add(p.name); base.push(p); } });
+    return base;
+  }
+  const caD=addCAOrientees(getStaff('0630-1430','CA'), ['0700-1500']);
+  const caE1=addCAOrientees(getStaff('1430-1830','CA'), ['1500-1900']);
+  const caE2=addCAOrientees(getStaff('1830-2230','CA'), []);
+  const caN=addCAOrientees(getStaff('2230-0630','CA'), ['1900-0700']);
   const caMax = Math.max(4, caD.length, caE1.length, caE2.length, caN.length);
-  function caTimeTag(p, sk) {
+  function caTimeTag(p, sk, related) {
     if (!p) return '';
-    const nm = nameCell(p.name, sk);
-    // Check if this CA also spans into adjacent columns (non-standard end time)
-    const inE2 = caE2.some(x=>x.name===p.name), inN = caN.some(x=>x.name===p.name);
-    const inE1 = caE1.some(x=>x.name===p.name), inD = caD.some(x=>x.name===p.name);
+    const nm = nameCell(p.name, sk, related || []);
     return nm;
   }
   let caRows = '';
   for (let i=0; i<caMax; i++) {
-    caRows += `<tr><td>${caD[i]  ? caTimeTag(caD[i],'0630-1430')  : ''}</td>
-                   <td>${caE1[i] ? caTimeTag(caE1[i],'1430-1830') : ''}</td>
+    caRows += `<tr><td>${caD[i]  ? caTimeTag(caD[i],'0630-1430',['0700-1500'])  : ''}</td>
+                   <td>${caE1[i] ? caTimeTag(caE1[i],'1430-1830',['1500-1900']) : ''}</td>
                    <td>${caE2[i] ? caTimeTag(caE2[i],'1830-2230') : ''}</td>
-                   <td>${caN[i]  ? caTimeTag(caN[i],'2230-0630')  : ''}</td></tr>`;
+                   <td>${caN[i]  ? caTimeTag(caN[i],'2230-0630',['1900-0700'])  : ''}</td></tr>`;
   }
 
   // Shift notes
@@ -1774,8 +1786,14 @@ function printNursingServices() {
     const eduFlag = items.length > 0 ? `<span class="ps-edu-flag">📚${items.length}</span>` : '';
     let orientFlag = '';
     if (state.empOrientation[name]) {
-      const prec = shift && state.orientAssign && state.orientAssign[`${dateKey}|${shift}|${name}`]
-        ? state.orientAssign[`${dateKey}|${shift}|${name}`].split(',')[0].trim() : '';
+      const lookupShifts = [shift, ...(relatedShifts || [])].filter(Boolean);
+      let prec = '';
+      if (state.orientAssign) {
+        for (const sk of lookupShifts) {
+          const hit = state.orientAssign[`${dateKey}|${sk}|${name}`];
+          if (hit) { prec = hit.split(',')[0].trim(); break; }
+        }
+      }
       orientFlag = ` <span style="font-size:7.5pt;font-weight:700;color:#92400e;background:#fef3c7;padding:1px 5px;border-radius:3px;letter-spacing:0.2px;">ORIENT${prec ? ' → '+prec : ''}</span>`;
     }
     const info = ccPrintScheduleInfo(dateKey, name, shift, relatedShifts);
@@ -1861,24 +1879,29 @@ function printNursingServices() {
   const teamRows2 = `<tr><td>${tnCellForKey2(`${dateKey}|0700-1500`)}</td><td>${tnCellForKey2(`${dateKey}|1900-0700`)}</td></tr>`;
 
   // CA
-  const caDay   = getStaff('0630-1430', 'CA');
-  const caEve1  = getStaff('1430-1830', 'CA');
-  const caEve2  = getStaff('1830-2230', 'CA');
-  const caNight = getStaff('2230-0630', 'CA');
+  function addCAOrienteesNS(base, sourceShifts) {
+    const seen = new Set(base.map(p => p.name));
+    const extras = sourceShifts.flatMap(sk => getStaff(sk, 'CA').filter(p => state.empOrientation[p.name]));
+    extras.forEach(p => { if (!seen.has(p.name)) { seen.add(p.name); base.push(p); } });
+    return base;
+  }
+  const caDay   = addCAOrienteesNS(getStaff('0630-1430', 'CA'), ['0700-1500']);
+  const caEve1  = addCAOrienteesNS(getStaff('1430-1830', 'CA'), ['1500-1900']);
+  const caEve2  = addCAOrienteesNS(getStaff('1830-2230', 'CA'), []);
+  const caNight = addCAOrienteesNS(getStaff('2230-0630', 'CA'), ['1900-0700']);
   const caMax   = Math.max(4, caDay.length, caEve1.length, caEve2.length, caNight.length);
-  function caTag(p, sk) {
+  function caTag(p, sk, related) {
     if (!p) return '';
-    const nm = nameCell(p.name, sk);
-    // time badges removed
+    const nm = nameCell(p.name, sk, related || []);
     return nm;
   }
   let caRows = '';
   for (let i = 0; i < caMax; i++) {
     caRows += `<tr>
-      <td>${caDay[i]   ? caTag(caDay[i],'0630-1430')   : ''}</td>
-      <td>${caEve1[i]  ? caTag(caEve1[i],'1430-1830')  : ''}</td>
+      <td>${caDay[i]   ? caTag(caDay[i],'0630-1430',['0700-1500'])   : ''}</td>
+      <td>${caEve1[i]  ? caTag(caEve1[i],'1430-1830',['1500-1900'])  : ''}</td>
       <td>${caEve2[i]  ? caTag(caEve2[i],'1830-2230')  : ''}</td>
-      <td>${caNight[i] ? caTag(caNight[i],'2230-0630') : ''}</td>
+      <td>${caNight[i] ? caTag(caNight[i],'2230-0630',['1900-0700']) : ''}</td>
     </tr>`;
   }
 
@@ -2106,8 +2129,14 @@ async function printStaffingSheet() {
     const eduFlag = items.length ? ` <span style="font-size:8pt;color:#b45309;">[📚${items.length}]</span>` : '';
     let orientFlag = '';
     if (state.empOrientation[name]) {
-      const prec = shift && state.orientAssign && state.orientAssign[`${dateKey}|${shift}|${name}`]
-        ? state.orientAssign[`${dateKey}|${shift}|${name}`].split(',')[0].trim() : '';
+      const lookupShifts = [shift, ...(relatedShifts || [])].filter(Boolean);
+      let prec = '';
+      if (state.orientAssign) {
+        for (const sk of lookupShifts) {
+          const hit = state.orientAssign[`${dateKey}|${sk}|${name}`];
+          if (hit) { prec = hit.split(',')[0].trim(); break; }
+        }
+      }
       orientFlag = ` <span style="font-size:7pt;font-weight:700;color:#92400e;background:#fef3c7;padding:1px 4px;border-radius:3px;">ORIENT${prec ? ' → '+prec : ''}</span>`;
     }
     const info = ccPrintScheduleInfo(dateKey, name, shift, relatedShifts);
@@ -2169,16 +2198,24 @@ async function printStaffingSheet() {
   }
 
   // CA rows
-  const caD=getStaff('0630-1430','CA'),caE1=getStaff('1430-1830','CA'),caE2=getStaff('1830-2230','CA'),caN=getStaff('2230-0630','CA');
+  function addCAOrienteesM(base, sourceShifts) {
+    const seen = new Set(base.map(p => p.name));
+    const extras = sourceShifts.flatMap(sk => getStaff(sk, 'CA').filter(p => state.empOrientation[p.name]));
+    extras.forEach(p => { if (!seen.has(p.name)) { seen.add(p.name); base.push(p); } });
+    return base;
+  }
+  const caD=addCAOrienteesM(getStaff('0630-1430','CA'),['0700-1500']);
+  const caE1=addCAOrienteesM(getStaff('1430-1830','CA'),['1500-1900']);
+  const caE2=addCAOrienteesM(getStaff('1830-2230','CA'),[]);
+  const caN=addCAOrienteesM(getStaff('2230-0630','CA'),['1900-0700']);
   const caMax=Math.max(4,caD.length,caE1.length,caE2.length,caN.length);
-  function caTagM(p,sk){
+  function caTagM(p,sk,related){
     if(!p)return'';
-    const nm=nameCell(p.name,sk);
-    // time badges removed
+    const nm=nameCell(p.name,sk,related||[]);
     return nm;
   }
   let caRows='';
-  for(let i=0;i<caMax;i++) caRows+=`<tr><td>${caD[i]?caTagM(caD[i],'0630-1430'):''}</td><td>${caE1[i]?caTagM(caE1[i],'1430-1830'):''}</td><td>${caE2[i]?caTagM(caE2[i],'1830-2230'):''}</td><td>${caN[i]?caTagM(caN[i],'2230-0630'):''}</td></tr>`;
+  for(let i=0;i<caMax;i++) caRows+=`<tr><td>${caD[i]?caTagM(caD[i],'0630-1430',['0700-1500']):''}</td><td>${caE1[i]?caTagM(caE1[i],'1430-1830',['1500-1900']):''}</td><td>${caE2[i]?caTagM(caE2[i],'1830-2230'):''}</td><td>${caN[i]?caTagM(caN[i],'2230-0630',['1900-0700']):''}</td></tr>`;
 
   const noteDay=noteFor('DAY'),noteEve=noteFor('EVE'),noteNight=noteFor('NIGHT'),noteGen=noteFor('GENERAL');
 
