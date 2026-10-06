@@ -63,7 +63,7 @@ function rebuildMasterStaff() {
   const EXCLUDED = ['Ron Higley', 'Ronald Higley'];
   const roster = MASTER_STAFF
     .filter(s => s.job !== 'UC' && s.job !== 'NM' && !EXCLUDED.includes(s.name))
-    .map(s => ({ name: s.name, role: s.job, status: 'active' }));
+    .map(s => ({ name: s.name, role: s.job, status: state.inactiveEmployees?.[s.name] ? 'inactive' : 'active' }));
 
   const cfg = getSBConfig();
   if (cfg.enabled && cfg.url && cfg.key) {
@@ -172,6 +172,7 @@ let state = {
   customOriMilestones: [], // [{ key, label }] — user-added milestones appended to ORI_MILESTONES
   customOriGoals: {},      // { 'RN'|'LPN'|'CA'|'UC': [weekGoalStr, ...] } — overrides ORI_WEEK_GOALS
   onboarding: {},          // { name: { startDate, role, buddy, hrDone:{key:date}, itDone:{key:date}, clinicalDone:{key:date}, notes } }
+  inactiveEmployees: {}, // employment status; historical records are retained
   offboarding: {},         // { name: { lastDay, role, reason, hrDone:{key:date}, itDone:{key:date}, notes } }
   coaching: {},            // { name: [{ id, date, area, notes, plan, followUp, status, ts }] }
   monthlyFollowUp: {},     // { 'YYYY-MM': { name: { date, status, notes, ts } } }
