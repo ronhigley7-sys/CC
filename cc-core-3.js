@@ -2626,8 +2626,8 @@ function getStaffMetrics(name, job, yr) {
       tS += q.scans || 0; tST += q.scanTotal || 0;
       tP += q.pain  || 0; tPT += q.painTotal || 0;
     }
-    if (tST > 0) scanPct = Math.round(tS / tST * 100);
-    if (tPT > 0) painPct = Math.round(tP / tPT * 100);
+    scanPct = qualityYearAverage(name,yr,'scan');
+    painPct = qualityYearAverage(name,yr,'pain');
   }
   const si = (state.staffIncidents || {})[name] || {};
   const filterYr = arr => (arr || []).filter(e => new Date(e.date + 'T12:00:00').getFullYear() === yr);
@@ -3139,8 +3139,8 @@ const MFU_PLATO_TARGET = 90; // must be >= this to pass
 
 function getMonthlyQuality(name, monthKey) {
   const q = ((state.qualityData[name] || {})[monthKey]) || {};
-  const scanPct = q.scanTotal > 0 ? Math.round((q.scans || 0) / q.scanTotal * 100) : null;
-  const painPct = q.painTotal > 0 ? Math.round((q.pain  || 0) / q.painTotal * 100) : null;
+  const scanPct = qualityPercentage(q,'scan');
+  const painPct = qualityPercentage(q,'pain');
   return { scanPct, painPct };
 }
 
