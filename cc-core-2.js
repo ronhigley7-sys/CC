@@ -471,6 +471,7 @@ async function openEmployeeHub(name) {
         ${job ? `<span class="tag tag-${job.toLowerCase()}">${job}</span>` : ''}
       </div>
       <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost btn-sm" onclick="toggleEmployeeInactive('${safe}')">${state.inactiveEmployees?.[name] ? 'Restore as employee' : 'No longer an employee'}</button>
         <button class="btn btn-ghost btn-sm" onclick="openEmpProfile('${safe}')" title="Getting-to-know-you profile">👤 Personal</button>
         <button onclick="this.closest('#emp-hub-overlay').remove()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:20px;line-height:1;">×</button>
       </div>
@@ -498,6 +499,7 @@ async function openEmployeeHub(name) {
   const certs     = state.certs?.[name] || {};
 
   const contactHtml =
+    ehRow('Employment Status', state.inactiveEmployees?.[name] ? 'No longer an employee — historical results included' : 'Current employee') +
     ehRow('Role', job) +
     ehRow('Phone', phone) +
     ehRow('Email', email) +
@@ -3853,6 +3855,7 @@ function buildSavePayload() {
     hppdCheckins: state.hppdCheckins,
     equipmentLog: state.equipmentLog, shiftTargets: state.shiftTargets,
     customOriMilestones: state.customOriMilestones, customOriGoals: state.customOriGoals,
+    inactiveEmployees: state.inactiveEmployees || {},
     onboarding: state.onboarding, offboarding: state.offboarding,
     coaching: state.coaching, placements: state.placements, dates: state.dates,
     twilioConfig: state.twilioConfig || {},
@@ -4101,6 +4104,7 @@ function applyLoadedData(data) {
     if (has('customOriMilestones')) state.customOriMilestones = data.customOriMilestones || [];
     if (has('customOriGoals')) state.customOriGoals  = data.customOriGoals  || {};
     if (has('onboarding'))     state.onboarding      = data.onboarding      || {};
+    if (has('inactiveEmployees')) state.inactiveEmployees = data.inactiveEmployees || {};
     if (has('offboarding'))    state.offboarding     = data.offboarding     || {};
     if (has('coaching'))       state.coaching        = data.coaching        || {};
     if (has('placements'))     state.placements      = data.placements      || {};
@@ -7948,4 +7952,15 @@ function renderOtTab(){
   const tEl=document.getElementById('ot-table');if(!tEl)return;
   if(!rows.length){tEl.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3);">No overtime logged for this pay period.</div>';return;}
   tEl.innerHTML='<div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;overflow:hidden;"><table style="width:100%;border-collapse:collapse;"><thead><tr style="background:rgba(255,255,255,0.05);"><th style="padding:10px;text-align:left;font-size:10px;color:var(--text3);">Staff</th><th style="padding:10px;text-align:left;font-size:10px;color:var(--text3);">Role</th><th style="padding:10px;text-align:right;font-size:10px;color:var(--text3);">Regular Hrs</th><th style="padding:10px;text-align:right;font-size:10px;color:var(--text3);">OT Hrs</th><th style="padding:10px;text-align:left;font-size:10px;color:var(--text3);">Type</th><th style="padding:10px;text-align:left;font-size:10px;color:var(--text3);">Approved</th><th style="padding:10px;text-align:left;font-size:10px;color:var(--text3);">Notes</th><th style="padding:10px;"></th></tr></thead><tbody>'+rows.map(r=>{const rCol=IV_ROLE_COLOR[r.job]||'var(--text2)';return`<tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:10px;font-size:12px;font-weight:600;color:var(--white);">${r.name}</td><td style="padding:10px;font-size:11px;color:${rCol};">${r.job}</td><td style="padding:10px;text-align:right;font-size:12px;color:var(--text2);">${r.entry.regularHrs}</td><td style="padding:10px;text-align:right;font-size:13px;font-weight:700;color:var(--red2);">${r.entry.otHrs}</td><td style="padding:10px;font-size:11px;color:var(--text2);">${r.entry.premiumType}</td><td style="padding:10px;">${r.entry.approved?'<span style="color:var(--green2);font-size:11px;">✓ Yes</span>':'<span style="color:var(--text3);font-size:11px;">Pending</span>'}</td><td style="padding:10px;font-size:10px;color:var(--text3);max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.entry.notes||'—'}</td><td style="padding:10px;"><button onclick="deleteOtEntry('${r.name.replace(/'/g,"\\'")}','${r.entry.payPeriod}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px;" onmouseover="this.style.color='var(--red2)'" onmouseout="this.style.color='var(--text3)'">✕</button></td></tr>`;}).join('')+'</tbody></table></div>';
+}
+
+function toggleEmployeeInactive(name) {
+  state.inactiveEmployees ||= {};
+  if (state.inactiveEmployees[name]) delete state.inactiveEmployees[name];
+  else state.inactiveEmployees[name] = {markedAt:new Date().toISOString()};
+  // Keep staff and all quality/rounding records so historical denominators are unchanged.
+  persistSave();
+  rebuildMasterStaff();
+  openEmployeeHub(name);
+  showSaveBanner(state.inactiveEmployees[name] ? 'Marked as former employee. Historical results remain included.' : 'Restored as current employee.');
 }
