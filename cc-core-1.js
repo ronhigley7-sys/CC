@@ -2736,8 +2736,8 @@ function updateQualityTotals(key) {
     tPT += q.painTotal    || 0;
     tTx += q.transfusions || 0;
   });
-  const sp = tST > 0 ? Math.round(tS/tST*100) : null;
-  const pp = tPT > 0 ? Math.round(tP/tPT*100) : null;
+  const sp = qualityAverage(staff, key, 'scan');
+  const pp = qualityAverage(staff, key, 'pain');
   const setCell = (id, val) => { const e=document.getElementById(id); if(e) e.textContent=val; };
   const setPct  = (id, p) => {
     const e = document.getElementById(id);
@@ -2797,14 +2797,14 @@ function renderQualityTab() {
     totPain  += q.pain;  totPainT += q.painTotal;
     totTx    += q.transfusions;
   });
-  const scanPct = pct(totScans, totScanT);
-  const painPct = pct(totPain, totPainT);
+  const scanPct = qualityAverage(staff, key, 'scan');
+  const painPct = qualityAverage(staff, key, 'pain');
 
   if (sumEl) sumEl.innerHTML = [
-    { label:'Unit Scan %',          val: scanPct !== null ? scanPct+'%' : '—', color: pctColor(scanPct), icon:'💊', qual:'scan' },
-    { label:'Unit Pain Reassess %', val: painPct !== null ? painPct+'%' : '—', color: pctColor(painPct), icon:'💔', qual:'pain' },
+    { label:'Staff Average Scan %',          val: scanPct !== null ? scanPct+'%' : '—', color: pctColor(scanPct), icon:'💊', qual:'scan' },
+    { label:'Staff Average Pain %', val: painPct !== null ? painPct+'%' : '—', color: pctColor(painPct), icon:'💔', qual:'pain' },
     { label:'Blood Transfusions',   val: totTx,  color: 'var(--accent2)',  icon:'🩸', qual:'tx' },
-    { label:'Staff Tracked',        val: staff.filter(s=>getQ(s.name).scanTotal>0).length+'/'+staff.length, color:'var(--text2)', icon:'👤', qual:'' },
+    { label:'Staff Tracked',        val: staff.filter(s=>qualityPercentage(getQ(s.name),'scan')!==null || qualityPercentage(getQ(s.name),'pain')!==null).length+'/'+staff.length, color:'var(--text2)', icon:'👤', qual:'' },
   ].map(b=>`<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 18px;min-width:140px;">
     <div style="font-size:20px;font-weight:700;color:${b.color};">${b.icon} <span${b.qual?' data-qual="'+b.qual+'"':''}>${b.val}</span></div>
     <div style="font-size:10px;color:var(--text3);margin-top:2px;">${b.label} · ${MONTHS[mo]} ${yr}</div>
@@ -2816,18 +2816,14 @@ function renderQualityTab() {
         <tr style="background:rgba(255,255,255,0.06);">
           <th style="padding:8px 10px;text-align:left;color:var(--text3);position:sticky;left:0;background:var(--card);">Staff</th>
           <th style="padding:8px 6px;text-align:center;color:var(--text3);">Role</th>
-          <th style="padding:8px 6px;text-align:center;color:var(--accent2);" colspan="3">💊 Scanning</th>
-          <th style="padding:8px 6px;text-align:center;color:var(--amber2);" colspan="3">💔 Pain Reassessment</th>
+          <th style="padding:8px 6px;text-align:center;color:var(--accent2);" colspan="1">💊 Scanning</th>
+          <th style="padding:8px 6px;text-align:center;color:var(--amber2);" colspan="1">💔 Pain Reassessment</th>
           <th style="padding:8px 6px;text-align:center;color:var(--red2);">🩸 Blood Tx</th>
         </tr>
         <tr style="background:rgba(255,255,255,0.03);">
           <th style="padding:4px 10px;position:sticky;left:0;background:var(--card);"></th>
           <th></th>
-          <th style="padding:4px 6px;text-align:center;font-size:10px;color:var(--text3);">Scanned</th>
-          <th style="padding:4px 6px;text-align:center;font-size:10px;color:var(--text3);">Total Meds</th>
           <th style="padding:4px 6px;text-align:center;font-size:10px;color:var(--text3);">%</th>
-          <th style="padding:4px 6px;text-align:center;font-size:10px;color:var(--text3);">Reassessed</th>
-          <th style="padding:4px 6px;text-align:center;font-size:10px;color:var(--text3);">Total Opps</th>
           <th style="padding:4px 6px;text-align:center;font-size:10px;color:var(--text3);">%</th>
           <th style="padding:4px 6px;text-align:center;font-size:10px;color:var(--text3);">Count</th>
         </tr>
@@ -2835,8 +2831,8 @@ function renderQualityTab() {
       <tbody>
         ${staff.map((s,i) => {
           const q = getQ(s.name);
-          const sP = pct(q.scans, q.scanTotal);
-          const pP = pct(q.pain, q.painTotal);
+          const sP = qualityPercentage(q, 'scan');
+          const pP = qualityPercentage(q, 'pain');
           const safe = s.name.replace(/'/g,"\\'");
           const sid  = s.name.replace(/[^a-z]/gi,'_'); // safe DOM id
           const rowBg = i%2 ? '' : 'rgba(255,255,255,0.01)';
@@ -2844,27 +2840,13 @@ function renderQualityTab() {
             <td style="padding:6px 10px;font-weight:600;position:sticky;left:0;background:${rowBg||'var(--card)'};">${s.name.split(',')[0]}</td>
             <td style="padding:6px 6px;text-align:center;color:${s.job==='RN'?'var(--accent2)':'var(--purple2)'};font-size:10px;font-weight:700;">${s.job}</td>
             <td style="padding:4px 6px;text-align:center;">
-              <input type="number" id="q_${sid}_scans" min="0" value="${q.scans||''}" placeholder="0"
-                oninput="saveQuality('${safe}','scans',this.value,'q_${sid}_scanpct','q_${sid}_scans','q_${sid}_scant')"
-                style="width:60px;background:var(--slate);border:1px solid var(--border);color:var(--white);border-radius:4px;padding:2px 4px;text-align:center;font-size:11px;">
+              <input type="number" min="0" max="100" step="0.01" value="${sP ?? ''}" placeholder="—" aria-label="Scanning percentage"
+                onchange="saveQualityPercentage('${safe}','scan',this)" style="width:75px;background:var(--slate);border:1px solid var(--border);color:var(--white);border-radius:4px;padding:4px;text-align:center;"> %
             </td>
             <td style="padding:4px 6px;text-align:center;">
-              <input type="number" id="q_${sid}_scant" min="0" value="${q.scanTotal||''}" placeholder="0"
-                oninput="saveQuality('${safe}','scanTotal',this.value,'q_${sid}_scanpct','q_${sid}_scans','q_${sid}_scant')"
-                style="width:60px;background:var(--slate);border:1px solid var(--border);color:var(--white);border-radius:4px;padding:2px 4px;text-align:center;font-size:11px;">
+              <input type="number" min="0" max="100" step="0.01" value="${pP ?? ''}" placeholder="—" aria-label="Pain reassessment percentage"
+                onchange="saveQualityPercentage('${safe}','pain',this)" style="width:75px;background:var(--slate);border:1px solid var(--border);color:var(--white);border-radius:4px;padding:4px;text-align:center;"> %
             </td>
-            <td id="q_${sid}_scanpct" style="padding:4px 6px;text-align:center;font-weight:700;font-size:13px;color:${pctColor(sP)};">${sP!==null?sP+'%':'—'}</td>
-            <td style="padding:4px 6px;text-align:center;">
-              <input type="number" id="q_${sid}_pain" min="0" value="${q.pain||''}" placeholder="0"
-                oninput="saveQuality('${safe}','pain',this.value,'q_${sid}_painpct','q_${sid}_pain','q_${sid}_paint')"
-                style="width:60px;background:var(--slate);border:1px solid var(--border);color:var(--white);border-radius:4px;padding:2px 4px;text-align:center;font-size:11px;">
-            </td>
-            <td style="padding:4px 6px;text-align:center;">
-              <input type="number" id="q_${sid}_paint" min="0" value="${q.painTotal||''}" placeholder="0"
-                oninput="saveQuality('${safe}','painTotal',this.value,'q_${sid}_painpct','q_${sid}_pain','q_${sid}_paint')"
-                style="width:60px;background:var(--slate);border:1px solid var(--border);color:var(--white);border-radius:4px;padding:2px 4px;text-align:center;font-size:11px;">
-            </td>
-            <td id="q_${sid}_painpct" style="padding:4px 6px;text-align:center;font-weight:700;font-size:13px;color:${pctColor(pP)};">${pP!==null?pP+'%':'—'}</td>
             <td style="padding:4px 6px;text-align:center;">
               <div style="display:flex;flex-direction:column;gap:2px;align-items:center;">
                 <div style="display:flex;gap:2px;align-items:center;">
@@ -2884,13 +2866,9 @@ function renderQualityTab() {
       </tbody>
       <tfoot>
         <tr style="background:rgba(255,255,255,0.06);font-weight:700;border-top:2px solid var(--border);">
-          <td style="padding:6px 10px;position:sticky;left:0;background:var(--slate);">Unit Total</td>
+          <td style="padding:6px 10px;position:sticky;left:0;background:var(--slate);">Staff Average / Tx Total</td>
           <td></td>
-          <td id="qtot-scans"  style="padding:6px 6px;text-align:center;">${totScans}</td>
-          <td id="qtot-scant"  style="padding:6px 6px;text-align:center;">${totScanT}</td>
           <td id="qtot-scanpct" style="padding:6px 6px;text-align:center;color:${pctColor(scanPct)};">${scanPct!==null?scanPct+'%':'—'}</td>
-          <td id="qtot-pain"   style="padding:6px 6px;text-align:center;">${totPain}</td>
-          <td id="qtot-paint"  style="padding:6px 6px;text-align:center;">${totPainT}</td>
           <td id="qtot-painpct" style="padding:6px 6px;text-align:center;color:${pctColor(painPct)};">${painPct!==null?painPct+'%':'—'}</td>
           <td id="qtot-tx"     style="padding:6px 6px;text-align:center;color:var(--red2);">${totTx}</td>
         </tr>
@@ -8210,4 +8188,27 @@ function certLabel(dateStr) {
 
 function getEduItems(name) {
   return state.pendingEdu[name] || [];
+}
+
+function qualityPercentage(q, type) {
+  const field = type === 'scan' ? 'scanPct' : 'painPct';
+  if (Object.prototype.hasOwnProperty.call(q, field)) return q[field] == null ? null : Number(q[field]);
+  const den = type === 'scan' ? q.scanTotal : q.painTotal;
+  const num = type === 'scan' ? q.scans : q.pain;
+  return den > 0 ? Math.round((num || 0) / den * 10000) / 100 : null;
+}
+function qualityAverage(staff, key, type) {
+  const values = staff.map(s => qualityPercentage((state.qualityData[s.name] || {})[key] || {}, type)).filter(v => v !== null);
+  return values.length ? Math.round(values.reduce((a,b) => a+b,0) / values.length * 100) / 100 : null;
+}
+function saveQualityPercentage(name, type, input) {
+  if (!input.checkValidity()) { input.reportValidity(); return; }
+  const yr = parseInt(document.getElementById('qual-year')?.value || new Date().getFullYear());
+  const mo = parseInt(document.getElementById('qual-month')?.value || new Date().getMonth()+1);
+  const key = yr + '-' + String(mo).padStart(2,'0');
+  state.qualityData[name] ||= {};
+  state.qualityData[name][key] ||= {};
+  state.qualityData[name][key][type === 'scan' ? 'scanPct' : 'painPct'] = input.value.trim() === '' ? null : Number(input.value);
+  persistSave();
+  renderQualityTab();
 }
