@@ -2261,10 +2261,16 @@ function renderUnmatchedNamesPanel(containerId) {
   el.innerHTML = `
     <div style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.3);border-radius:8px;padding:12px 14px;margin-bottom:16px;">
       <div style="font-size:12px;font-weight:700;color:#f59e0b;margin-bottom:8px;">⚠ ${unmatched.length} Name${unmatched.length===1?'':'s'} Not Matching the Staff Directory</div>
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+        <label style="font-size:12px;"><input type="checkbox" onchange="selectAllFormerRoundStaff('${containerId}',this.checked)"> Select all</label>
+        <button class="btn btn-ghost btn-sm" onclick="markSelectedFormerRoundStaff('${containerId}')">Mark selected as no longer employees</button>
+        <span style="font-size:10px;color:var(--text3);">Historical rounds remain included.</span>
+      </div>
       ${unmatched.map(u => {
         const suggestedNames = new Set(u.suggestions.map(s => s.name));
         const selId = 'unmatch-sel-' + btoa(unescape(encodeURIComponent(u.raw))).replace(/[^a-zA-Z0-9]/g, '');
         return `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 0;border-top:1px solid rgba(245,158,11,0.15);">
+          <input type="checkbox" class="former-round-select" value="${ehHtmlEsc(u.raw)}" aria-label="Select ${ehHtmlEsc(u.raw)}">
           <div style="flex:1;min-width:140px;font-size:12px;color:var(--white);">"${u.raw}" <span style="color:var(--text3);">(${u.count} round${u.count===1?'':'s'})</span></div>
           <select id="${selId}" style="background:var(--slate);border:1px solid var(--border);border-radius:4px;padding:3px 6px;color:var(--white);font-size:11px;outline:none;max-width:220px;">
             ${u.suggestions.length ? `<optgroup label="Suggested">${u.suggestions.map(s => `<option value="${s.name.replace(/"/g,'&quot;')}">${s.name} (${s.score}% match)</option>`).join('')}</optgroup>` : ''}
@@ -7251,4 +7257,19 @@ function markFormerRoundStaff(rawName) {
   persistSave();
   renderFallRounding(); renderHapiRounding();
   showSaveBanner('Marked as former employee. All historical rounds remain included in overall percentages.');
+}
+
+function selectAllFormerRoundStaff(containerId, checked) {
+  document.getElementById(containerId)?.querySelectorAll('.former-round-select').forEach(input => input.checked=checked);
+}
+function markSelectedFormerRoundStaff(containerId) {
+  const selected = Array.from(document.getElementById(containerId)?.querySelectorAll('.former-round-select:checked') || []).map(input=>input.value);
+  if (!selected.length) { showSaveBanner('Select at least one staff member first.'); return; }
+  state.inactiveEmployees ||= {};
+  const markedAt = new Date().toISOString();
+  const names = new Set(selected.map(raw => (state.staffNameMap || {})[raw] || raw));
+  names.forEach(name => state.inactiveEmployees[name] = {markedAt});
+  persistSave();
+  renderFallRounding(); renderHapiRounding();
+  showSaveBanner('Marked '+names.size+' former employees. Historical results remain included.');
 }
