@@ -2228,7 +2228,7 @@ function getUnmatchedRoundNames() {
   const counts = {};
   [...(state.fallRoundData || []), ...(state.hapiRoundData || [])].forEach(r => {
     [r.staff, r.staff2, r.ca].filter(Boolean).forEach(raw => {
-      if (dirNames.has(raw) || map[raw] || ignored.has(raw)) return;
+      if (dirNames.has(raw) || map[raw] || ignored.has(raw) || state.inactiveEmployees?.[raw]) return;
       counts[raw] = (counts[raw] || 0) + 1;
     });
   });
@@ -2272,6 +2272,8 @@ function renderUnmatchedNamesPanel(containerId) {
           </select>
           <button onclick="confirmStaffNameMatch('${u.raw.replace(/'/g,"\\'")}', document.getElementById('${selId}').value)"
             style="font-size:11px;padding:4px 10px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:5px;color:var(--green2);cursor:pointer;">✓ Confirm</button>
+          <button onclick="markFormerRoundStaff('${u.raw.replace(/'/g,"\\'")}')"
+            style="font-size:11px;padding:4px 10px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:5px;color:var(--amber2);cursor:pointer;">No longer an employee</button>
           <button onclick="ignoreStaffNameMatch('${u.raw.replace(/'/g,"\\'")}')"
             style="font-size:11px;padding:4px 10px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:5px;color:var(--text3);cursor:pointer;">Not Staff — Dismiss</button>
         </div>`;
@@ -2449,7 +2451,7 @@ function renderHapiRounding() {
   const staffEl = document.getElementById('hr-staff-list');
   if (staffEl) {
     const names = [...new Set((state.hapiRoundData || []).flatMap(roundStaffNames))]
-      .filter(name => MASTER_STAFF.some(s => s.name === name))
+      .filter(name => MASTER_STAFF.some(s => s.name === name) || state.inactiveEmployees?.[name])
       .sort();
     if (!names.length) {
       staffEl.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:20px;text-align:center;background:rgba(255,255,255,0.02);border-radius:8px;">No staff data yet — import rounds above.</div>';
@@ -2467,7 +2469,7 @@ function renderHapiRounding() {
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
             <div style="flex:1;min-width:0;">
               <div style="font-size:13px;font-weight:700;color:var(--white);">${r.name}</div>
-              <div style="font-size:10px;color:var(--text3);">${r.job} · ${r.stats.total} audited round${r.stats.total===1?'':'s'}</div>
+              <div style="font-size:10px;color:var(--text3);">${r.job}${state.inactiveEmployees?.[r.name] ? ' · Former employee' : ''} · ${r.stats.total} audited round${r.stats.total===1?'':'s'}</div>
             </div>
             <span style="font-size:14px;font-weight:700;padding:3px 10px;border-radius:8px;${warn?'background:rgba(239,68,68,0.12);color:var(--red2);':'background:rgba(16,185,129,0.12);color:var(--green2);'}">${r.stats.pct}%</span>
             ${r.stats.total>0 ? `<button onclick="openCoachModal('${r.name.replace(/'/g,"\\'")}','');setCoachAreaChecked('HAPIPLATO',true);"
@@ -2582,7 +2584,7 @@ function renderFallRounding() {
   const staffEl = document.getElementById('fr-staff-list');
   if (staffEl) {
     const names = [...new Set((state.fallRoundData || []).flatMap(roundStaffNames))]
-      .filter(name => MASTER_STAFF.some(s => s.name === name))
+      .filter(name => MASTER_STAFF.some(s => s.name === name) || state.inactiveEmployees?.[name])
       .sort();
     if (!names.length) {
       staffEl.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:20px;text-align:center;background:rgba(255,255,255,0.02);border-radius:8px;">No staff data yet — import rounds above.</div>';
@@ -2601,7 +2603,7 @@ function renderFallRounding() {
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
             <div style="flex:1;min-width:0;">
               <div style="font-size:13px;font-weight:700;color:var(--white);">${r.name}</div>
-              <div style="font-size:10px;color:var(--text3);">${r.job} · ${r.stats.total} audited round${r.stats.total===1?'':'s'}</div>
+              <div style="font-size:10px;color:var(--text3);">${r.job}${state.inactiveEmployees?.[r.name] ? ' · Former employee' : ''} · ${r.stats.total} audited round${r.stats.total===1?'':'s'}</div>
             </div>
             <span style="font-size:14px;font-weight:700;padding:3px 10px;border-radius:8px;${warn?'background:rgba(239,68,68,0.12);color:var(--red2);':'background:rgba(16,185,129,0.12);color:var(--green2);'}">${r.stats.pct}%</span>
             ${r.stats.total>0 ? `<button onclick="openCoachModal('${r.name.replace(/'/g,"\\'")}','');setCoachAreaChecked('PLATO',true);"
@@ -7240,4 +7242,13 @@ async function importCombinedPlatoFile(input) {
     showSaveBanner('Imported '+count+' HAPI/falls records. Review unmatched staff names before using individual results.');
   } catch(e) { alert(e.message || 'Could not import PLATO file.'); }
   input.value='';
+}
+
+function markFormerRoundStaff(rawName) {
+  const name = (state.staffNameMap || {})[rawName] || rawName;
+  state.inactiveEmployees ||= {};
+  state.inactiveEmployees[name] = {markedAt:new Date().toISOString()};
+  persistSave();
+  renderFallRounding(); renderHapiRounding();
+  showSaveBanner('Marked as former employee. All historical rounds remain included in overall percentages.');
 }
