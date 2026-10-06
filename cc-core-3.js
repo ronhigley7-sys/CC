@@ -2417,6 +2417,7 @@ function renderHapiRounding() {
   const yr = yrVal === 'ALL' ? null : parseInt(yrVal);
 
   renderUnmatchedNamesPanel('hr-unmatched-names');
+  renderPlatoMonthlySummary('hapi',yr);
 
   const totalEl = document.getElementById('hr-total-rounds');
   const allRounds = (state.hapiRoundData || []).length;
@@ -2547,6 +2548,7 @@ function renderFallRounding() {
   const yr = yrVal === 'ALL' ? null : parseInt(yrVal);
 
   renderUnmatchedNamesPanel('fr-unmatched-names');
+  renderPlatoMonthlySummary('falls',yr);
 
   const totalEl = document.getElementById('fr-total-rounds');
   const allRounds = (state.fallRoundData || []).length;
@@ -7168,3 +7170,42 @@ function printSchedule() {
 }
 
 
+
+function platoMonthKey(value) {
+  const text = String(value || '').trim();
+  const iso = text.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T].*)?$/);
+  const d = iso ? new Date(+iso[1], +iso[2]-1, +iso[3],12) : parseUSDate(text.split(' ')[0]);
+  return d && !isNaN(d.getTime()) ? d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0') : null;
+}
+function platoMonthlyResults(type, name, year) {
+  const records = type === 'falls' ? (state.fallRoundData || []) : (state.hapiRoundData || []);
+  const items = type === 'falls' ? FALL_ROUND_ITEMS : HAPI_ROUND_ITEMS;
+  const groups = {};
+  records.forEach(r => {
+    const key = platoMonthKey(r.date);
+    if (!key || (year && !key.startsWith(String(year)+'-')) || (name && !roundStaffNames(r).includes(name))) return;
+    const g = groups[key] ||= {month:key,total:0,compliant:0,missed:{}};
+    g.total++; if (r.compliant === true) g.compliant++;
+    items.forEach(it => {
+      if (String(r.items?.[it.key] || '').trim().toLowerCase() === 'no') g.missed[it.label] = (g.missed[it.label] || 0)+1;
+    });
+  });
+  return Object.values(groups).sort((a,b)=>b.month.localeCompare(a.month)).map(g=>{
+    const missed = Object.entries(g.missed).sort((a,b)=>b[1]-a[1] || a[0].localeCompare(b[0]));
+    const top = missed.length ? missed.filter(x=>x[1]===missed[0][1]) : [];
+    return {...g,pct:Math.round(g.compliant/g.total*100),top};
+  });
+}
+function platoMonthlyTable(type, name, year) {
+  const rows = platoMonthlyResults(type,name,year);
+  if (!rows.length) return '<div style="color:var(--text3);font-size:12px;">No dated '+(type==='falls'?'falls':'HAPI')+' rounds imported for this period.</div>';
+  const esc = v => String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  return '<div style="overflow-x:auto;"><table style="width:100%;font-size:12px;border-collapse:collapse;"><thead><tr><th style="text-align:left;">Month</th><th>Compliant / Rounds</th><th>Compliance %</th><th style="text-align:left;">Most Missed</th></tr></thead><tbody>'+rows.map(r=>
+    '<tr><td style="padding:7px 4px;">'+r.month+'</td><td style="text-align:center;">'+r.compliant+' / '+r.total+'</td><td style="text-align:center;">'+r.pct+'%</td><td style="padding:7px 4px;">'+(r.top.length?r.top.map(([label,count])=>esc(label)+' ('+count+' misses)').join('; '):'No intervention misses recorded')+'</td></tr>'
+  ).join('')+'</tbody></table></div><div style="font-size:10px;color:var(--text3);margin-top:8px;">Compliance = compliant rounds / audited rounds. Most-missed counts include No responses; blanks, N/A, and refusals are excluded.</div>';
+}
+function renderPlatoMonthlySummary(type, year) {
+  const prefix = type === 'falls' ? 'fr' : 'hr';
+  const el = document.getElementById(prefix+'-monthly-results');
+  if (el) el.innerHTML = '<h3 style="font-size:13px;">PLATO Monthly Results — '+(type==='falls'?'Falls':'HAPI')+'</h3>'+platoMonthlyTable(type,null,year);
+}
