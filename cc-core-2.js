@@ -514,6 +514,21 @@ async function openEmployeeHub(name) {
 
   const certLines = Object.entries(certs).filter(([,v]) => v).map(([k,v]) => ehRow(k, v)).join('');
 
+
+  // Monthly quality from the same records used by Quality > Bulk Entry.
+  const qualityRows = Object.entries(state.qualityData?.[name] || {})
+    .filter(([key,q]) => /^\d{4}-\d{2}$/.test(key) &&
+      (qualityPercentage(q,'scan') !== null || qualityPercentage(q,'pain') !== null))
+    .sort(([a],[b]) => b.localeCompare(a)).slice(0,12);
+  const qualityHtml = qualityRows.length
+    ? '<table style="width:100%;font-size:12px;border-collapse:collapse;"><thead><tr><th style="text-align:left;">Month</th><th>BCMA %</th><th>Pain Reassessment %</th></tr></thead><tbody>' +
+      qualityRows.map(([key,q]) => {
+        const scan = qualityPercentage(q,'scan'), pain = qualityPercentage(q,'pain');
+        const display = value => value === null ? '—' : value + '%';
+        return '<tr><td style="padding:6px 0;">' + ehHtmlEsc(key) + '</td><td style="text-align:center;">' + display(scan) + '</td><td style="text-align:center;">' + display(pain) + '</td></tr>';
+      }).join('') + '</tbody></table>'
+    : '';
+
   // Pay-period OT log
   const otEntries = (state.otLog?.[name] || []).slice().sort((a,b)=> (b.payPeriod||'').localeCompare(a.payPeriod||''));
   const totalOtLog = otEntries.reduce((s,e)=> s + (parseFloat(e.otHrs)||0), 0);
@@ -597,6 +612,7 @@ async function openEmployeeHub(name) {
     body.innerHTML =
       ehSection('📇 Contact &amp; Employment', contactHtml) +
       ehSection('🎓 Certifications', certLines) +
+      ehSection('📊 BCMA &amp; Pain Reassessment', qualityHtml, 'No monthly percentages entered.') +
       ehSection('⏱ Overtime (Pay-Period Log)', otHtml, 'No OT logged.') +
       ehSection('🗓 Absences', absHtml, 'No absences on file.') +
       ehSection('⚠️ Variance Log', varHtml, 'No variance entries.') +
@@ -5083,8 +5099,8 @@ function nineBoxScoreStaff(name, job, yr) {
       tP  += q.pain        || 0; tPT += q.painTotal  || 0;
       tTx += q.transfusions|| 0; tTxD+= q.txDen      || 0;
     }
-    if (tST  > 0) scanPct = Math.round(tS  / tST  * 100);
-    if (tPT  > 0) painPct = Math.round(tP  / tPT  * 100);
+    scanPct = qualityYearAverage(name,yr,'scan');
+    painPct = qualityYearAverage(name,yr,'pain');
     if (tTxD > 0) txPct   = Math.round(tTx / tTxD * 100);
   }
 
