@@ -7184,8 +7184,9 @@ function platoMonthlyResults(type, name, year) {
   records.forEach(r => {
     const key = platoMonthKey(r.date);
     if (!key || (year && !key.startsWith(String(year)+'-')) || (name && !roundStaffNames(r).includes(name))) return;
-    const g = groups[key] ||= {month:key,total:0,compliant:0,missed:{}};
+    const g = groups[key] ||= {month:key,total:0,compliant:0,missed:{},hasDetails:false};
     g.total++; if (r.compliant === true) g.compliant++;
+    if (Object.values(r.items || {}).some(v=>String(v).trim())) g.hasDetails=true;
     items.forEach(it => {
       if (String(r.items?.[it.key] || '').trim().toLowerCase() === 'no') g.missed[it.label] = (g.missed[it.label] || 0)+1;
     });
@@ -7201,11 +7202,42 @@ function platoMonthlyTable(type, name, year) {
   if (!rows.length) return '<div style="color:var(--text3);font-size:12px;">No dated '+(type==='falls'?'falls':'HAPI')+' rounds imported for this period.</div>';
   const esc = v => String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   return '<div style="overflow-x:auto;"><table style="width:100%;font-size:12px;border-collapse:collapse;"><thead><tr><th style="text-align:left;">Month</th><th>Compliant / Rounds</th><th>Compliance %</th><th style="text-align:left;">Most Missed</th></tr></thead><tbody>'+rows.map(r=>
-    '<tr><td style="padding:7px 4px;">'+r.month+'</td><td style="text-align:center;">'+r.compliant+' / '+r.total+'</td><td style="text-align:center;">'+r.pct+'%</td><td style="padding:7px 4px;">'+(r.top.length?r.top.map(([label,count])=>esc(label)+' ('+count+' misses)').join('; '):'No intervention misses recorded')+'</td></tr>'
+    '<tr><td style="padding:7px 4px;">'+r.month+'</td><td style="text-align:center;">'+r.compliant+' / '+r.total+'</td><td style="text-align:center;">'+r.pct+'%</td><td style="padding:7px 4px;">'+(r.top.length?r.top.map(([label,count])=>esc(label)+' ('+count+' misses)').join('; '):(r.hasDetails?'No intervention misses recorded':'Intervention details not supplied'))+'</td></tr>'
   ).join('')+'</tbody></table></div><div style="font-size:10px;color:var(--text3);margin-top:8px;">Compliance = compliant rounds / audited rounds. Most-missed counts include No responses; blanks, N/A, and refusals are excluded.</div>';
 }
 function renderPlatoMonthlySummary(type, year) {
   const prefix = type === 'falls' ? 'fr' : 'hr';
   const el = document.getElementById(prefix+'-monthly-results');
-  if (el) el.innerHTML = '<h3 style="font-size:13px;">PLATO Monthly Results — '+(type==='falls'?'Falls':'HAPI')+'</h3>'+platoMonthlyTable(type,null,year);
+  if (el) el.innerHTML = '<h3 style="font-size:13px;">PLATO Monthly Results — '+(type==='falls'?'Falls':'HAPI')+'</h3><label style="display:block;margin-bottom:10px;">Import combined PLATO results <input type="file" accept=".json" onchange="importCombinedPlatoFile(this)"></label>'+platoMonthlyTable(type,null,year);
+}
+
+async function importCombinedPlatoFile(input) {
+  const file=input.files?.[0]; if(!file)return;
+  try {
+    const data=JSON.parse(await file.text());
+    if(data.format!=='plato-import-v1'||!Array.isArray(data.hapi)||!Array.isArray(data.falls))throw Error('Select a prepared PLATO import file.');
+    const valid=r=>r&&typeof r.id==='string'&&typeof r.staff==='string'&&typeof r.compliant==='boolean'&&platoMonthKey(r.date)&&r.items&&typeof r.items==='object';
+    if(!data.hapi.every(valid)||!data.falls.every(valid))throw Error('Invalid PLATO records; nothing imported.');
+    // Match only complete first/last names uniquely; unresolved names stay in the existing review panel.
+    const norm=s=>String(s).toLowerCase().replace(/[^a-z ]/g,' ').trim().split(/\s+/).filter(Boolean);
+    state.staffNameMap ||= {};
+    [...data.hapi,...data.falls].forEach(r=>[r.staff,r.staff2,r.ca].filter(Boolean).forEach(raw=>{
+      if(state.staffNameMap[raw]||MASTER_STAFF.some(s=>s.name===raw))return;
+      const tokens=norm(raw); if(tokens.length<2)return;
+      const matches=MASTER_STAFF.filter(s=>{
+        const parts=s.name.split(','); if(parts.length!==2)return false;
+        const surname=norm(parts[0]), given=norm(parts[1]);
+        return tokens[0]===given[0]&&tokens.slice(1).join(' ')===surname.join(' ');
+      });
+      if(matches.length===1)state.staffNameMap[raw]=matches[0].name;
+    }));
+    let count=0;
+    for(const [field,rows]of [['hapiRoundData',data.hapi],['fallRoundData',data.falls]]) {
+      state[field] ||= []; const existing=new Set(state[field].map(r=>r.id));
+      rows.forEach(r=>{if(!existing.has(r.id)){state[field].push(r);existing.add(r.id);count++;}});
+    }
+    persistSave();renderHapiRounding();renderFallRounding();
+    showSaveBanner('Imported '+count+' HAPI/falls records. Review unmatched staff names before using individual results.');
+  } catch(e) { alert(e.message || 'Could not import PLATO file.'); }
+  input.value='';
 }
