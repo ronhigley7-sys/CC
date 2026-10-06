@@ -2102,16 +2102,16 @@ function renderYearReview() {
   for (let m=1;m<=12;m++) {
     const key = yr+'-'+String(m).padStart(2,'0');
     const q = ((state.qualityData[name]||{})[key])||{};
-    if (q.scanTotal>0) { totScans+=q.scans||0; totScanT+=q.scanTotal||0; monthsTracked++; }
+    if (qualityPercentage(q,'scan') !== null || qualityPercentage(q,'pain') !== null) monthsTracked++;
     if (q.painTotal>0) { totPain+=q.pain||0; totPainT+=q.painTotal||0; }
     totTx    += q.transfusions||0;
     totTxNum += q.txNum||0;
     totTxDen += q.txDen||0;
-    scanByMonth.push({ m, pct: q.scanTotal>0?Math.round(q.scans/q.scanTotal*100):null });
-    painByMonth.push({ m, pct: q.painTotal>0?Math.round(q.pain/q.painTotal*100):null });
+    scanByMonth.push({ m, pct: qualityPercentage(q,'scan') });
+    painByMonth.push({ m, pct: qualityPercentage(q,'pain') });
   }
-  const sP = totScanT>0?Math.round(totScans/totScanT*100):null;
-  const pP = totPainT>0?Math.round(totPain/totPainT*100):null;
+  const sP = qualityYearAverage(name,yr,'scan');
+  const pP = qualityYearAverage(name,yr,'pain');
   const txP = totTxDen>0?Math.round(totTxNum/totTxDen*100):null;
 
   // Unit goals for year
@@ -2422,8 +2422,8 @@ function printYearReview() {
   for (let m=1;m<=12;m++){
     const key=yr+'-'+String(m).padStart(2,'0');
     const q=((state.qualityData[name]||{})[key])||{};
-    pScanByMonth.push({m,pct:q.scanTotal>0?Math.round(q.scans/q.scanTotal*100):null});
-    pPainByMonth.push({m,pct:q.painTotal>0?Math.round(q.pain/q.painTotal*100):null});
+    pScanByMonth.push({m,pct:qualityPercentage(q,'scan')});
+    pPainByMonth.push({m,pct:qualityPercentage(q,'pain')});
   }
   const MON2P=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   let tS=0,tST=0,tP=0,tPT=0,tTx=0;
@@ -2434,8 +2434,8 @@ function printYearReview() {
     tP+=q.pain||0;  tPT+=q.painTotal||0;
     tTx+=q.transfusions||0;
   }
-  const sP=tST>0?Math.round(tS/tST*100):null;
-  const pP=tPT>0?Math.round(tP/tPT*100):null;
+  const sP=qualityYearAverage(name,yr,'scan');
+  const pP=qualityYearAverage(name,yr,'pain');
   let pgSum=0,pgCount=0;
   for(let m=1;m<=12;m++){const key=yr+'-'+String(m).padStart(2,'0');const pg=state.pressGaney[key]||{};if(pg.overall){pgSum+=parseFloat(pg.overall)||0;pgCount++;}}
   const pgAvg=pgCount>0?Math.round(pgSum/pgCount):null;
@@ -8202,4 +8202,13 @@ function saveQualityPercentage(name, type, input) {
   state.qualityData[name][key][type === 'scan' ? 'scanPct' : 'painPct'] = input.value.trim() === '' ? null : Number(input.value);
   persistSave();
   renderQualityTab();
+}
+
+function qualityYearAverage(name, yr, type) {
+  const values = [];
+  for (let m=1; m<=12; m++) {
+    const p = qualityPercentage((state.qualityData[name] || {})[yr+'-'+String(m).padStart(2,'0')] || {}, type);
+    if (p !== null) values.push(p);
+  }
+  return values.length ? Math.round(values.reduce((a,b)=>a+b,0)/values.length*100)/100 : null;
 }
