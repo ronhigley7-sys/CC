@@ -2580,12 +2580,12 @@ function renderBulkQualTable() {
   const txStyle   = fldStyle('239,68,68');
 
   // Build header
-  let scanCols = showScan ? `<th colspan="3" style="padding:6px 8px;color:var(--accent2);text-align:center;border-bottom:2px solid var(--accent2);">💊 BCMA Scanning</th>` : '';
-  let painCols = showPain ? `<th colspan="3" style="padding:6px 8px;color:var(--amber2);text-align:center;border-bottom:2px solid var(--amber2);">💔 Pain Reassessment</th>` : '';
+  let scanCols = showScan ? `<th colspan="1" style="padding:6px 8px;color:var(--accent2);text-align:center;border-bottom:2px solid var(--accent2);">💊 BCMA Scanning</th>` : '';
+  let painCols = showPain ? `<th colspan="1" style="padding:6px 8px;color:var(--amber2);text-align:center;border-bottom:2px solid var(--amber2);">💔 Pain Reassessment</th>` : '';
   let txCols   = showTx   ? `<th colspan="2" style="padding:6px 8px;color:var(--red2);text-align:center;border-bottom:2px solid var(--red2);">🩸 Transfusions</th>` : '';
 
-  let scanSub = showScan ? `<th style="padding:4px 6px;font-size:9px;color:var(--text3);">Scanned</th><th style="padding:4px 6px;font-size:9px;color:var(--text3);">Total</th><th style="padding:4px 6px;font-size:9px;color:var(--accent2);">%</th>` : '';
-  let painSub = showPain ? `<th style="padding:4px 6px;font-size:9px;color:var(--text3);">Reassessed</th><th style="padding:4px 6px;font-size:9px;color:var(--text3);">Opps</th><th style="padding:4px 6px;font-size:9px;color:var(--amber2);">%</th>` : '';
+  let scanSub = showScan ? '<th style="padding:4px 6px;font-size:9px;color:var(--accent2);">%</th>' : '';
+  let painSub = showPain ? '<th style="padding:4px 6px;font-size:9px;color:var(--amber2);">%</th>' : '';
   let txSub   = showTx   ? `<th style="padding:4px 6px;font-size:9px;color:var(--text3);">Done</th><th style="padding:4px 6px;font-size:9px;color:var(--text3);">Total</th>` : '';
 
   function pctDisp(num, den) {
@@ -2603,14 +2603,8 @@ function renderBulkQualTable() {
     const isThisMonth = yr === now.getFullYear() && mo === now.getMonth()+1;
 
     let scanInputs = showScan ? `
-      <td style="padding:4px 6px;"><input type="number" id="bq_${msid}_scans" value="${q.scans||''}" placeholder="0" min="0" style="${scanStyle}" oninput="bqUpdatePct('${msid}','scan')"></td>
-      <td style="padding:4px 6px;"><input type="number" id="bq_${msid}_scant" value="${q.scanTotal||''}" placeholder="0" min="0" style="${scanStyle}" oninput="bqUpdatePct('${msid}','scan')"></td>
-      <td style="padding:4px 6px;text-align:center;" id="bq_${msid}_scanpct">${pctDisp(q.scans,q.scanTotal)}</td>` : '';
-    let painInputs = showPain ? `
-      <td style="padding:4px 6px;"><input type="number" id="bq_${msid}_pain" value="${q.pain||''}" placeholder="0" min="0" style="${painStyle}" oninput="bqUpdatePct('${msid}','pain')"></td>
-      <td style="padding:4px 6px;"><input type="number" id="bq_${msid}_paint" value="${q.painTotal||''}" placeholder="0" min="0" style="${painStyle}" oninput="bqUpdatePct('${msid}','pain')"></td>
-      <td style="padding:4px 6px;text-align:center;" id="bq_${msid}_painpct">${pctDisp(q.pain,q.painTotal)}</td>` : '';
-    let txInputs = showTx ? `
+      <td style="padding:4px 6px;text-align:center;"><input type="number" id="bq_${msid}_scanpct" value="${qualityPercentage(q,'scan') ?? ''}" placeholder="—" min="0" max="100" step="0.01" aria-label="BCMA scanning percentage ${label}" style="${scanStyle}"> %</td>` : '';    let painInputs = showPain ? `
+      <td style="padding:4px 6px;text-align:center;"><input type="number" id="bq_${msid}_painpct" value="${qualityPercentage(q,'pain') ?? ''}" placeholder="—" min="0" max="100" step="0.01" aria-label="Pain reassessment percentage ${label}" style="${painStyle}"> %</td>` : '';    let txInputs = showTx ? `
       <td style="padding:4px 6px;"><input type="number" id="bq_${msid}_txn" value="${q.txNum||''}" placeholder="0" min="0" style="${txStyle}"></td>
       <td style="padding:4px 6px;"><input type="number" id="bq_${msid}_txd" value="${q.txDen||''}" placeholder="0" min="0" style="${txStyle}"></td>` : '';
 
@@ -2655,6 +2649,10 @@ function saveBulkQualEntry() {
   const showTx   = document.getElementById('bq-tx')?.checked;
   const sid = name.replace(/[^a-z]/gi,'_');
 
+  const inputs = document.getElementById('bulk-qual-table')?.querySelectorAll('input[type="number"]') || [];
+  for (const input of inputs) {
+    if (!input.checkValidity()) { input.reportValidity(); return; }
+  }
   const now = new Date();
   let saved = 0;
 
@@ -2670,17 +2668,10 @@ function saveBulkQualEntry() {
     const q = state.qualityData[name][key];
 
     let changed = false;
-    if (showScan) {
-      const s = document.getElementById(`bq_${msid}_scans`)?.value;
-      const t = document.getElementById(`bq_${msid}_scant`)?.value;
-      if (s !== '') { q.scans = parseFloat(s)||0; changed = true; }
-      if (t !== '') { q.scanTotal = parseFloat(t)||0; changed = true; }
-    }
-    if (showPain) {
-      const p = document.getElementById(`bq_${msid}_pain`)?.value;
-      const pt = document.getElementById(`bq_${msid}_paint`)?.value;
-      if (p !== '') { q.pain = parseFloat(p)||0; changed = true; }
-      if (pt !== '') { q.painTotal = parseFloat(pt)||0; changed = true; }
+    for (const [enabled, type, field] of [[showScan,'scan','scanPct'],[showPain,'pain','painPct']]) {
+      if (!enabled) continue;
+      const input = document.getElementById(`bq_${msid}_${type}pct`);
+      if (input && input.value.trim() !== '') { q[field] = Number(input.value); changed = true; }
     }
     if (showTx) {
       const tn = document.getElementById(`bq_${msid}_txn`)?.value;
