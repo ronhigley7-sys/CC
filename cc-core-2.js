@@ -613,6 +613,8 @@ async function openEmployeeHub(name) {
       ehSection('📇 Contact &amp; Employment', contactHtml) +
       ehSection('🎓 Certifications', certLines) +
       ehSection('📊 BCMA &amp; Pain Reassessment', qualityHtml, 'No monthly percentages entered.') +
+      ehSection('🚶 PLATO Falls — Monthly', platoMonthlyTable('falls',name)) +
+      ehSection('🩹 PLATO HAPI — Monthly', platoMonthlyTable('hapi',name)) +
       ehSection('⏱ Overtime (Pay-Period Log)', otHtml, 'No OT logged.') +
       ehSection('🗓 Absences', absHtml, 'No absences on file.') +
       ehSection('⚠️ Variance Log', varHtml, 'No variance entries.') +
