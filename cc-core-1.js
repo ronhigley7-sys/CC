@@ -6176,6 +6176,11 @@ function ccTimeToMinutes(t) {
   const m = parseInt(String(t).slice(2,4), 10);
   return Number.isFinite(h) && Number.isFinite(m) ? h * 60 + m : null;
 }
+function ccMinutesToTime(mins) {
+  if (!Number.isFinite(mins)) return '';
+  const total = ((Math.round(mins) % 1440) + 1440) % 1440;
+  return String(Math.floor(total / 60)).padStart(2,'0') + String(total % 60).padStart(2,'0');
+}
 function ccExpectedShiftFromStart(role, startNorm) {
   const mins = ccTimeToMinutes(startNorm);
   if (mins === null) return '';
@@ -6218,10 +6223,32 @@ function ccAddHours(startNorm, hours) {
   const total = (h * 60 + m + Math.round(Number(hours) * 60)) % (24 * 60);
   return String(Math.floor(total / 60)).padStart(2,'0') + String(total % 60).padStart(2,'0');
 }
-function ccScheduleInfo(entries, fallbackShift) {
+function ccClipScheduleToShift(start, end, shiftKey) {
+  const scheduleStart = ccTimeToMinutes(start);
+  let scheduleEnd = ccTimeToMinutes(end);
+  const window = ccShiftRange(shiftKey);
+  const windowStart = ccTimeToMinutes(window.start);
+  let windowEnd = ccTimeToMinutes(window.end);
+  if (scheduleStart === null || scheduleEnd === null || windowStart === null || windowEnd === null) return null;
+  if (scheduleEnd <= scheduleStart) scheduleEnd += 1440;
+  if (windowEnd <= windowStart) windowEnd += 1440;
+
+  let best = null;
+  [-1440, 0, 1440].forEach(offset => {
+    const s = scheduleStart + offset;
+    const e = scheduleEnd + offset;
+    const overlapStart = Math.max(s, windowStart);
+    const overlapEnd = Math.min(e, windowEnd);
+    if (overlapEnd > overlapStart && (!best || (overlapEnd - overlapStart) > best.minutes)) {
+      best = { start:ccMinutesToTime(overlapStart), end:ccMinutesToTime(overlapEnd), minutes:overlapEnd - overlapStart };
+    }
+  });
+  return best ? { start:best.start, end:best.end, hours:best.minutes / 60 } : null;
+}
+function ccScheduleInfo(entries, fallbackShift, opts = {}) {
   const arr = (entries || []).filter(Boolean);
   const fallback = ccShiftRange(fallbackShift);
-  const hours = arr.reduce((sum, x) => {
+  let hours = arr.reduce((sum, x) => {
     const n = Number(x.scheduledHours);
     return sum + (Number.isFinite(n) ? n : 0);
   }, 0);
@@ -6229,8 +6256,19 @@ function ccScheduleInfo(entries, fallbackShift) {
   const explicitEnd = arr.map(x => x.endTime || x.customEnd || '').filter(Boolean).pop() || '';
   // Prefer UKG's actual schedule span when the import provides it; fall back
   // to the board column for hand-entered placements.
-  const start = dataStart || fallback.start;
-  const end = explicitEnd || (dataStart && hours > 0 ? ccAddHours(dataStart, hours) : '') || fallback.end;
+  let start = dataStart || fallback.start;
+  let end = explicitEnd || (dataStart && hours > 0 ? ccAddHours(dataStart, hours) : '') || fallback.end;
+  if (opts.clipToShift && start && end) {
+    let clipped = ccClipScheduleToShift(start, end, fallbackShift);
+    if (!clipped && fallback.end && ccTimeToMinutes(start) !== null && ccTimeToMinutes(fallback.start) !== null && ccTimeToMinutes(start) < ccTimeToMinutes(fallback.start)) {
+      clipped = ccClipScheduleToShift(start, fallback.end, fallbackShift);
+    }
+    if (clipped) {
+      start = clipped.start;
+      end = clipped.end;
+      hours = clipped.hours;
+    }
+  }
   const hoursLabel = Number.isInteger(hours) ? String(hours) : hours.toFixed(1).replace(/\.0$/, '');
   return { start, end, hours, hoursLabel };
 }
@@ -6344,12 +6382,12 @@ function renderBoard() {
           const isCA    = roleFilter === 'CA';
 
           const scheduleEntries = isCA
-            ? Object.values(shifts).flat().filter(x => x.name === p.name && x.role === p.role)
+            ? (shifts[actualShift] || []).filter(x => x.name === p.name && x.role === p.role)
             : (mergedShifts || [actualShift]).flatMap(s =>
                 (shifts[s]||[]).filter(x => x.name === p.name && x.role === p.role)
               );
           if (!scheduleEntries.length) scheduleEntries.push(p);
-          const scheduleInfo = ccScheduleInfo(scheduleEntries, shift);
+          const scheduleInfo = ccScheduleInfo(scheduleEntries, shift, { clipToShift:isCA });
           const scheduleHours = scheduleInfo.hours;
           const hoursLabel = scheduleInfo.hoursLabel;
           const rangeBadge = ccTimeRangeBadge(scheduleInfo);
