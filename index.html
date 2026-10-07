@@ -1801,7 +1801,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--white);
     <div class="header-badge">3B</div>
     <div>
       <div class="header-title">Tele Med Surg — Staff Command Center</div>
-      <div class="header-sub">AOMC Nursing Operations · UKG Integration <span id="cc-build-tag" style="opacity:0.55;margin-left:6px;" title="Build version — helps confirm this tab is running the latest Board-only and custom-shift update">· build 2026-09-24-print-orients</span></div>
+      <div class="header-sub">AOMC Nursing Operations · UKG Integration <span id="cc-build-tag" style="opacity:0.55;margin-left:6px;" title="Build version — helps confirm this tab is running the latest Board-only and custom-shift update">· build 2026-10-07-weekly-service-line</span></div>
     </div>
   </div>
   <div class="header-right">
@@ -7681,7 +7681,7 @@ window.fsm_showToast          = fsm_showToast;
     <button type="button" onclick="toggleMoreManagerTools()" style="width:100%;text-align:left;padding:9px 10px;border:1px dashed #365879;border-radius:6px;background:#0b1d35;color:#8fb7d8;font-size:10px;font-weight:800;cursor:pointer;">＋ More Manager Tools</button>
     <div id="fqa-more-tools" style="display:none;grid-template-columns:1fr;gap:6px;">
       <button type="button" onclick="fqaSafeClose();openManagerHandoff()" class="fqa-subbtn" style="width:100%;text-align:left;padding:8px 10px;border:1px solid #29496c;border-radius:6px;background:#102746;color:#c7d8eb;font-size:10px;font-weight:700;cursor:pointer;">📝 Manager Handoff</button>
-      <button type="button" onclick="fqaSafeClose();openWeeklyManagerReview()" class="fqa-subbtn" style="width:100%;text-align:left;padding:8px 10px;border:1px solid #29496c;border-radius:6px;background:#102746;color:#c7d8eb;font-size:10px;font-weight:700;cursor:pointer;">📅 Weekly Manager Review</button>
+      <button type="button" onclick="fqaSafeClose();openWeeklyManagerReview()" class="fqa-subbtn" style="width:100%;text-align:left;padding:8px 10px;border:1px solid #29496c;border-radius:6px;background:#102746;color:#c7d8eb;font-size:10px;font-weight:700;cursor:pointer;">📅 Weekly Service Line Update</button>
       <button type="button" onclick="fqaSafeClose();openMonthlyLeadershipScorecard()" class="fqa-subbtn" style="width:100%;text-align:left;padding:8px 10px;border:1px solid #29496c;border-radius:6px;background:#102746;color:#c7d8eb;font-size:10px;font-weight:700;cursor:pointer;">📊 Monthly Scorecard</button>
       <button type="button" onclick="fqaSafeClose();openImprovementPlanBuilder()" class="fqa-subbtn" style="width:100%;text-align:left;padding:8px 10px;border:1px solid #29496c;border-radius:6px;background:#102746;color:#c7d8eb;font-size:10px;font-weight:700;cursor:pointer;">🛠 Improvement Plans</button>
       <button type="button" onclick="fqaSafeClose();openAgencyRecruitmentPlanner()" class="fqa-subbtn" style="width:100%;text-align:left;padding:8px 10px;border:1px solid #29496c;border-radius:6px;background:#102746;color:#c7d8eb;font-size:10px;font-weight:700;cursor:pointer;">🧳 Agency Exit Planner</button>
@@ -7692,7 +7692,7 @@ window.fsm_showToast          = fsm_showToast;
   </div>
 </div>
 
-<script src="cc-final.js?v=2026-09-18-entry-ca"></script>
+<script src="cc-final.js?v=2026-10-07-weekly-service-line"></script>
 
 <!-- MANAGER HANDOFF MODAL -->
 <div id="mgr-handoff-modal" style="display:none;position:fixed;inset:0;z-index:2147483645;background:rgba(0,0,0,.72);align-items:center;justify-content:center;padding:18px;">
@@ -7773,18 +7773,46 @@ window.fsm_showToast          = fsm_showToast;
   </div>
 </div>
 
-<!-- WEEKLY MANAGER REVIEW MODAL -->
+<!-- WEEKLY SERVICE LINE UPDATE MODAL -->
 <div id="mgr-weekly-review-modal" style="display:none;position:fixed;inset:0;z-index:2147483645;background:rgba(0,0,0,.72);align-items:center;justify-content:center;padding:18px;">
   <div style="width:min(980px,96vw);max-height:92vh;overflow:auto;background:#0d2340;border:1px solid #2f9cff;border-radius:12px;box-shadow:0 18px 50px rgba(0,0,0,.6);padding:14px;">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;">
       <div>
-        <div style="font-size:14px;font-weight:800;color:#fff;">📅 3B/3C Weekly Manager Review</div>
-        <div style="font-size:9px;color:#7891ad;margin-top:2px;">7-day operating summary · workforce · quality · follow-up · risk</div>
+        <div style="font-size:14px;font-weight:800;color:#fff;">📅 3B/3C Weekly Service Line Update</div>
+        <div style="font-size:9px;color:#7891ad;margin-top:2px;">Live 7-day operating summary · workforce · quality · PLATO · risk</div>
       </div>
       <button type="button" onclick="closeWeeklyManagerReview()" class="btn btn-ghost btn-sm">✕</button>
     </div>
 
     <div id="mgr-weekly-review-summary" style="margin-bottom:10px;"></div>
+    <div id="mgr-weekly-live-status" style="font-size:10px;color:#9fb6d3;margin:-4px 0 10px;"></div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+      <div class="card" style="margin:0;padding:10px;">
+        <div class="card-title" style="margin-bottom:7px;">📊 Live Quality Snapshot</div>
+        <div id="mgr-weekly-quality"></div>
+      </div>
+      <div class="card" style="margin:0;padding:10px;">
+        <div class="card-title" style="margin-bottom:7px;">🔄 PLATO Rounds</div>
+        <div id="mgr-weekly-plato"></div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+      <div class="card" style="margin:0;padding:10px;">
+        <div class="card-title" style="margin-bottom:7px;">🧭 RN / CA Staffing Gaps</div>
+        <div id="mgr-weekly-staffing"></div>
+      </div>
+      <div class="card" style="margin:0;padding:10px;">
+        <div class="card-title" style="margin-bottom:7px;">🧳 Agency RN Two-Week Watch</div>
+        <div id="mgr-weekly-agency"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin:0 0 10px;padding:10px;">
+      <div class="card-title" style="margin-bottom:7px;">🗓 Absences / Write-Ups</div>
+      <div id="mgr-weekly-people"></div>
+    </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
       <div class="card" style="margin:0;padding:10px;">
