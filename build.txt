@@ -1,0 +1,2 @@
+2026-10-09-tabs-plato-save
+Triggered Pages rebuild after restoring full index.html and PLATO weekly save payload.
