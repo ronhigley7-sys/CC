@@ -1858,7 +1858,7 @@ if (new URLSearchParams(location.search).get('vf')) {
     <div class="header-badge">3B</div>
     <div>
       <div class="header-title">Tele Med Surg — Staff Command Center</div>
-      <div class="header-sub">AOMC Nursing Operations · UKG Integration <span id="cc-build-tag" style="opacity:0.55;margin-left:6px;" title="Build version — helps confirm the PLATO weekly / HAPI variance build is live">· build 2026-10-08-plato-weekly-v2</span></div>
+      <div class="header-sub">AOMC Nursing Operations · UKG Integration <span id="cc-build-tag" style="opacity:0.55;margin-left:6px;" title="Build version — helps confirm the tab panel display fix is live">· build 2026-10-09-tab-panel-fix</span></div>
     </div>
   </div>
   <div class="header-right">
@@ -5950,7 +5950,6 @@ if (new URLSearchParams(location.search).get('vf')) {
       </div>
       <button class="btn btn-primary btn-sm" onclick="addAbsence()" style="align-self:flex-end;">+ Add</button>
     </div>
-  </div>
 
   <!-- Staff Absence List -->
   <div id="absence-staff-list"></div>
@@ -5961,6 +5960,7 @@ if (new URLSearchParams(location.search).get('vf')) {
     <div style="font-size:10px;color:var(--text3);margin-bottom:14px;">Call-outs, called-off, NCNS, and sick — by role and weekday</div>
     <div id="absence-dow-charts"></div>
   </div>
+</div>
 
 <!-- ══════════════ QUALITY METRICS TAB ══════════════ -->
 <div class="tab-panel" id="panel-quality" style="display:none;">
@@ -8298,8 +8298,8 @@ function renderAbsenceDowCharts() {
       ${ROLES.map(role => `
         <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-left:3px solid ${ROLE_COLORS[role]};border-radius:8px;padding:12px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-            <span style="font-size:11px;font-weight:700;color:${ROLE_COLORS[role]};">${ro
-... 1093300 bytes omitted ...
+            <span style="font-size:11px;font-weight:700;color:${ROLE_COLORS[role]};">${role} — Last 30 D
+... 1093281 bytes omitted ...
 permanentFilled.toFixed(1):'—'}</div>
             <div style="color:var(--text3);">Agency FTE</div><div style="text-align:right;font-weight:800;color:var(--purple2);">${r.budget?r.agencyFTE.toFixed(1):'—'}</div>
             <div style="color:var(--text3);">Vacant FTE</div><div style="text-align:right;font-weight:800;color:${r.vacant>0?'var(--red2)':'var(--green2)'};">${r.budget?r.vacant.toFixed(1):'—'}</div>
