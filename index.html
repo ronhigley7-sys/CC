@@ -16852,7 +16852,7 @@ function parseUKGRows(rows) {
         (_,h,m)=>h.padStart(2,'0')+m);
       const stdStart  = STANDARD_STARTS[shift];
       const isNonStd  = startNorm && stdStart && startNorm !== stdStart;
-      const endNorm   = isNonStd ? computeEndTime(startNorm, shiftHours(shift)) : null;
+      const endNorm   = isNonStd ? computeEndTime(startNorm, (role === 'RN' || role === 'LPN') ? 12 : shiftHours(shift)) : null;
 
       const entry = {name, role};
       if (isNonStd && startNorm) { entry.customStart = startNorm; entry.customEnd = endNorm; }
@@ -30983,7 +30983,8 @@ function printUnitDailyReport() {
           const sT = x.customStart || parts[0];
           const s0 = mins(sT); let slotE = mins(parts[1]); const slotS = mins(parts[0]); if (slotE <= slotS) slotE += 1440; if (slotE <= s0) slotE += 1440;
           let e0 = slotE, eT = parts[1];
-          if (x.customEnd) { let c = mins(x.customEnd); if (c <= s0) c += 1440; if (c > e0) { e0 = c; eT = x.customEnd; } }
+          if (x.role === 'RN' || x.role === 'LPN') { e0 = s0 + 720; const em = e0 % 1440; eT = String(Math.floor(em / 60)).padStart(2, '0') + String(em % 60).padStart(2, '0'); }
+          else if (x.customEnd) { let c = mins(x.customEnd); if (c <= s0) c += 1440; if (c > e0) { e0 = c; eT = x.customEnd; } }
           iv.push({ s: s0, e: e0, sT: sT, eT: eT, own: k === shift });
         });
       });
@@ -31516,7 +31517,8 @@ function printNursingServices() {
           const sT = x.customStart || parts[0];
           const s0 = mins(sT); let slotE = mins(parts[1]); const slotS = mins(parts[0]); if (slotE <= slotS) slotE += 1440; if (slotE <= s0) slotE += 1440;
           let e0 = slotE, eT = parts[1];
-          if (x.customEnd) { let c = mins(x.customEnd); if (c <= s0) c += 1440; if (c > e0) { e0 = c; eT = x.customEnd; } }
+          if (x.role === 'RN' || x.role === 'LPN') { e0 = s0 + 720; const em = e0 % 1440; eT = String(Math.floor(em / 60)).padStart(2, '0') + String(em % 60).padStart(2, '0'); }
+          else if (x.customEnd) { let c = mins(x.customEnd); if (c <= s0) c += 1440; if (c > e0) { e0 = c; eT = x.customEnd; } }
           iv.push({ s: s0, e: e0, sT: sT, eT: eT, own: k === shift });
         });
       });
@@ -31813,7 +31815,8 @@ async function printStaffingSheet() {
           const sT = x.customStart || parts[0];
           const s0 = mins(sT); let slotE = mins(parts[1]); const slotS = mins(parts[0]); if (slotE <= slotS) slotE += 1440; if (slotE <= s0) slotE += 1440;
           let e0 = slotE, eT = parts[1];
-          if (x.customEnd) { let c = mins(x.customEnd); if (c <= s0) c += 1440; if (c > e0) { e0 = c; eT = x.customEnd; } }
+          if (x.role === 'RN' || x.role === 'LPN') { e0 = s0 + 720; const em = e0 % 1440; eT = String(Math.floor(em / 60)).padStart(2, '0') + String(em % 60).padStart(2, '0'); }
+          else if (x.customEnd) { let c = mins(x.customEnd); if (c <= s0) c += 1440; if (c > e0) { e0 = c; eT = x.customEnd; } }
           iv.push({ s: s0, e: e0, sT: sT, eT: eT, own: k === shift });
         });
       });
