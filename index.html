@@ -30980,8 +30980,10 @@ function printUnitDailyReport() {
         (shifts[k] || []).forEach(x => {
           if (x.name !== name || (_p0 && x.role !== _p0.role)) return;
           const parts = k.split('-'); if (parts.length !== 2 || !/^\d{4}$/.test(parts[0]) || !/^\d{4}$/.test(parts[1])) return;
-          const sT = x.customStart || parts[0], eT = x.customEnd || parts[1];
-          let s0 = mins(sT), e0 = mins(eT); if (e0 <= s0) e0 += 1440;
+          const sT = x.customStart || parts[0];
+          const s0 = mins(sT); let slotE = mins(parts[1]); const slotS = mins(parts[0]); if (slotE <= slotS) slotE += 1440; if (slotE <= s0) slotE += 1440;
+          let e0 = slotE, eT = parts[1];
+          if (x.customEnd) { let c = mins(x.customEnd); if (c <= s0) c += 1440; if (c > e0) { e0 = c; eT = x.customEnd; } }
           iv.push({ s: s0, e: e0, sT: sT, eT: eT, own: k === shift });
         });
       });
@@ -31511,8 +31513,10 @@ function printNursingServices() {
         (shifts[k] || []).forEach(x => {
           if (x.name !== name || (_p0 && x.role !== _p0.role)) return;
           const parts = k.split('-'); if (parts.length !== 2 || !/^\d{4}$/.test(parts[0]) || !/^\d{4}$/.test(parts[1])) return;
-          const sT = x.customStart || parts[0], eT = x.customEnd || parts[1];
-          let s0 = mins(sT), e0 = mins(eT); if (e0 <= s0) e0 += 1440;
+          const sT = x.customStart || parts[0];
+          const s0 = mins(sT); let slotE = mins(parts[1]); const slotS = mins(parts[0]); if (slotE <= slotS) slotE += 1440; if (slotE <= s0) slotE += 1440;
+          let e0 = slotE, eT = parts[1];
+          if (x.customEnd) { let c = mins(x.customEnd); if (c <= s0) c += 1440; if (c > e0) { e0 = c; eT = x.customEnd; } }
           iv.push({ s: s0, e: e0, sT: sT, eT: eT, own: k === shift });
         });
       });
@@ -31806,8 +31810,10 @@ async function printStaffingSheet() {
         (shifts[k] || []).forEach(x => {
           if (x.name !== name || (_p0 && x.role !== _p0.role)) return;
           const parts = k.split('-'); if (parts.length !== 2 || !/^\d{4}$/.test(parts[0]) || !/^\d{4}$/.test(parts[1])) return;
-          const sT = x.customStart || parts[0], eT = x.customEnd || parts[1];
-          let s0 = mins(sT), e0 = mins(eT); if (e0 <= s0) e0 += 1440;
+          const sT = x.customStart || parts[0];
+          const s0 = mins(sT); let slotE = mins(parts[1]); const slotS = mins(parts[0]); if (slotE <= slotS) slotE += 1440; if (slotE <= s0) slotE += 1440;
+          let e0 = slotE, eT = parts[1];
+          if (x.customEnd) { let c = mins(x.customEnd); if (c <= s0) c += 1440; if (c > e0) { e0 = c; eT = x.customEnd; } }
           iv.push({ s: s0, e: e0, sT: sT, eT: eT, own: k === shift });
         });
       });
