@@ -31028,10 +31028,10 @@ function printUnitDailyReport() {
     const charge = state.charge3C[key] || '';
     const s3c    = state.staff3C[key]  || {};
     const parts = [];
-    if (charge)  parts.push(`<div>${nameCell(charge)} <span style="font-size:7pt;font-weight:700;color:#7c3aed;">★ 3C CHARGE</span></div>`);
-    if (s3c.rn1) parts.push(`<div>${nameCell(s3c.rn1)} <span style="font-size:7pt;font-weight:700;color:#1d4ed8;">RN 1</span></div>`);
-    if (s3c.rn2) parts.push(`<div>${nameCell(s3c.rn2)} <span style="font-size:7pt;font-weight:700;color:#1d4ed8;">RN 2</span></div>`);
-    if (s3c.lpn) parts.push(`<div>${nameCell(s3c.lpn)} <span style="font-size:7pt;font-weight:700;color:#7c3aed;">LPN</span></div>`);
+    if (charge)  parts.push(`<div>${nameCell(charge)}<span style="font-size:8pt;font-weight:600;color:#555;white-space:nowrap;"> ${key.endsWith('|1900-0700') ? '1900–0700' : '0700–1900'}</span> <span style="font-size:7pt;font-weight:700;color:#7c3aed;">★ 3C CHARGE</span></div>`);
+    if (s3c.rn1) parts.push(`<div>${nameCell(s3c.rn1)}<span style="font-size:8pt;font-weight:600;color:#555;white-space:nowrap;"> ${key.endsWith('|1900-0700') ? '1900–0700' : '0700–1900'}</span> <span style="font-size:7pt;font-weight:700;color:#1d4ed8;">RN 1</span></div>`);
+    if (s3c.rn2) parts.push(`<div>${nameCell(s3c.rn2)}<span style="font-size:8pt;font-weight:600;color:#555;white-space:nowrap;"> ${key.endsWith('|1900-0700') ? '1900–0700' : '0700–1900'}</span> <span style="font-size:7pt;font-weight:700;color:#1d4ed8;">RN 2</span></div>`);
+    if (s3c.lpn) parts.push(`<div>${nameCell(s3c.lpn)}<span style="font-size:8pt;font-weight:600;color:#555;white-space:nowrap;"> ${key.endsWith('|1900-0700') ? '1900–0700' : '0700–1900'}</span> <span style="font-size:7pt;font-weight:700;color:#7c3aed;">LPN</span></div>`);
     return parts.length ? parts.join('') : '<span style="color:#9ca3af;font-style:italic;">Not yet assigned</span>';
   }
   const teamRows = `<tr><td>${tnCellForKey(`${dateKey}|0700-1500`)}</td><td>${tnCellForKey(`${dateKey}|1900-0700`)}</td></tr>`;
@@ -31564,10 +31564,10 @@ function printNursingServices() {
     const charge = state.charge3C[key] || '';
     const s3c    = state.staff3C[key]  || {};
     const parts = [];
-    if (charge)  parts.push(`<div>${nameCell(charge)} <span style="font-size:7pt;font-weight:700;color:#7c3aed;">★ 3C CHARGE</span></div>`);
-    if (s3c.rn1) parts.push(`<div>${nameCell(s3c.rn1)} <span style="font-size:7pt;font-weight:700;color:#1d4ed8;">RN 1</span></div>`);
-    if (s3c.rn2) parts.push(`<div>${nameCell(s3c.rn2)} <span style="font-size:7pt;font-weight:700;color:#1d4ed8;">RN 2</span></div>`);
-    if (s3c.lpn) parts.push(`<div>${nameCell(s3c.lpn)} <span style="font-size:7pt;font-weight:700;color:#7c3aed;">LPN</span></div>`);
+    if (charge)  parts.push(`<div>${nameCell(charge)}<span style="font-size:8pt;font-weight:600;color:#555;white-space:nowrap;"> ${key.endsWith('|1900-0700') ? '1900–0700' : '0700–1900'}</span> <span style="font-size:7pt;font-weight:700;color:#7c3aed;">★ 3C CHARGE</span></div>`);
+    if (s3c.rn1) parts.push(`<div>${nameCell(s3c.rn1)}<span style="font-size:8pt;font-weight:600;color:#555;white-space:nowrap;"> ${key.endsWith('|1900-0700') ? '1900–0700' : '0700–1900'}</span> <span style="font-size:7pt;font-weight:700;color:#1d4ed8;">RN 1</span></div>`);
+    if (s3c.rn2) parts.push(`<div>${nameCell(s3c.rn2)}<span style="font-size:8pt;font-weight:600;color:#555;white-space:nowrap;"> ${key.endsWith('|1900-0700') ? '1900–0700' : '0700–1900'}</span> <span style="font-size:7pt;font-weight:700;color:#1d4ed8;">RN 2</span></div>`);
+    if (s3c.lpn) parts.push(`<div>${nameCell(s3c.lpn)}<span style="font-size:8pt;font-weight:600;color:#555;white-space:nowrap;"> ${key.endsWith('|1900-0700') ? '1900–0700' : '0700–1900'}</span> <span style="font-size:7pt;font-weight:700;color:#7c3aed;">LPN</span></div>`);
     return parts.length ? parts.join('') : '<span style="color:#9ca3af;font-style:italic;">Not yet assigned</span>';
   }
   const teamRows2 = `<tr><td>${tnCellForKey2(`${dateKey}|0700-1500`)}</td><td>${tnCellForKey2(`${dateKey}|1900-0700`)}</td></tr>`;
