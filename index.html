@@ -30971,8 +30971,16 @@ function printUnitDailyReport() {
         ? state.orientAssign[`${dateKey}|${shift}|${name}`].split(',')[0].trim() : '';
       orientFlag = ` <span style="font-size:7pt;font-weight:700;color:#92400e;background:#fef3c7;padding:1px 4px;border-radius:3px;">ORIENT${prec ? ' → '+prec : ''}</span>`;
     }
-    const _p = shift ? ((state.placements[dateKey]||{})[shift]||[]).find(x=>x.name===name) : null;
-    return `${name}${eduFlag}${orientFlag}`;
+    let timeTag = '';
+    if (shift) {
+      const grp = (shift === '0700-1500' || shift === '1500-1900') ? ['0700-1500', '1500-1900'] : [shift];
+      const _p0 = (shifts[shift] || []).find(x => x.name === name);
+      const have = grp.filter(k => (shifts[k] || []).some(x => x.name === name && (!_p0 || x.role === _p0.role)));
+      const ks = have.length ? have : [shift];
+      const a = ks[0].split('-')[0], b = ks[ks.length - 1].split('-')[1];
+      timeTag = ` <span style="font-size:8pt;font-weight:600;color:#555;white-space:nowrap;">${a}–${b}</span>`;
+    }
+    return `${name}${timeTag}${eduFlag}${orientFlag}`;
   }
   function chargeTag(shift, name) {
     return state.chargeNurses[`${dateKey}|${shift}`] === name
@@ -31483,8 +31491,16 @@ function printNursingServices() {
         ? state.orientAssign[`${dateKey}|${shift}|${name}`].split(',')[0].trim() : '';
       orientFlag = ` <span style="font-size:7.5pt;font-weight:700;color:#92400e;background:#fef3c7;padding:1px 5px;border-radius:3px;letter-spacing:0.2px;">ORIENT${prec ? ' → '+prec : ''}</span>`;
     }
-    const _p = shift ? ((state.placements[dateKey]||{})[shift]||[]).find(x=>x.name===name) : null;
-    return `${name}${eduFlag}${orientFlag}`;
+    let timeTag = '';
+    if (shift) {
+      const grp = (shift === '0700-1500' || shift === '1500-1900') ? ['0700-1500', '1500-1900'] : [shift];
+      const _p0 = (shifts[shift] || []).find(x => x.name === name);
+      const have = grp.filter(k => (shifts[k] || []).some(x => x.name === name && (!_p0 || x.role === _p0.role)));
+      const ks = have.length ? have : [shift];
+      const a = ks[0].split('-')[0], b = ks[ks.length - 1].split('-')[1];
+      timeTag = ` <span style="font-size:8pt;font-weight:600;color:#555;white-space:nowrap;">${a}–${b}</span>`;
+    }
+    return `${name}${timeTag}${eduFlag}${orientFlag}`;
   }
   function chargeTag3B(shift, name) {
     return state.chargeNurses[`${dateKey}|${shift}`] === name
@@ -31759,8 +31775,16 @@ async function printStaffingSheet() {
         ? state.orientAssign[`${dateKey}|${shift}|${name}`].split(',')[0].trim() : '';
       orientFlag = ` <span style="font-size:7pt;font-weight:700;color:#92400e;background:#fef3c7;padding:1px 4px;border-radius:3px;">ORIENT${prec ? ' → '+prec : ''}</span>`;
     }
-    const _p = shift ? ((state.placements[dateKey]||{})[shift]||[]).find(x=>x.name===name) : null;
-    return `${name}${eduFlag}${orientFlag}`;
+    let timeTag = '';
+    if (shift) {
+      const grp = (shift === '0700-1500' || shift === '1500-1900') ? ['0700-1500', '1500-1900'] : [shift];
+      const _p0 = (shifts[shift] || []).find(x => x.name === name);
+      const have = grp.filter(k => (shifts[k] || []).some(x => x.name === name && (!_p0 || x.role === _p0.role)));
+      const ks = have.length ? have : [shift];
+      const a = ks[0].split('-')[0], b = ks[ks.length - 1].split('-')[1];
+      timeTag = ` <span style="font-size:8pt;font-weight:600;color:#555;white-space:nowrap;">${a}–${b}</span>`;
+    }
+    return `${name}${timeTag}${eduFlag}${orientFlag}`;
   }
   function chargeTag3B(shift, name) {
     return state.chargeNurses[`${dateKey}|${shift}`]===name
