@@ -30975,9 +30975,11 @@ function printUnitDailyReport() {
     if (shift) {
       const grp = (shift === '0700-1500' || shift === '1500-1900') ? ['0700-1500', '1500-1900'] : [shift];
       const _p0 = (shifts[shift] || []).find(x => x.name === name);
-      const have = grp.filter(k => (shifts[k] || []).some(x => x.name === name && (!_p0 || x.role === _p0.role)));
-      const ks = have.length ? have : [shift];
-      const a = ks[0].split('-')[0], b = ks[ks.length - 1].split('-')[1];
+      const ents = [];
+      grp.forEach(k => { const e = (shifts[k] || []).find(x => x.name === name && (!_p0 || x.role === _p0.role)); if (e) ents.push({ k: k, e: e }); });
+      if (!ents.length) ents.push({ k: shift, e: _p0 || {} });
+      const a = ents[0].e.customStart || ents[0].k.split('-')[0];
+      const b = ents[ents.length - 1].e.customEnd || ents[ents.length - 1].k.split('-')[1];
       timeTag = ` <span style="font-size:8pt;font-weight:600;color:#555;white-space:nowrap;">${a}–${b}</span>`;
     }
     return `${name}${timeTag}${eduFlag}${orientFlag}`;
@@ -31495,9 +31497,11 @@ function printNursingServices() {
     if (shift) {
       const grp = (shift === '0700-1500' || shift === '1500-1900') ? ['0700-1500', '1500-1900'] : [shift];
       const _p0 = (shifts[shift] || []).find(x => x.name === name);
-      const have = grp.filter(k => (shifts[k] || []).some(x => x.name === name && (!_p0 || x.role === _p0.role)));
-      const ks = have.length ? have : [shift];
-      const a = ks[0].split('-')[0], b = ks[ks.length - 1].split('-')[1];
+      const ents = [];
+      grp.forEach(k => { const e = (shifts[k] || []).find(x => x.name === name && (!_p0 || x.role === _p0.role)); if (e) ents.push({ k: k, e: e }); });
+      if (!ents.length) ents.push({ k: shift, e: _p0 || {} });
+      const a = ents[0].e.customStart || ents[0].k.split('-')[0];
+      const b = ents[ents.length - 1].e.customEnd || ents[ents.length - 1].k.split('-')[1];
       timeTag = ` <span style="font-size:8pt;font-weight:600;color:#555;white-space:nowrap;">${a}–${b}</span>`;
     }
     return `${name}${timeTag}${eduFlag}${orientFlag}`;
@@ -31779,9 +31783,11 @@ async function printStaffingSheet() {
     if (shift) {
       const grp = (shift === '0700-1500' || shift === '1500-1900') ? ['0700-1500', '1500-1900'] : [shift];
       const _p0 = (shifts[shift] || []).find(x => x.name === name);
-      const have = grp.filter(k => (shifts[k] || []).some(x => x.name === name && (!_p0 || x.role === _p0.role)));
-      const ks = have.length ? have : [shift];
-      const a = ks[0].split('-')[0], b = ks[ks.length - 1].split('-')[1];
+      const ents = [];
+      grp.forEach(k => { const e = (shifts[k] || []).find(x => x.name === name && (!_p0 || x.role === _p0.role)); if (e) ents.push({ k: k, e: e }); });
+      if (!ents.length) ents.push({ k: shift, e: _p0 || {} });
+      const a = ents[0].e.customStart || ents[0].k.split('-')[0];
+      const b = ents[ents.length - 1].e.customEnd || ents[ents.length - 1].k.split('-')[1];
       timeTag = ` <span style="font-size:8pt;font-weight:600;color:#555;white-space:nowrap;">${a}–${b}</span>`;
     }
     return `${name}${timeTag}${eduFlag}${orientFlag}`;
