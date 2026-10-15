@@ -2694,3 +2694,21 @@ async function printStaffingSheet() {
 function printManagerView() {
   printStaffingSheet();
 }
+
+/* Quality menu: PLATO Import Results entry */
+(function(){
+  function install(){
+    if(document.getElementById('quality-plato-import-entry'))return true;
+    const options=Array.from(document.querySelectorAll('a,button,[role="menuitem"]'));
+    const item=options.find(e=>e.textContent && e.textContent.trim()==='PLATO Weekly');
+    if(!item)return false;
+    const target=item.closest('li')||item;
+    const entry=document.createElement(target.tagName==='LI'?'li':'div');
+    entry.id='quality-plato-import-entry';
+    entry.innerHTML='<button type="button" style="width:100%;background:transparent;border:0;color:inherit;text-align:left;padding:11px 18px;font:inherit;cursor:pointer">📊 PLATO Import Results</button>';
+    entry.querySelector('button').onclick=function(e){e.preventDefault();e.stopPropagation();if(typeof window.openPlatoImportResults==='function')window.openPlatoImportResults();else alert('PLATO results are loading. Refresh the Command Center and try again.');};
+    target.insertAdjacentElement('afterend',entry);return true;
+  }
+  function init(){install();const observer=new MutationObserver(()=>install());observer.observe(document.body,{childList:true,subtree:true});}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
