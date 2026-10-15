@@ -2697,18 +2697,36 @@ function printManagerView() {
 
 /* Quality menu: PLATO Import Results entry */
 (function(){
+  function openResults(e){
+    e.preventDefault();e.stopPropagation();
+    if(typeof window.openPlatoImportResults==='function')window.openPlatoImportResults();
+    else alert('PLATO results viewer is unavailable. Please refresh the Command Center.');
+  }
   function install(){
     if(document.getElementById('quality-plato-import-entry'))return true;
-    const options=Array.from(document.querySelectorAll('a,button,[role="menuitem"]'));
-    const item=options.find(e=>e.textContent && e.textContent.trim()==='PLATO Weekly');
+    const nodes=Array.from(document.querySelectorAll('a,button,span,div,[role="menuitem"]'));
+    const item=nodes.find(e=>e.children.length===0 && /^PLATO Weekly$/i.test((e.textContent||'').trim()));
     if(!item)return false;
-    const target=item.closest('li')||item;
+    const target=item.closest('a,button,[role="menuitem"],li')||item.parentElement;
+    if(!target || !target.parentElement)return false;
     const entry=document.createElement(target.tagName==='LI'?'li':'div');
     entry.id='quality-plato-import-entry';
-    entry.innerHTML='<button type="button" style="width:100%;background:transparent;border:0;color:inherit;text-align:left;padding:11px 18px;font:inherit;cursor:pointer">📊 PLATO Import Results</button>';
-    entry.querySelector('button').onclick=function(e){e.preventDefault();e.stopPropagation();if(typeof window.openPlatoImportResults==='function')window.openPlatoImportResults();else alert('PLATO results are loading. Refresh the Command Center and try again.');};
-    target.insertAdjacentElement('afterend',entry);return true;
+    entry.style.cssText='padding:0;cursor:pointer';
+    const button=document.createElement('button');
+    button.type='button';button.textContent='📊 PLATO Import Results';
+    button.style.cssText='display:block;width:100%;padding:12px 18px;text-align:left;color:inherit;background:transparent;border:0;font:inherit;cursor:pointer';
+    button.onclick=openResults;entry.appendChild(button);
+    target.insertAdjacentElement('afterend',entry);
+    return true;
   }
-  function init(){install();const observer=new MutationObserver(()=>install());observer.observe(document.body,{childList:true,subtree:true});}
+  function init(){
+    install();
+    const observer=new MutationObserver(()=>{install();});
+    observer.observe(document.body,{childList:true,subtree:true});
+    document.addEventListener('click',e=>{
+      const t=e.target.closest('button,a,[role="button"]');
+      if(t && /^Quality$/i.test((t.textContent||'').trim()))setTimeout(install,100);
+    },true);
+  }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
