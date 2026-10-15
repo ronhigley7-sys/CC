@@ -349,6 +349,7 @@ function printMorningHuddleBrief(){
     if(!key){ try { if (typeof FSM_SB_KEY !== 'undefined') key=FSM_SB_KEY; } catch(e){} }
     return { apikey:key, Authorization:`Bearer ${key}`, 'Content-Type':'application/json' };
   }
+  window.__platoReadObservations = fetchRest;
   async function fetchRest(path){
     const base=restBase();
     if(!base) throw new Error('Supabase URL missing');
@@ -1887,4 +1888,44 @@ function closeDataImportCenter(){const m=document.getElementById('mgr-data-impor
 
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',function(){setTimeout(addInterviewPrintButtons,400);});
   else setTimeout(addInterviewPrintButtons,400);
+})();
+
+
+/* Read-only imported PLATO results panel. Existing Quality data remains unchanged. */
+(function(){
+  function esc(v){return String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
+  function mount(){
+    if(document.getElementById('plato-import-tab'))return;
+    const btn=document.createElement('button');btn.id='plato-import-tab';btn.type='button';btn.textContent='📊 PLATO Import Results';
+    btn.style.cssText='position:fixed;right:16px;bottom:16px;z-index:9998;background:#174b85;color:white;border:1px solid #5a9bdf;border-radius:10px;padding:12px 16px;cursor:pointer;font-weight:700;box-shadow:0 3px 18px #0008';
+    btn.onclick=show;document.body.appendChild(btn);
+  }
+  async function show(){
+    let panel=document.getElementById('plato-import-results');
+    if(!panel){panel=document.createElement('section');panel.id='plato-import-results';panel.style.cssText='position:fixed;inset:4% 3%;z-index:9999;overflow:auto;background:#101e35;color:#edf5ff;border:1px solid #5a9bdf;border-radius:14px;padding:20px;box-shadow:0 0 0 200vmax #000a;font:14px Arial,sans-serif';document.body.appendChild(panel);}
+    panel.style.display='block';
+    panel.innerHTML='<div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><h2>PLATO — Imported Results (3B/3C)</h2><button id="plato-import-close" style="padding:8px 14px">Close</button></div><p id="plato-import-status">Loading Supabase records…</p><div id="plato-import-body"></div>';
+    panel.querySelector('#plato-import-close').onclick=()=>panel.style.display='none';
+    try{
+      if(typeof window.__platoReadObservations!=='function')throw Error('Command Center Supabase connection not ready');
+      const rows=await window.__platoReadObservations('plato_observations?select=smartsheet_row_id,observation_date,nurse_home_unit,staff_name,hapi_compliance,fall_compliance,total_rounds&nurse_home_unit=eq.3B%2F3C&order=observation_date.desc&limit=1000');
+      const valid=rows.filter(r=>r.smartsheet_row_id && r.observation_date && r.nurse_home_unit==='3B/3C');
+      const weeks=new Map();
+      function weekStart(s){const d=new Date(s+'T12:00:00Z');d.setUTCDate(d.getUTCDate()-((d.getUTCDay()+3)%7));return d.toISOString().slice(0,10);}
+      for(const r of valid){const key=weekStart(r.observation_date);if(!weeks.has(key))weeks.set(key,[]);weeks.get(key).push(r);}
+      const compliant=x=>/^compliant$/i.test(String(x||'').trim());
+      const noncompliant=x=>/^not compliant|non.compliant$/i.test(String(x||'').trim());
+      const rowsHtml=[...weeks].sort((a,b)=>b[0].localeCompare(a[0])).map(([week,items])=>{
+        const h=items.filter(r=>compliant(r.hapi_compliance)||noncompliant(r.hapi_compliance));
+        const f=items.filter(r=>compliant(r.fall_compliance)||noncompliant(r.fall_compliance));
+        const hp=h.filter(r=>compliant(r.hapi_compliance)).length,fp=f.filter(r=>compliant(r.fall_compliance)).length;
+        return '<tr><td>'+esc(week)+'</td><td>'+items.length+'</td><td>'+hp+' / '+h.length+'</td><td>'+(h.length?Math.round(100*hp/h.length)+'%':'—')+'</td><td>'+fp+' / '+f.length+'</td><td>'+(f.length?Math.round(100*fp/f.length)+'%':'Not supplied')+'</td></tr>';
+      }).join('');
+      const detail=valid.slice(0,150).map(r=>'<tr><td>'+esc(r.observation_date)+'</td><td>'+esc(r.staff_name||'—')+'</td><td>'+esc(r.hapi_compliance||'—')+'</td><td>'+esc(r.fall_compliance||'Not supplied')+'</td></tr>').join('');
+      const tableStyle='width:100%;border-collapse:collapse;text-align:left;line-height:2';
+      panel.querySelector('#plato-import-status').textContent=valid.length+' imported Smartsheet records. Read-only; manual Quality entries are unchanged. Falls values are shown only if present in the source.';
+      panel.querySelector('#plato-import-body').innerHTML='<h3>Weekly summary (Thursday start)</h3><table style="'+tableStyle+'"><thead><tr><th>Week starts</th><th>Rounds</th><th>HAPI passes</th><th>HAPI %</th><th>Falls passes</th><th>Falls %</th></tr></thead><tbody>'+rowsHtml+'</tbody></table><h3>Recent imported observations</h3><table style="'+tableStyle+'"><thead><tr><th>Date</th><th>Nurse</th><th>HAPI</th><th>Falls</th></tr></thead><tbody>'+detail+'</tbody></table>';
+    }catch(e){panel.querySelector('#plato-import-status').textContent='Unable to load imported records: '+e.message;}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount);else mount();
 })();
