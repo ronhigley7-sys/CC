@@ -1897,8 +1897,20 @@ function closeDataImportCenter(){const m=document.getElementById('mgr-data-impor
   function mount(){
     if(document.getElementById('plato-import-tab'))return;
     const btn=document.createElement('button');btn.id='plato-import-tab';btn.type='button';btn.textContent='📊 PLATO Import Results';
-    btn.style.cssText='position:fixed;right:16px;bottom:16px;z-index:9998;background:#174b85;color:white;border:1px solid #5a9bdf;border-radius:10px;padding:12px 16px;cursor:pointer;font-weight:700;box-shadow:0 3px 18px #0008';
-    btn.onclick=show;document.body.appendChild(btn);
+    btn.style.cssText='background:#174b85;color:white;border:1px solid #5a9bdf;border-radius:8px;padding:8px 12px;cursor:pointer;font-weight:700;margin:8px';
+    btn.onclick=show;
+    function place(){
+      const quality=document.querySelector('#panel-quality, [id*="quality-panel"], [data-panel="quality"].active, [id="quality-content"]');
+      const weekly=[...document.querySelectorAll('h1,h2,h3,h4,button,div,span')].find(el=>el.children.length===0 && /weekly plato/i.test((el.textContent||'').trim()));
+      const target=quality || (weekly && weekly.closest('section,.panel,.tab-content')) || (weekly && weekly.parentElement);
+      if(target){target.insertBefore(btn,target.firstChild);return true;}
+      return false;
+    }
+    if(!place()){
+      const observer=new MutationObserver(()=>{if(place())observer.disconnect();});
+      observer.observe(document.body,{childList:true,subtree:true});
+      setTimeout(()=>observer.disconnect(),15000);
+    }
   }
   async function show(){
     let panel=document.getElementById('plato-import-results');
