@@ -1942,5 +1942,6 @@ function closeDataImportCenter(){const m=document.getElementById('mgr-data-impor
       panel.querySelector('#plato-import-body').innerHTML='<h3>Weekly summary (Thursday start)</h3><table style="'+tableStyle+'"><thead><tr><th>Week starts</th><th>Rounds</th><th>HAPI passes</th><th>HAPI %</th><th>Falls passes</th><th>Falls %</th></tr></thead><tbody>'+rowsHtml+'</tbody></table><h3>Recent imported observations</h3><table style="'+tableStyle+'"><thead><tr><th>Date</th><th>Nurse</th><th>HAPI</th><th>Falls</th></tr></thead><tbody>'+detail+'</tbody></table>';
     }catch(e){panel.querySelector('#plato-import-status').textContent='Unable to load imported records: '+e.message;}
   }
+  window.openPlatoImportResults=show;
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount);else mount();
 })();
