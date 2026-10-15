@@ -1897,19 +1897,22 @@ function closeDataImportCenter(){const m=document.getElementById('mgr-data-impor
   function mount(){
     if(document.getElementById('plato-import-tab'))return;
     const btn=document.createElement('button');btn.id='plato-import-tab';btn.type='button';btn.textContent='📊 PLATO Import Results';
-    btn.style.cssText='background:#174b85;color:white;border:1px solid #5a9bdf;border-radius:8px;padding:8px 12px;cursor:pointer;font-weight:700;margin:8px';
-    btn.onclick=show;
+    btn.style.cssText='display:block;width:100%;text-align:left;background:transparent;color:inherit;border:0;padding:12px 20px;cursor:pointer;font:inherit';
+    btn.onclick=function(e){e.preventDefault();e.stopPropagation();show();};
     function place(){
-      const quality=document.querySelector('#panel-quality, [id*="quality-panel"], [data-panel="quality"].active, [id="quality-content"]');
-      const weekly=[...document.querySelectorAll('h1,h2,h3,h4,button,div,span')].find(el=>el.children.length===0 && /weekly plato/i.test((el.textContent||'').trim()));
-      const target=quality || (weekly && weekly.closest('section,.panel,.tab-content')) || (weekly && weekly.parentElement);
-      if(target){target.insertBefore(btn,target.firstChild);return true;}
-      return false;
+      const entries=[...document.querySelectorAll('a,button,[role="menuitem"],[onclick]')];
+      const weekly=entries.find(el=>/PLATO Weekly/i.test((el.textContent||'').trim()) && (el.textContent||'').trim().length<80);
+      if(!weekly || !weekly.parentElement)return false;
+      const holder=weekly.closest('li')||weekly;
+      if(!holder.parentElement)return false;
+      const wrapper=document.createElement(holder.tagName==='LI'?'li':'div');
+      wrapper.id='plato-import-menu-item';wrapper.appendChild(btn);
+      holder.insertAdjacentElement('afterend',wrapper);
+      return true;
     }
     if(!place()){
       const observer=new MutationObserver(()=>{if(place())observer.disconnect();});
       observer.observe(document.body,{childList:true,subtree:true});
-      setTimeout(()=>observer.disconnect(),15000);
     }
   }
   async function show(){
