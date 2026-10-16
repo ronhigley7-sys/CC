@@ -2749,3 +2749,25 @@ function printManagerView() {
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
+\n
+/* Persistent standalone PLATO page in the main One-Stop navigation. */
+(function(){
+  const href='https://ronhigley7-sys.github.io/CC/plato-results.html';
+  function install(){
+    if(document.getElementById('plato-standalone-nav'))return;
+    const nodes=[...document.querySelectorAll('nav a,nav button,header a,header button,[role="navigation"] a,[role="navigation"] button')];
+    const quality=nodes.find(el=>/^QUALITY\s*▾?$/i.test((el.textContent||'').trim())||/^QUALITY$/i.test((el.textContent||'').trim()));
+    if(!quality||!quality.parentElement)return;
+    const link=document.createElement('a');
+    link.id='plato-standalone-nav';
+    link.href=href;
+    link.target='_blank';
+    link.rel='noopener noreferrer';
+    link.textContent='📊 PLATO RESULTS';
+    link.title='Open standalone PLATO Executive Dashboard';
+    link.style.cssText='display:inline-flex;align-items:center;white-space:nowrap;padding:10px 14px;color:#8de0ff;text-decoration:none;font-weight:750;font-size:13px;border:1px solid #3280bb;border-radius:8px;background:#0b2948;margin:0 6px;';
+    quality.insertAdjacentElement('afterend',link);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
+  new MutationObserver(install).observe(document.documentElement,{childList:true,subtree:true});
+})();
