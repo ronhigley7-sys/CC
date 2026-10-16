@@ -2729,3 +2729,23 @@ function printManagerView() {
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
+\n
+/* Temporarily hide the manual daily PLATO audit-entry grid.
+   The standalone Executive Dashboard and other Quality panels remain available. */
+(function(){
+  function hideManualPlatoGrid(){
+    const headers=Array.from(document.querySelectorAll('th'));
+    const target=headers.find(th=>/HAPI\s*CHECKLIST/i.test(th.textContent||''));
+    if(!target)return;
+    const table=target.closest('table');
+    if(!table || !/TOTAL\s*PLATO/i.test(table.textContent||''))return;
+    table.style.display='none';table.dataset.platoGridHidden='true';
+  }
+  function init(){
+    hideManualPlatoGrid();
+    document.addEventListener('click',()=>setTimeout(hideManualPlatoGrid,100),true);
+    const observer=new MutationObserver(()=>{if(!document.querySelector('table[data-plato-grid-hidden]'))hideManualPlatoGrid()});
+    observer.observe(document.body,{childList:true,subtree:true});
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
