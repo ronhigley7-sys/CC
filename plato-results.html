@@ -13,7 +13,7 @@
 <script>
 (()=>{'use strict';
 const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let rows=[],base='',key='';
+let rows=[],staffRows=[],weeklyKeys=[],base='',key='';
 const now=new Date(),to=now.toISOString().slice(0,10),from=new Date(now.getTime()-90*86400000).toISOString().slice(0,10);$('to').value=to;$('from').value=from;
 const yes=x=>String(x??'').trim().toLowerCase()==='compliant';
 const no=x=>/^not[ -]?compliant$/i.test(String(x??'').trim());
