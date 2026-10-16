@@ -5,8 +5,10 @@
 <div class="card"><div class="controls"><label>From date<input id="from" type="date"></label><label>Through date<input id="to" type="date"></label><button id="refresh">Refresh results</button><button id="export">Export CSV</button></div><p id="status" class="muted">Connect to Supabase to load results.</p></div>
 <div class="card" id="connect"><h2>Data connection</h2><p class="notice">Enter your Supabase <b>publishable / anon</b> key (not a service-role key). This page stores it only for the current browser tab. Access to staff data must be protected by your Supabase security policies.</p><div class="controls"><label>Supabase project URL<input id="url" style="min-width:310px" value="https://xnsdvdfceflmagfhpycw.supabase.co"></label><label>Publishable / anon key<input id="key" type="password" autocomplete="off" style="min-width:280px" placeholder="sb_publishable_... or eyJ..."></label><button id="connectBtn">Connect</button></div></div>
 <div class="stats"><div class="stat">Imported rounds<div class="num" id="total">—</div></div><div class="stat">HAPI passes<div class="num" id="hapiPass">—</div></div><div class="stat">HAPI compliance<div class="num" id="hapiPct">—</div></div><div class="stat">Falls compliance<div class="num" id="fallPct">—</div></div></div>
-<div class="card"><h2>Week-to-week results</h2><div class="table-wrap"><table><thead><tr><th>Week beginning Thursday</th><th>Rounds</th><th>HAPI passes</th><th>HAPI fails</th><th>HAPI %</th><th>Falls passes</th><th>Falls %</th></tr></thead><tbody id="weeks"><tr><td colspan="7">No data loaded</td></tr></tbody></table></div></div>
-<div class="card"><h2>Week-to-week changes</h2><p class="muted">Change in percentage points compared with the preceding week. Weeks run Thursday–Wednesday.</p><div class="table-wrap"><table><thead><tr><th>Week</th><th>Rounds</th><th>Rounds change</th><th>HAPI %</th><th>HAPI change</th><th>Falls %</th><th>Falls change</th></tr></thead><tbody id="changes"><tr><td colspan="7">No data loaded</td></tr></tbody></table></div></div>
+<div class="card"><h2>Week-to-week results</h2><div class="table-wrap"><table><thead><tr><th>Week ending Thursday</th><th>Rounds</th><th>HAPI passes</th><th>HAPI fails</th><th>HAPI %</th><th>Falls passes</th><th>Falls %</th></tr></thead><tbody id="weeks"><tr><td colspan="7">No data loaded</td></tr></tbody></table></div></div>
+<div class="card"><h2>CNO / Service Line Director — Weekly PLATO Brief</h2><p class="muted notice">Friday–Thursday reporting. Choose a week, record new HAPI events and the two leading missed interventions, then copy the summary. Manually entered fields are stored in this browser only, not synchronized between devices.</p>
+<div class="controls"><label>Week ending Thursday<select id="briefWeek"></select></label><label>New HAPI events<input id="newHapi" type="number" min="0" step="1" placeholder="Not entered"></label><label>Most missed intervention<input id="missOne" placeholder="Not entered"></label><label>Second most missed<input id="missTwo" placeholder="Not entered"></label><button id="saveBrief">Save weekly details</button><button id="copyBrief">Copy CNO report</button></div><div id="briefOutput" class="card" style="white-space:pre-wrap;line-height:1.6"></div></div>
+<div class="card"><h2>Week-to-week changes</h2><p class="muted">Change in percentage points compared with the preceding week. Weeks run Friday–Thursday.</p><div class="table-wrap"><table><thead><tr><th>Week</th><th>Rounds</th><th>Rounds change</th><th>HAPI %</th><th>HAPI change</th><th>Falls %</th><th>Falls change</th></tr></thead><tbody id="changes"><tr><td colspan="7">No data loaded</td></tr></tbody></table></div></div>
 <div class="card"><h2>RN and CA compliance</h2><p class="muted notice">Each nurse and CA named on a PLATO observation is credited with the same observed HAPI result. This is an observation-based team measure, not proof of individual responsibility. Missing or unrecognized results are excluded. Cumulative rates cover all records returned for the selected date range.</p><div class="controls"><label>Staff role<select id="role" style="padding:10px;background:#102640;color:#fff;border:1px solid #456e9b;border-radius:8px"><option value="RN">RN / LPN</option><option value="CA">Clinical assistant</option></select></label><label>Week<select id="staffWeek" style="padding:10px;background:#102640;color:#fff;border:1px solid #456e9b;border-radius:8px"></select></label></div><h3>Selected week</h3><div class="table-wrap"><table><thead><tr><th>Staff member</th><th>Passes</th><th>Fails</th><th>Pass rate</th><th>Change vs prior week</th></tr></thead><tbody id="staffWeekly"></tbody></table></div><h3>Ongoing / selected date range</h3><div class="table-wrap"><table><thead><tr><th>Staff member</th><th>Passes</th><th>Fails</th><th>Pass rate</th></tr></thead><tbody id="staffOngoing"></tbody></table></div></div>
 <div class="card"><h2>Imported observations</h2><div class="table-wrap"><table><thead><tr><th>Date</th><th>Nurse</th><th>Second nurse</th><th>CA</th><th>HAPI</th><th>Falls</th><th>Source row</th></tr></thead><tbody id="records"><tr><td colspan="7">No data loaded</td></tr></tbody></table></div></div>
 <p class="muted notice">Data source: Supabase plato_observations. Only rows tagged 3B, 3C or 3B/3C are included. Results are not verified against the original Smartsheet report; review source records before using for coaching or official compliance reporting. Missing Falls values are excluded from the Falls denominator. This site does not modify records.</p>
@@ -18,7 +20,7 @@ const now=new Date(),to=now.toISOString().slice(0,10),from=new Date(now.getTime(
 const yes=x=>String(x??'').trim().toLowerCase()==='compliant';
 const no=x=>/^not[ -]?compliant$/i.test(String(x??'').trim());
 const pct=(p,n)=>n?Math.round(100*p/n)+'%':'—';
-const week=s=>{const d=new Date(s+'T12:00:00Z');d.setUTCDate(d.getUTCDate()-((d.getUTCDay()+3)%7));return d.toISOString().slice(0,10)};
+const week=s=>{const d=new Date(s+'T12:00:00Z');d.setUTCDate(d.getUTCDate()-((d.getUTCDay()+2)%7));return d.toISOString().slice(0,10)};
 function staffMetrics(data,role){
  const map=new Map();
  for(const r of data){
@@ -48,11 +50,31 @@ function renderStaff(){
  $('staffOngoing').innerHTML=staffTable(staffMetrics(staffRows,role));
 }
 $('role').onchange=renderStaff;$('staffWeek').onchange=renderStaff;
+const briefKey=w=>'plato-cno-week-'+w;
+function readBrief(w){try{return JSON.parse(localStorage.getItem(briefKey(w))||'{}')}catch{return {}}}
+function renderBrief(){
+ const w=$('briefWeek').value;if(!w)return;
+ const data=staffRows.filter(r=>week(r.observation_date)===w);
+ const prior=new Date(w+'T12:00:00Z');prior.setUTCDate(prior.getUTCDate()-7);
+ const before=staffRows.filter(r=>week(r.observation_date)===prior.toISOString().slice(0,10));
+ const calc=a=>{const h=a.filter(r=>yes(r.hapi_compliance)||no(r.hapi_compliance)),f=a.filter(r=>yes(r.fall_compliance)||no(r.fall_compliance));return {n:a.length,h:h.length?100*h.filter(r=>yes(r.hapi_compliance)).length/h.length:null,f:f.length?100*f.filter(r=>yes(r.fall_compliance)).length/f.length:null,hn:h.length,fn:f.length}};
+ const a=calc(data),b=calc(before),stored=readBrief(w);
+ $('newHapi').value=stored.hapi??'';$('missOne').value=stored.first??'';$('missTwo').value=stored.second??'';
+ const d=new Date(w+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+6);
+ const end=d.toISOString().slice(0,10);
+ const delta=(x,y)=>x===null||y===null?'Not comparable':((x-y)>=0?'+':'')+(x-y).toFixed(1)+' percentage points';
+ const format=x=>x===null?'Not available':x.toFixed(1)+'%';
+ const txt='3B/3C STROKE TELEMETRY — WEEKLY QUALITY UPDATE\\nReporting period: '+w+' through '+end+' (Friday–Thursday)\\nPLATO rounds: '+a.n+' ('+(before.length?((a.n-b.n)>=0?'+':'')+(a.n-b.n)+' vs prior week':'prior-week comparison unavailable')+')\\nHAPI prevention success: '+format(a.h)+' ('+a.hn+' scored rounds; '+delta(a.h,b.h)+' vs prior week)\\nFalls prevention success: '+format(a.f)+' ('+a.fn+' scored rounds; '+delta(a.f,b.f)+' vs prior week)\\nNew hospital-acquired pressure injuries: '+(stored.hapi??'Not reported')+'\\nTop missed intervention: '+(stored.first||'Not documented')+'\\nSecond missed intervention: '+(stored.second||'Not documented')+'\\nNote: HAPI events and missed interventions are manually entered. Audit outcomes are observation-level and should be verified before formal reporting.';
+ $('briefOutput').textContent=txt;
+}
+$('briefWeek').onchange=renderBrief;
+$('saveBrief').onclick=()=>{const w=$('briefWeek').value;if(!w)return;const value=$('newHapi').value;localStorage.setItem(briefKey(w),JSON.stringify({hapi:value===''?null:Number(value),first:$('missOne').value.trim(),second:$('missTwo').value.trim()}));renderBrief()};
+$('copyBrief').onclick=()=>{const text=$('briefOutput').textContent;navigator.clipboard.writeText(text).then(()=>{$('status').textContent='Weekly report copied.'}).catch(()=>{$('status').textContent='Copy failed; select and copy the report text.'})};
 function render(){
 const valid=rows.filter(r=>['3B','3C','3B/3C'].includes(String(r.nurse_home_unit||'').trim().toUpperCase()));
 const h=valid.filter(r=>yes(r.hapi_compliance)||no(r.hapi_compliance)),f=valid.filter(r=>yes(r.fall_compliance)||no(r.fall_compliance));
 $('total').textContent=valid.length;$('hapiPass').textContent=h.filter(r=>yes(r.hapi_compliance)).length;$('hapiPct').textContent=pct(h.filter(r=>yes(r.hapi_compliance)).length,h.length);$('fallPct').textContent=pct(f.filter(r=>yes(r.fall_compliance)).length,f.length);
-staffRows=valid;const groups=new Map();for(const r of valid){const w=week(r.observation_date);if(!groups.has(w))groups.set(w,[]);groups.get(w).push(r)}
+staffRows=valid;const briefWeeks=[...new Set(valid.map(r=>week(r.observation_date)))].sort().reverse();const oldBrief=$('briefWeek').value;$('briefWeek').innerHTML=briefWeeks.map(w=>'<option value="'+esc(w)+'">'+esc(w)+'</option>').join('');if(briefWeeks.includes(oldBrief))$('briefWeek').value=oldBrief;if(briefWeeks.length)renderBrief();const groups=new Map();for(const r of valid){const w=week(r.observation_date);if(!groups.has(w))groups.set(w,[]);groups.get(w).push(r)}
 $('weeks').innerHTML=[...groups].sort((a,b)=>b[0].localeCompare(a[0])).map(([w,v])=>{const h=v.filter(r=>yes(r.hapi_compliance)||no(r.hapi_compliance)),f=v.filter(r=>yes(r.fall_compliance)||no(r.fall_compliance)),hp=h.filter(r=>yes(r.hapi_compliance)).length,fp=f.filter(r=>yes(r.fall_compliance)).length;return '<tr><td>'+esc(w)+'</td><td>'+v.length+'</td><td>'+hp+'</td><td>'+h.filter(r=>no(r.hapi_compliance)).length+'</td><td>'+pct(hp,h.length)+'</td><td>'+fp+'</td><td>'+pct(fp,f.length)+'</td></tr>'}).join('')||'<tr><td colspan="7">No records for selected dates</td></tr>';
 const sorted=[...groups].sort((a,b)=>b[0].localeCompare(a[0]));
  weeklyKeys=sorted.map(x=>x[0]);
