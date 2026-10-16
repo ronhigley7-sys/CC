@@ -2699,8 +2699,7 @@ function printManagerView() {
 (function(){
   function openResults(e){
     e.preventDefault();e.stopPropagation();
-    if(typeof window.openPlatoImportResults==='function')window.openPlatoImportResults();
-    else alert('PLATO results viewer is unavailable. Please refresh the Command Center.');
+    window.open('https://ronhigley7-sys.github.io/CC/plato-results.html','_blank','noopener,noreferrer');
   }
   function install(){
     if(document.getElementById('quality-plato-import-entry'))return true;
@@ -2713,7 +2712,7 @@ function printManagerView() {
     entry.id='quality-plato-import-entry';
     entry.style.cssText='padding:0;cursor:pointer';
     const button=document.createElement('button');
-    button.type='button';button.textContent='📊 PLATO Import Results';
+    button.type='button';button.textContent='📊 PLATO Executive Dashboard';
     button.style.cssText='display:block;width:100%;padding:12px 18px;text-align:left;color:inherit;background:transparent;border:0;font:inherit;cursor:pointer';
     button.onclick=openResults;entry.appendChild(button);
     target.insertAdjacentElement('afterend',entry);
