@@ -1842,6 +1842,31 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--white);
 .board-secondary > summary:focus-visible { outline: 2px solid var(--accent2); outline-offset: 2px; }
 .board-secondary[open] { padding: 0 12px 12px; }
 .board-secondary[open] > summary { margin: 0 -12px; border-bottom: 1px solid var(--border); }
+/* Keep supporting vacancy tables contained and opt-in. */
+#panel-vacancy .vacancy-extra { margin-top:16px; padding:16px; border:1px solid var(--border); border-radius:10px; background:var(--card); min-width:0; }
+#panel-vacancy .vacancy-extra > summary { cursor:pointer; font-size:15px; font-weight:700; color:var(--white); line-height:1.6; }
+#panel-vacancy .vacancy-extra > summary span { display:block; padding-left:18px; font-size:12px; font-weight:400; color:var(--text2); }
+#panel-vacancy .vacancy-extra > summary:focus-visible { outline:2px solid var(--accent2); outline-offset:5px; border-radius:3px; }
+#panel-vacancy .vacancy-extra-content { margin-top:16px; overflow-x:auto; }
+#panel-vacancy #pnl-budget-table { max-height:65vh; overflow:auto; }
+/* Scoped budget readability */
+#panel-vacancy .vacancy-help {font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:18px}
+#panel-vacancy .vacancy-title {font-size:18px}
+#panel-vacancy .vacancy-panel,#panel-vacancy #vacancy-forecast {overflow-x:auto}
+#panel-vacancy .vacancy-grid {min-width:750px;grid-template-columns:190px repeat(4,minmax(130px,1fr));gap:8px}
+#panel-vacancy .vacancy-row-label {font-size:13px!important;line-height:1.5}
+#panel-vacancy .vacancy-col-header {font-size:12px;color:var(--text2);text-transform:none;letter-spacing:0}
+#panel-vacancy .vacancy-cell {min-height:48px;box-sizing:border-box;display:flex;align-items:center;justify-content:center}
+#panel-vacancy .vacancy-num {font-size:16px;line-height:1.4}
+#panel-vacancy .vacancy-input {width:76px;min-height:32px;font-size:15px}
+#panel-vacancy .vacancy-input:focus-visible {outline:2px solid var(--accent2);outline-offset:2px}
+#panel-vacancy #vacancy-summary-badges>span {font-size:14px!important;padding:12px 16px!important;border-radius:8px!important}
+#panel-vacancy #budget-split-summary>div>div:first-child {font-size:15px!important}
+#panel-vacancy #budget-split-summary>div>div:nth-child(2) {font-size:13px!important}
+#panel-vacancy .forecast-table {min-width:760px}
+#panel-vacancy .forecast-table td {padding:14px 12px}
+#panel-vacancy .forecast-table td div,#panel-vacancy .forecast-table td span {font-size:13px!important;line-height:1.6}
+@media(max-width:700px){#panel-vacancy #budget-split-summary {grid-template-columns:1fr!important}}
 </style>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
@@ -3076,29 +3101,30 @@ if (new URLSearchParams(location.search).get('vf')) {
 
   <!-- Budget Grid -->
   <div class="vacancy-panel" id="vacancy-panel">
-    <div class="vacancy-title">Current Vacancy Rate — FTE</div>
+    <div class="vacancy-title">Staffing by role &amp; shift</div>
+    <p class="vacancy-help">FTE = full-time equivalent. Edit budgeted FTE below. Filled FTE comes from staff assignments; open means below budget, over means above budget.</p>
     <div class="vacancy-grid">
       <div></div>
       <div class="vacancy-col-header">Budgeted FTE</div>
       <div class="vacancy-col-header">Filled FTE</div>
-      <div class="vacancy-col-header">Vacant / Over</div>
+      <div class="vacancy-col-header">Open / over FTE</div>
       <div class="vacancy-col-header">Vacancy %</div>
 
       <!-- RN -->
       <div class="vacancy-row-label"><span class="tag tag-rn">RN</span> Total</div>
-      <div class="vacancy-cell"><div class="vacancy-input-wrap"><input type="number" class="vacancy-input" id="vac-rn-total-budget" min="0" max="99" value="" placeholder="—" oninput="renderVacancy()"></div></div>
+      <div class="vacancy-cell"><div class="vacancy-input-wrap"><input type="number" class="vacancy-input" aria-label="RN total budgeted FTE" id="vac-rn-total-budget" min="0" max="99" value="" placeholder="—" oninput="renderVacancy()"></div></div>
       <div class="vacancy-cell"><div class="vacancy-num" id="vac-rn-total-filled">—</div></div>
       <div class="vacancy-cell"><div class="vacancy-num" id="vac-rn-total-vacant">—</div></div>
       <div class="vacancy-cell"><div class="vacancy-num" id="vac-rn-total-pct">—</div></div>
 
       <div class="vacancy-row-label" style="padding-left:10px;font-size:11px;">☀️ Day (0700-1500)</div>
-      <div class="vacancy-cell"><div class="vacancy-input-wrap"><input type="number" class="vacancy-input" id="vac-rn-day-budget" min="0" max="99" value="" placeholder="—" oninput="renderVacancy()"></div></div>
+      <div class="vacancy-cell"><div class="vacancy-input-wrap"><input type="number" class="vacancy-input" aria-label="RN day budgeted FTE" id="vac-rn-day-budget" min="0" max="99" value="" placeholder="—" oninput="renderVacancy()"></div></div>
       <div class="vacancy-cell"><div class="vacancy-num" id="vac-rn-day-filled">—</div></div>
       <div class="vacancy-cell"><div class="vacancy-num" id="vac-rn-day-vacant">—</div></div>
       <div class="vacancy-cell"><div class="vacancy-num" id="vac-rn-day-pct">—</div></div>
 
       <div class="vacancy-row-label" style="padding-left:10px;font-size:11px;">🌙 Night (1900-0700)</div>
-      <div class="vacancy-cell"><div class="vacancy-input-wrap"><input type="number" class="vacancy-input" id="vac-rn-ngt-budget" min="0" max="99" value="" placeholder="—" oninput="renderVacancy()"></div></div>
+      <div class="vacancy-cell"><div class="vacancy-input-wrap"><input type="number" class="vacancy-input" aria-label="RN night budgeted FTE" id="vac-rn-ngt-budget" min="0" max="99" value="" placeholder="—" oninput="renderVacancy()"></div></div>
       <div class="vacancy-cell"><div class="vacancy-num" id="vac-rn-ngt-filled">—</div></div>
       <div class="vacancy-cell"><div class="vacancy-num" id="vac-rn-ngt-vacant">—</div></div>
       <div class="vacancy-cell"><div class="vacancy-num" id="vac-rn-ngt-pct">—</div></div>
@@ -3107,19 +3133,19 @@ if (new URLSearchParams(location.search).get('vf')) {
 
       <!-- LPN -->
       <div class="vacancy-row-label"><span class="tag tag-lpn">LPN</span> Total</div>
-      <div class="vacancy-cell"><div class="vacancy-input-wrap"><input type="number" class="vacancy-input" id="vac-lpn-total-budget" min="0" max="99" value="" placeholder="—" oninput="renderVacancy()"></div></div>
+      <div class="vacancy-cell"><div class="vacancy-input-wrap"><input type="number" class="vacancy-input" aria-label="LPN total budgeted FTE" id="vac-lpn-total-budget" min="0" max="99" value="" placeholder="—" oninput="renderVacancy()"></div></div>
       <div class="vacancy-cell"><div class="vacancy-num" id="vac-lpn-total-filled">—</div></div>
       <div class="vacancy-cell"><div class="vacancy-num" id="vac-lpn-total-vacant">—</div></div>
       <div class="vacancy-cell"><div class="vacancy-num" id="vac-lpn-total-pct">—</div></div>
 
       <div class="vacancy-row-label" style="padding-left:10px;font-size:11px;">☀️ Day</div>
-      <div class="vacancy-cell"><div class="vacancy-input-wrap"><input type="number" class="vacancy-input" id="vac-lpn-day-budget" min="0" max="99" value="" placeholder="—" oninput="renderVacancy()"></div></div>
+      <div class="vacancy-cell"><div class="vacancy-input-wrap"><input type="number" class="vacancy-input" aria-label="LPN day budgeted FTE" id="vac-lpn-day-budget" min="0" max="99" value="" placeholder="—" oninput="renderVacancy()"></div></div>
       <div class="vacancy-cell"><div class="vacancy-num" id="vac-lpn-day-filled">—</div></div>
       <div class="vacancy-cell"><div class="vacancy-num" id="vac-lpn-day-vacant">—</div></div>
       <div class="vacancy-cell"><div class="vacancy-num" id="vac-lpn-day-pct">—</div></div>
 
       <div class="vacancy-row-label" style="padding-left:10px;font-size:11px;">🌙 Night</div>
-      <div class="vacancy-cell"><div class="vacancy-input-wrap"><input type="number" class="vacancy-input" id="vac-lpn-ngt-budget" min="0" max="99" value="" placeholder="—" oninput="renderVacancy()"></div></div>
+      <div class="vacancy-cell"><div class="vacancy-input-wrap"><input type="number" class="vacancy-input" aria-label="LPN night budgeted FTE" id="vac-lpn-ngt-budget" min="0" max="99" value="" placeholder="—" oninput="renderVacancy()"></div></div>
       <div class="vacancy-cell"><div class="vacancy-num" id="vac-lpn-ngt-filled">—</div></div>
       <div class="vacancy-cell"><div class="vacancy-num" id="vac-lpn-ngt-vacant">—</div></div>
       <div class="vacancy-cell"><div class="vacancy-num" id="vac-lpn-ngt-pct">—</div></div>
@@ -3128,25 +3154,25 @@ if (new URLSearchParams(location.search).get('vf')) {
 
       <!-- CA -->
       <div class="vacancy-row-label"><span class="tag tag-ca">CA</span> Total</div>
-      <div class="vacancy-cell"><div class="vacancy-input-wrap"><input type="number" class="vacancy-input" id="vac-ca-total-budget" min="0" max="99" value="" placeholder="—" oninput="renderVacancy()"></div></div>
+      <div class="vacancy-cell"><div class="vacancy-input-wrap"><input type="number" class="vacancy-input" aria-label="CA total budgeted FTE" id="vac-ca-total-budget" min="0" max="99" value="" placeholder="—" oninput="renderVacancy()"></div></div>
       <div class="vacancy-cell"><div class="vacancy-num" id="vac-ca-total-filled">—</div></div>
       <div class="vacancy-cell"><div class="vacancy-num" id="vac-ca-total-vacant">—</div></div>
       <div class="vacancy-cell"><div class="vacancy-num" id="vac-ca-total-pct">—</div></div>
 
       <div class="vacancy-row-label" style="padding-left:10px;font-size:11px;">☀️ Day (0630-1430)</div>
-      <div class="vacancy-cell"><div class="vacancy-input-wrap"><input type="number" class="vacancy-input" id="vac-ca-day-budget" min="0" max="99" value="" placeholder="—" oninput="renderVacancy()"></div></div>
+      <div class="vacancy-cell"><div class="vacancy-input-wrap"><input type="number" class="vacancy-input" aria-label="CA day budgeted FTE" id="vac-ca-day-budget" min="0" max="99" value="" placeholder="—" oninput="renderVacancy()"></div></div>
       <div class="vacancy-cell"><div class="vacancy-num" id="vac-ca-day-filled">—</div></div>
       <div class="vacancy-cell"><div class="vacancy-num" id="vac-ca-day-vacant">—</div></div>
       <div class="vacancy-cell"><div class="vacancy-num" id="vac-ca-day-pct">—</div></div>
 
       <div class="vacancy-row-label" style="padding-left:10px;font-size:11px;">🌆 Evening (1430-2230)</div>
-      <div class="vacancy-cell"><div class="vacancy-input-wrap"><input type="number" class="vacancy-input" id="vac-ca-eve-budget" min="0" max="99" value="" placeholder="—" oninput="renderVacancy()"></div></div>
+      <div class="vacancy-cell"><div class="vacancy-input-wrap"><input type="number" class="vacancy-input" aria-label="CA evening budgeted FTE" id="vac-ca-eve-budget" min="0" max="99" value="" placeholder="—" oninput="renderVacancy()"></div></div>
       <div class="vacancy-cell"><div class="vacancy-num" id="vac-ca-eve-filled">—</div></div>
       <div class="vacancy-cell"><div class="vacancy-num" id="vac-ca-eve-vacant">—</div></div>
       <div class="vacancy-cell"><div class="vacancy-num" id="vac-ca-eve-pct">—</div></div>
 
       <div class="vacancy-row-label" style="padding-left:10px;font-size:11px;">🌙 Night (2230-0630)</div>
-      <div class="vacancy-cell"><div class="vacancy-input-wrap"><input type="number" class="vacancy-input" id="vac-ca-ngt-budget" min="0" max="99" value="" placeholder="—" oninput="renderVacancy()"></div></div>
+      <div class="vacancy-cell"><div class="vacancy-input-wrap"><input type="number" class="vacancy-input" aria-label="CA night budgeted FTE" id="vac-ca-ngt-budget" min="0" max="99" value="" placeholder="—" oninput="renderVacancy()"></div></div>
       <div class="vacancy-cell"><div class="vacancy-num" id="vac-ca-ngt-filled">—</div></div>
       <div class="vacancy-cell"><div class="vacancy-num" id="vac-ca-ngt-vacant">—</div></div>
       <div class="vacancy-cell"><div class="vacancy-num" id="vac-ca-ngt-pct">—</div></div>
@@ -3159,8 +3185,10 @@ if (new URLSearchParams(location.search).get('vf')) {
     <div id="vacancy-forecast"></div>
   </div>
 
-  <!-- P&L Budget vs Actual — synced from Supabase budget_income_statement -->
-  <div style="margin-top:22px;">
+  <!-- Financial details are separate from the staffing overview. -->
+  <details class="vacancy-extra" id="vacancy-financial-details">
+    <summary>Financial budget &amp; actuals <span>View income statement and expense details</span></summary>
+  <div style="margin-top:16px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
       <div class="section-title" style="font-size:14px;margin:0;">💵 P&amp;L Budget vs Actual</div>
       <div style="display:flex;gap:8px;align-items:center;">
@@ -3172,6 +3200,7 @@ if (new URLSearchParams(location.search).get('vf')) {
     <div id="pnl-budget-summary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;"></div>
     <div id="pnl-budget-table" style="overflow-x:auto;"></div>
   </div>
+  </details>
 </div>
 
 
@@ -13704,8 +13733,8 @@ function renderVacancy() {
 
     budgetSplitEl.innerHTML = `
       <div style="background:rgba(37,168,104,0.08);border:1px solid rgba(37,168,104,0.3);border-radius:10px;padding:14px;">
-        <div style="font-size:11px;font-weight:700;color:var(--green2);margin-bottom:2px;">💼 Working Budget</div>
-        <div style="font-size:11px;color:var(--text3);margin-bottom:10px;">Excludes DBL/Maternity &amp; Orientation</div>
+        <div style="font-size:11px;font-weight:700;color:var(--green2);margin-bottom:2px;">💼 Available staff</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:10px;">Staff count · excludes leave and orientation</div>
         ${roleRow('RN','rn','RN')}${roleRow('LPN','lpn','LPN')}${roleRow('CA','ca','CA')}
         <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;margin-top:4px;">
           <span style="font-size:11px;font-weight:700;color:var(--white);">Total</span>
@@ -13715,8 +13744,8 @@ function renderVacancy() {
         ${oTotal>0?`<div style="font-size:11px;color:var(--amber2);">🎓 ${oTotal} in Orientation</div>`:''}
       </div>
       <div style="background:rgba(46,125,209,0.08);border:1px solid rgba(46,125,209,0.3);border-radius:10px;padding:14px;">
-        <div style="font-size:11px;font-weight:700;color:var(--accent2);margin-bottom:2px;">👥 Full Budget</div>
-        <div style="font-size:11px;color:var(--text3);margin-bottom:10px;">All staff including leaves &amp; orientation</div>
+        <div style="font-size:11px;font-weight:700;color:var(--accent2);margin-bottom:2px;">👥 Total roster</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:10px;">Staff count · includes leave and orientation</div>
         ${roleRowFull('RN','rn','RN')}${roleRowFull('LPN','lpn','LPN')}${roleRowFull('CA','ca','CA')}
         <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;margin-top:4px;">
           <span style="font-size:11px;font-weight:700;color:var(--white);">Total</span>
@@ -13762,7 +13791,7 @@ function renderVacancy() {
       const cell = filledEl.closest('.vacancy-cell');
 
       if (budgetVal) {
-        const diff   = budgetVal - filled; // positive = vacant, negative = over budget
+        const diff   = Math.round((budgetVal - filled) * 10) / 10; // positive = vacant, negative = over budget
         const isOver = diff < 0;
         const pct    = Math.abs((diff / budgetVal) * 100).toFixed(0);
 
@@ -13774,13 +13803,13 @@ function renderVacancy() {
 
         if (isOver) {
           hasOverBudget = true;
-          vacantEl.textContent = `+${Math.abs(diff)} Over`;
+          vacantEl.textContent = `${Math.abs(diff).toFixed(1)} over`;
           vacantEl.className   = 'vacancy-num vacancy-over';
           pctEl.textContent    = pct + '% Over';
           pctEl.className      = 'vacancy-num vacancy-over';
           if (cell) cell.style.background = 'rgba(179,35,24,0.15)';
         } else {
-          vacantEl.textContent = diff;
+          vacantEl.textContent = diff === 0 ? 'On budget' : `${diff.toFixed(1)} open`;
           pctEl.textContent    = pct + '%';
           const cls = pct >= 20 ? 'vacancy-red' : pct >= 10 ? 'vacancy-amber' : 'vacancy-green';
           vacantEl.className   = `vacancy-num ${cls}`;
@@ -13807,7 +13836,7 @@ function renderVacancy() {
       const pct    = Math.abs(((b.diff) / b.budgetVal) * 100).toFixed(0);
       const color  = isOver ? 'var(--red2)' : b.diff <= 1 ? 'var(--amber2)' : 'var(--green2)';
       const bg     = isOver ? 'rgba(179,35,24,0.15)' : b.diff <= 1 ? 'rgba(180,83,9,0.12)' : 'rgba(26,122,74,0.1)';
-      const label  = isOver ? `🔴 ${b.role} OVER by ${Math.abs(b.diff)}` : `${b.diff === 0 ? '🟡' : '🟢'} ${b.role}: ${b.diff} open`;
+      const label  = isOver ? `🔴 ${b.role} OVER by ${Math.abs(b.diff).toFixed(1)}` : `${b.diff === 0 ? '🟡' : '🟢'} ${b.role}: ${b.diff.toFixed(1)} FTE open`;
       return `<span style="padding:4px 10px;border-radius:12px;font-size:11px;font-weight:700;color:${color};background:${bg};font-family:'IBM Plex Mono',monospace;">${label}</span>`;
     }).join('');
   }
@@ -14124,8 +14153,9 @@ function renderVacancyForecast(shifts) {
   // Cert summary section — all expirations in next 6 weeks sorted by date
   const allCerts = weeks.flatMap(w => w.certs).sort((a,b) => parseDate(a.date) - parseDate(b.date));
   if (allCerts.length > 0) {
-    html += `<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
-      <div style="font-size:12px;font-weight:700;color:var(--white);margin-bottom:8px;">🏥 Certification Expirations (Next 6 Weeks)</div>
+    html += `<details class="vacancy-extra" id="vacancy-cert-details">
+      <summary>Certification expirations <span>${allCerts.length} due in the next six weeks · also listed in the forecast</span></summary>
+      <div class="vacancy-extra-content">
       <table class="forecast-table">
         <thead><tr>
           <th>Staff Member</th><th>Role</th><th>Shift</th><th>Certification</th><th>Expiration</th><th style="text-align:center;">Days Away</th>
@@ -14144,13 +14174,14 @@ function renderVacancyForecast(shifts) {
         }).join('')}
         </tbody>
       </table>
-    </div>`;
+      </div>
+    </details>`;
   }
 
 
   // CA Scheduling Requirements section
   const _caStaff = MASTER_STAFF.filter(s=>s.job==='CA');
-  let _caSect = '<div style="margin-top:16px;"><div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:10px;">🏥 CA Scheduling Requirements</div><div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11px;"><thead><tr style="background:rgba(255,255,255,0.06);"><th style="padding:8px 10px;text-align:left;color:var(--teal2);">CA Staff</th><th style="padding:8px 6px;text-align:center;color:var(--text3);">FTE</th><th style="padding:8px 6px;text-align:center;color:var(--text3);">Shifts/4wk</th><th style="padding:8px 6px;text-align:center;color:var(--text3);">Hrs Target</th><th style="padding:8px 6px;text-align:center;color:var(--text3);">Shift Mix</th><th style="padding:8px 6px;text-align:center;color:var(--text3);">Weekend</th></tr></thead><tbody>';
+  let _caSect = '<details class="vacancy-extra" id="vacancy-ca-details"><summary>CA scheduling reference <span>View individual scheduling requirements</span></summary><div class="vacancy-extra-content" style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11px;"><thead><tr style="background:rgba(255,255,255,0.06);"><th style="padding:8px 10px;text-align:left;color:var(--teal2);">CA Staff</th><th style="padding:8px 6px;text-align:center;color:var(--text3);">FTE</th><th style="padding:8px 6px;text-align:center;color:var(--text3);">Shifts/4wk</th><th style="padding:8px 6px;text-align:center;color:var(--text3);">Hrs Target</th><th style="padding:8px 6px;text-align:center;color:var(--text3);">Shift Mix</th><th style="padding:8px 6px;text-align:center;color:var(--text3);">Weekend</th></tr></thead><tbody>';
   _caStaff.forEach((s,i) => {
     const _fte=parseFloat(state.empFTE[s.name])||0.9, _shifts=fteShiftsPerCycle(_fte,'CA')*2, _hrs=Math.round(_shifts*8);
     const _mix=_fte>=0.9?'2×12h + 2×8h/wk':_fte>=0.5?'2×8h/wk avg':'1×8h/wk avg';
@@ -14158,9 +14189,11 @@ function renderVacancyForecast(shifts) {
     const _rb=i%2?'':'rgba(255,255,255,0.02)', _wc=(_fte>=0.9||(_fte>=0.5&&_fte<0.6))?'var(--green2)':'var(--amber2)';
     _caSect+='<tr style="background:'+_rb+';border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:6px 10px;font-weight:600;">'+s.name.split(',')[0]+'</td><td style="padding:4px 6px;text-align:center;color:var(--text3);">'+_fte+'</td><td style="padding:4px 6px;text-align:center;font-weight:700;color:var(--teal2);">'+_shifts+'</td><td style="padding:4px 6px;text-align:center;font-weight:700;color:var(--accent2);">'+_hrs+'h</td><td style="padding:4px 6px;text-align:center;font-size:11px;">'+_mix+'</td><td style="padding:4px 6px;text-align:center;color:'+_wc+';">'+_wknd+'</td></tr>';
   });
-  _caSect += '</tbody></table></div></div>';
+  _caSect += '</tbody></table></div></details>';
   html += _caSect;
+  const openDetails = [...el.querySelectorAll('details[open]')].map(detail => detail.id);
   el.innerHTML = html;
+  openDetails.forEach(id => { const detail = document.getElementById(id); if (detail) detail.open = true; });
 }
 
 function loadVacancyBudgets() {
