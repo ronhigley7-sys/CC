@@ -1835,6 +1835,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--white);
   .mgr-met { color:var(--green2); font-weight:700; }
   @media (max-width:1100px){ .mgr-kpi-grid{grid-template-columns:repeat(3,1fr)} .mgr-layout{grid-template-columns:1fr} }
   @media (max-width:650px){ .mgr-kpi-grid{grid-template-columns:repeat(2,1fr)} .mgr-window-grid{grid-template-columns:1fr 1fr} .mgr-hero-title{font-size:17px} }
+/* Keep the daily board focused; supporting tools expand on demand. */
+.board-secondary { margin: 14px 0; border: 1px solid var(--border); border-radius: 8px; background: var(--navy); }
+.board-secondary > summary { cursor: pointer; padding: 13px 16px; color: var(--white); font-size: 13px; font-weight: 600; }
+.board-secondary > summary span { display: block; margin: 5px 0 0 16px; color: var(--text3); font-size: 11px; font-weight: 400; }
+.board-secondary > summary:focus-visible { outline: 2px solid var(--accent2); outline-offset: 2px; }
+.board-secondary[open] { padding: 0 12px 12px; }
+.board-secondary[open] > summary { margin: 0 -12px; border-bottom: 1px solid var(--border); }
 </style>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
@@ -2508,6 +2515,7 @@ if (new URLSearchParams(location.search).get('vf')) {
     <div id="callin-summary" style="font-size:11px;color:var(--text3);"></div>
   </div>
 
+<details class="board-secondary"><summary>Add staff to this shift<span>Manual staffing entry</span></summary>
   <!-- Add staff form -->
   <div class="add-form" id="add-form">
     <div class="form-group">
@@ -2544,8 +2552,11 @@ if (new URLSearchParams(location.search).get('vf')) {
     <button class="btn btn-success" onclick="addStaffManual()">＋ Add Staff</button>
   </div>
 
+</details>
+
   <div id="board-view"></div>
 
+<details class="board-secondary"><summary>Staff follow-up<span>Certifications, competencies, policies, documentation, and weekend review</span></summary>
   <!-- ── Documentation Opportunities ── -->
   <div class="card" style="margin-top:14px;padding:14px;" id="doc-opps-panel">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
@@ -2595,6 +2606,8 @@ if (new URLSearchParams(location.search).get('vf')) {
   <div class="card" style="margin-top:14px;padding:14px;display:none;" id="board-policy-alerts">
   </div>
 
+</details>
+
   <!-- ── RECENT MESSAGES ── -->
   <div class="card" style="margin-top:14px;padding:14px;" id="board-messages-widget">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
@@ -2604,6 +2617,7 @@ if (new URLSearchParams(location.search).get('vf')) {
     <div id="board-messages-list" style="font-size:11px;"></div>
   </div>
 
+<details class="board-secondary"><summary>Tracking &amp; board guide<span>Float, sitter, call-off history, and staffing legend</span></summary>
   <!-- ── FLOAT / SITTER / CALLOFF TRACKING GRID ── -->
   <div style="margin-top:28px;padding-top:16px;border-top:2px solid var(--accent);">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
@@ -2623,6 +2637,9 @@ if (new URLSearchParams(location.search).get('vf')) {
     </div>
   </div>
 
+</details>
+
+<details class="board-secondary"><summary>Weekly education<span>Topics, handouts, and education sheet</span></summary>
     <!-- ── Weekly Education ── -->
   <div class="card" style="margin-top:14px;padding:14px;" id="board-weekly-edu">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
@@ -2673,6 +2690,7 @@ if (new URLSearchParams(location.search).get('vf')) {
     </div>
     <div id="board-edu-display"></div>
   </div>
+</details>
 </div>
 
 <!-- ══════════════ CALL-IN PANEL (overlay on board) ══════════════ -->
@@ -2884,7 +2902,7 @@ if (new URLSearchParams(location.search).get('vf')) {
           <option value="UC">UC</option>
         </select>
       </div>
-      <button class="btn btn-success" onclick="addEmployee()">➕ Add Employee</button>
+<div style="display:flex;flex-wrap:wrap;gap:10px;margin:12px 0;"><label class="form-label">Phone number<br><input class="form-input" id="new-emp-phone" type="tel" ></label><label class="form-label">Date of hire<br><input class="form-input" id="new-emp-hire" type="date" ></label><label class="form-label">Birthday (MM/DD)<br><input class="form-input" id="new-emp-birthday" type="text" placeholder="MM/DD" maxlength="5"></label><label class="form-label">Shift<br><select class="form-select" id="new-emp-shift"><option value="">—</option><option value="DAY">Day</option><option value="NIGHT">Night</option><option value="EVE">Evening</option><option value="BOTH">Both</option></select></label><label class="form-label">FTE status<br><select class="form-select" id="new-emp-fte"><option value="">—</option><option value="1">1</option><option value="0.9">0.9</option><option value="0.8">0.8</option><option value="0.6">0.6</option><option value="0.5">0.5</option><option value="0.25">0.25</option></select></label><label class="form-label"><input type="checkbox" id="new-emp-agency" onchange="toggleStaffAgencyFields('new-emp')"> Agency</label><div id="new-emp-agency-dates" style="display:none;gap:10px;flex-wrap:wrap;"><label class="form-label">Agency start date<br><input class="form-input" type="date" id="new-emp-contract-start"></label><label class="form-label">Agency end date<br><input class="form-input" type="date" id="new-emp-contract-end"></label></div></div>      <button class="btn btn-success" onclick="addEmployee()">➕ Add Employee</button>
     </div>
     <div id="add-emp-status" style="margin-top:8px;font-size:11px;display:none;"></div>
   </div>
@@ -4103,7 +4121,7 @@ if (new URLSearchParams(location.search).get('vf')) {
         <input type="number" id="ori-weeks" min="1" max="26" value="12" onchange="clampOriWeeks()" style="width:100%;background:var(--slate);border:1px solid var(--border);border-radius:4px;padding:6px 8px;color:var(--white);font-size:12px;outline:none;box-sizing:border-box;"></div>
     </div>
 
-    <!-- New Team Member Profile -->
+<div style="display:flex;flex-wrap:wrap;gap:10px;margin:12px 0;"><label class="form-label">Phone number<br><input class="form-input" id="ori-staff-phone" type="tel" ></label><label class="form-label">Date of hire<br><input class="form-input" id="ori-staff-hire" type="date" ></label><label class="form-label">Birthday (MM/DD)<br><input class="form-input" id="ori-staff-birthday" type="text" placeholder="MM/DD" maxlength="5"></label><label class="form-label">Shift<br><select class="form-select" id="ori-staff-shift"><option value="">—</option><option value="DAY">Day</option><option value="NIGHT">Night</option><option value="EVE">Evening</option><option value="BOTH">Both</option></select></label><label class="form-label">FTE status<br><select class="form-select" id="ori-staff-fte"><option value="">—</option><option value="1">1</option><option value="0.9">0.9</option><option value="0.8">0.8</option><option value="0.6">0.6</option><option value="0.5">0.5</option><option value="0.25">0.25</option></select></label><label class="form-label"><input type="checkbox" id="ori-staff-agency" onchange="toggleStaffAgencyFields('ori-staff')"> Agency</label><div id="ori-staff-agency-dates" style="display:none;gap:10px;flex-wrap:wrap;"><label class="form-label">Agency start date<br><input class="form-input" type="date" id="ori-staff-contract-start"></label><label class="form-label">Agency end date<br><input class="form-input" type="date" id="ori-staff-contract-end"></label></div></div>    <!-- New Team Member Profile -->
     <div style="border-top:1px solid var(--border);padding-top:12px;margin-bottom:12px;">
       <div style="font-size:11px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">👤 New Team Member Profile</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
@@ -14728,6 +14746,32 @@ function closeQRModal() {
 }
 
 
+function toggleStaffAgencyFields(prefix) {
+  document.getElementById(prefix+'-agency-dates').style.display = document.getElementById(prefix+'-agency').checked ? 'flex' : 'none';
+}
+function loadStaffDetails(prefix, name) {
+  const ag = state.agencyDates[name] || {};
+  const values = {phone:state.phones[name], hire:state.hireDates[name], birthday:state.birthdays[name], shift:state.empShifts[name], fte:state.empFTE[name], 'contract-start':ag.contractStart, 'contract-end':ag.contractEnd};
+  Object.entries(values).forEach(([key,val]) => document.getElementById(prefix+'-'+key).value = val || '');
+  document.getElementById(prefix+'-agency').checked = !!ag.isAgency;
+  toggleStaffAgencyFields(prefix);
+}
+function saveStaffDetails(prefix, name) {
+  const value = key => document.getElementById(prefix+'-'+key).value.trim();
+  const birthday = value('birthday');
+  if (birthday && !/^(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])$/.test(birthday)) { alert('Enter birthday as MM/DD.'); return false; }
+  const isAgency = document.getElementById(prefix+'-agency').checked;
+  const start = value('contract-start'), end = value('contract-end');
+  if (isAgency && start && end && end < start) { alert('Agency end date must be on or after the start date.'); return false; }
+  state.phones[name] = value('phone'); state.hireDates[name] = value('hire');
+  state.birthdays[name] = birthday; state.empShifts[name] = value('shift'); state.empFTE[name] = value('fte');
+  const ag = state.agencyDates[name] = {...(state.agencyDates[name] || {}), isAgency};
+  if (isAgency) { ag.contractStart = start; ag.contractEnd = end; }
+  else ['contractStart','contractEnd','extensionEnd'].forEach(key => delete ag[key]);
+  state.empOrientation[name] = true;
+  return true;
+}
+
 function addEmployee() {
   const nameInput = document.getElementById('new-emp-name');
   const roleInput = document.getElementById('new-emp-role');
@@ -14746,6 +14790,7 @@ function addEmployee() {
     return;
   }
 
+  if (!saveStaffDetails('new-emp', name)) return;
   state.customStaff.push({ name, job });
   rebuildMasterStaff();
 
@@ -14755,7 +14800,7 @@ function addEmployee() {
     const today      = new Date().toISOString().split('T')[0];
     const isAgencyNw = !!(state.agencyDates && state.agencyDates[name]?.isAgency);
     const oriRole    = isAgencyNw ? 'Agency RN' : job;
-    const defaultWk  = isAgencyNw ? 1 : (job === 'CA') ? 6 : 12;
+    const defaultWk  = isAgencyNw ? 3 : (job === 'CA') ? 6 : 12;
     // Target date: agency = 3 days, others = weeks
     const targetDt   = new Date();
     targetDt.setDate(targetDt.getDate() + (isAgencyNw ? 3 : defaultWk * 7));
@@ -14778,6 +14823,7 @@ function addEmployee() {
   if (typeof renderOrientationList === 'function') renderOrientationList();
 
   nameInput.value = '';
+  loadStaffDetails('new-emp', '');
   showAddEmpStatus(`✓ ${name} (${job}) added & placed on Orientation tab.`, 'success');
   showSaveBanner(`➕ ${name} added → Orientation`);
 
@@ -20982,6 +21028,7 @@ function openOrientationModal(name) {
   // Populate buddy datalist with all staff
   const bdl = document.getElementById('ori-buddy-dl');
   if (bdl) bdl.innerHTML = MASTER_STAFF.map(s=>`<option value="${s.name}">`).join('');
+  loadStaffDetails('ori-staff', name || '');
   document.getElementById('ori-edit-name').value = name || '';
   document.getElementById('ori-modal-title').textContent = name ? 'Edit Orientee' : 'Add Orientee';
   if (name) {
@@ -21016,6 +21063,10 @@ function openOrientationModal(name) {
 function closeOriModal() { const m=document.getElementById('ori-modal'); if(m) m.style.display='none'; }
 
 function oriRoleChange(val) {
+  if (val === 'Agency RN') {
+    document.getElementById('ori-staff-agency').checked = true;
+    toggleStaffAgencyFields('ori-staff');
+  }
   const wkEl = document.getElementById('ori-weeks');
   if (!wkEl) return;
   if (val === 'Agency RN') { wkEl.value = 3; wkEl.min = 1; wkEl.max = 5; }
@@ -21033,6 +21084,8 @@ function saveOrientee() {
     alert('Please select an Onboarding Buddy or check "Assign Later".');
     return;
   }
+  if (document.getElementById('ori-role').value === 'Agency RN') document.getElementById('ori-staff-agency').checked = true;
+  if (!saveStaffDetails('ori-staff', name)) return;
   const od = oriData(name);
   od.preceptor   = document.getElementById('ori-preceptor')?.value  || '';
   od.buddy       = buddy;
@@ -21065,6 +21118,7 @@ function saveOrientee() {
 
   persistSave();
   closeOriModal();
+  renderDirectory();
   renderOrientationList();
   renderOrientationDetail(name);
 }
