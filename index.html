@@ -13646,6 +13646,30 @@ function setDirRoleTab(el) {
 }
 
 // ── Vacancy Rate ──
+// Agency activity uses the current calendar week (Monday–Sunday), independent of board date.
+function vacancyAgencyWeek(now = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-US', {timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(now);
+  const part = type => parts.find(p => p.type === type).value;
+  const today = new Date(Date.UTC(+part('year'), +part('month') - 1, +part('day')));
+  const start = new Date(today); start.setUTCDate(start.getUTCDate() - (start.getUTCDay() + 6) % 7);
+  const end = new Date(start); end.setUTCDate(end.getUTCDate() + 6);
+  return {start, end};
+}
+function vacancyAgencyStatus(name, week = vacancyAgencyWeek()) {
+  const agency = state.agencyDates?.[name];
+  if (!agency?.isAgency) return 'staff';
+  const parse = value => {
+    const text = String(value || '').trim();
+    let m = text.match(/^(\d{4})-(\d{2})-(\d{2})$/), y, mo, d;
+    if (m) { y=+m[1]; mo=+m[2]; d=+m[3]; }
+    else { m=text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/); if (!m) return null; y=+m[3]; if(y<100)y+=2000; mo=+m[1]; d=+m[2]; }
+    const date = new Date(Date.UTC(y,mo-1,d));
+    return date.getUTCFullYear()===y && date.getUTCMonth()===mo-1 && date.getUTCDate()===d ? date : null;
+  };
+  const start = parse(agency.contractStart), end = parse(agency.extensionEnd || agency.contractEnd);
+  if (!start || !end || end < start) return 'unknown';
+  return start <= week.end && end >= week.start ? 'active' : 'inactive';
+}
 function getStaffOnShift(role, shifts) {
   const dayShiftKeys = role==='CA' ? ['0630-1430','0630-1830'] : ['0700-1500'];
   const eveShiftKeys = role==='CA' ? ['1430-1830','1830-2230','1430-0300'] : ['1500-1900'];
@@ -13653,7 +13677,8 @@ function getStaffOnShift(role, shifts) {
 
   // Use FTE values instead of headcount
   function getFTE(name) {
-    return parseFloat(state.empFTE[name]) || 1.0;
+    const value = Number.parseFloat(state.empFTE[name]);
+    return Number.isFinite(value) ? value : 1.0;
   }
 
   const dayNames = new Set();
@@ -13679,7 +13704,13 @@ function getStaffOnShift(role, shifts) {
     }
   });
 
+  const week = vacancyAgencyWeek();
+  [dayNames, eveNames, ngtNames].forEach(names => {
+    names.forEach(name => { if (state.agencyDates?.[name]?.isAgency && vacancyAgencyStatus(name, week) !== 'active') names.delete(name); });
+  });
   const allNames = new Set([...dayNames, ...eveNames, ...ngtNames]);
+  // Active agency nurses count in total RN FTE even before a shift is assigned.
+  if (role === 'RN') MASTER_STAFF.filter(s => s.job === 'RN' && vacancyAgencyStatus(s.name, week) === 'active').forEach(s => allNames.add(s.name));
 
   // Sum FTE values — round to 1 decimal for display
   function sumFTE(nameSet) {
@@ -13711,7 +13742,7 @@ function renderVacancy() {
       counts.full[s.job]++;
       if (onDbl)    counts.dbl[s.job]++;
       if (onOrient) counts.orient[s.job]++;
-      if (!onDbl && !onOrient) counts.working[s.job]++;
+      if (!onDbl && !onOrient && ['staff','active'].includes(vacancyAgencyStatus(s.name))) counts.working[s.job]++;
     });
 
     const total = (obj) => Object.values(obj).reduce((a,b)=>a+b,0);
@@ -13755,6 +13786,23 @@ function renderVacancy() {
           ${dTotal>0?`🤱 ${dTotal} DBL/Mat · `:''}${oTotal>0?`🎓 ${oTotal} Orient · `:''}${wTotal} active
         </div>
       </div>`;
+  }
+
+  const agencyWeek = vacancyAgencyWeek();
+  const agencyNurses = MASTER_STAFF.filter(s => s.job === 'RN' && state.agencyDates?.[s.name]?.isAgency);
+  const activeAgency = agencyNurses.filter(s => vacancyAgencyStatus(s.name, agencyWeek) === 'active');
+  const unknownAgency = agencyNurses.filter(s => vacancyAgencyStatus(s.name, agencyWeek) === 'unknown');
+  let agencySummary = document.getElementById('vacancy-agency-summary');
+  if (!agencySummary && budgetSplitEl) {
+    agencySummary = document.createElement('div'); agencySummary.id = 'vacancy-agency-summary';
+    agencySummary.className = 'vacancy-extra'; budgetSplitEl.after(agencySummary);
+  }
+  if (agencySummary) {
+    const fmt = date => date.toLocaleDateString('en-US', {timeZone:'UTC',month:'short',day:'numeric'});
+    const fte = activeAgency.reduce((sum, s) => { const value = Number.parseFloat(state.empFTE[s.name]); return sum + (Number.isFinite(value) ? value : 1); }, 0);
+    agencySummary.innerHTML = '<strong>Agency RNs · active this week: ' + activeAgency.length + '</strong>' +
+      '<div class="vacancy-help" style="margin:8px 0 0;">' + fmt(agencyWeek.start) + ' – ' + fmt(agencyWeek.end) + ' (Mon–Sun) · ' + fte.toFixed(1) + ' FTE included in total RN filled FTE. Counts assignments overlapping any day this week; extensions use the latest saved end date.</div>' +
+      (unknownAgency.length ? '<div class="vacancy-help" style="margin:8px 0 0;">' + unknownAgency.length + ' agency RN(s) need valid start and end dates before they can be counted as active.</div>' : '');
   }
 
   const roleRows = [
