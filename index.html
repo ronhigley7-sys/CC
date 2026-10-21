@@ -13646,12 +13646,12 @@ function setDirRoleTab(el) {
 }
 
 // ── Vacancy Rate ──
-// Agency activity uses the current calendar week (Monday–Sunday), independent of board date.
+// Agency activity uses the current calendar week (Sunday–Saturday), independent of board date.
 function vacancyAgencyWeek(now = new Date()) {
   const parts = new Intl.DateTimeFormat('en-US', {timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(now);
   const part = type => parts.find(p => p.type === type).value;
   const today = new Date(Date.UTC(+part('year'), +part('month') - 1, +part('day')));
-  const start = new Date(today); start.setUTCDate(start.getUTCDate() - (start.getUTCDay() + 6) % 7);
+  const start = new Date(today); start.setUTCDate(start.getUTCDate() - start.getUTCDay());
   const end = new Date(start); end.setUTCDate(end.getUTCDate() + 6);
   return {start, end};
 }
@@ -13801,7 +13801,7 @@ function renderVacancy() {
     const fmt = date => date.toLocaleDateString('en-US', {timeZone:'UTC',month:'short',day:'numeric'});
     const fte = activeAgency.reduce((sum, s) => { const value = Number.parseFloat(state.empFTE[s.name]); return sum + (Number.isFinite(value) ? value : 1); }, 0);
     agencySummary.innerHTML = '<strong>Agency RNs · active this week: ' + activeAgency.length + '</strong>' +
-      '<div class="vacancy-help" style="margin:8px 0 0;">' + fmt(agencyWeek.start) + ' – ' + fmt(agencyWeek.end) + ' (Mon–Sun) · ' + fte.toFixed(1) + ' FTE included in total RN filled FTE. Counts assignments overlapping any day this week; extensions use the latest saved end date.</div>' +
+      '<div class="vacancy-help" style="margin:8px 0 0;">' + fmt(agencyWeek.start) + ' – ' + fmt(agencyWeek.end) + ' (Sun–Sat) · ' + fte.toFixed(1) + ' FTE included in total RN filled FTE. Counts assignments overlapping any day this week; extensions use the latest saved end date.</div>' +
       (unknownAgency.length ? '<div class="vacancy-help" style="margin:8px 0 0;">' + unknownAgency.length + ' agency RN(s) need valid start and end dates before they can be counted as active.</div>' : '');
   }
 
