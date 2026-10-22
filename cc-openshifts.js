@@ -784,17 +784,23 @@
     }
     if (role==='ALL'||role==='CA') {
       sections.push({ label:'Clinical Assistant (CA) — Day Shift (0630–1430)',   type:'day',   grp:'ca', tgt:tgts.caDay, icon:'☀️', hdrBg:'#b45309' });
+      sections.push({ label:'Clinical Assistant (CA) — Eve 1 (1430–1830)', type:'eve1', grp:'ca', tgt:tgts.caDay, icon:'🌤️', hdrBg:'#9a6700' });
+      sections.push({ label:'Clinical Assistant (CA) — Eve 2 (1830–2230)', type:'eve2', grp:'ca', tgt:tgts.caNgt, icon:'🌆', hdrBg:'#7c3aed' });
       sections.push({ label:'Clinical Assistant (CA) — Night Shift (2230–0630)', type:'night', grp:'ca', tgt:tgts.caNgt, icon:'🌙', hdrBg:'#5b21b6' });
     }
 
     // Per-date filled counts
     function getCounts(dt) {
-      var pl = (state.placements||{})[dt]||{}, rnD=0,rnN=0,caD=0,caN=0;
+      var pl = (state.placements||{})[dt]||{}, rnD=0,rnN=0,caD=0,caE1=0,caE2=0,caN=0;
       Object.keys(pl).forEach(function(sk){
         (pl[sk]||[]).forEach(function(p){
           var r=(p.role||'').toUpperCase();
           if(['NURSE MGR','ASSIST NU RSE MGR','ASSIST NURSE MGR'].indexOf(r)>=0) return;
           var st=window._sbShiftType(sk,r);
+          if(r==='CA'&&sk==='1430-1830') caE1++;
+          if(r==='CA'&&sk==='1830-2230') caE2++;
+          if(r==='CA'&&sk==='1430-1830') caE1.push({name:p.name,role:r});
+          if(r==='CA'&&sk==='1830-2230') caE2.push({name:p.name,role:r});
           if(st==='eve') return;
           if((r==='RN'||r==='LPN')&&st==='day')   rnD++;
           if((r==='RN'||r==='LPN')&&st==='night') rnN++;
@@ -802,14 +808,14 @@
           if(r==='CA'&&st==='night')               caN++;
         });
       });
-      return { rnD:rnD,rnN:rnN,caD:caD,caN:caN,
+      return { rnD:rnD,rnN:rnN,caD:caD,caE1:caE1,caE2:caE2,caN:caN,
         openRnD:Math.max(0,tgts.rnDay-rnD), openRnN:Math.max(0,tgts.rnNgt-rnN),
-        openCaD:Math.max(0,tgts.caDay-caD), openCaN:Math.max(0,tgts.caNgt-caN) };
+        openCaD:Math.max(0,tgts.caDay-caD), openCaE1:Math.max(0,tgts.caDay-caE1), openCaE2:Math.max(0,tgts.caNgt-caE2), openCaN:Math.max(0,tgts.caNgt-caN) };
     }
 
     // Build filled staff lists for daily detail
     function getStaff(dt) {
-      var pl=(state.placements||{})[dt]||{},rnD=[],rnN=[],caD=[],caN=[];
+      var pl=(state.placements||{})[dt]||{},rnD=[],rnN=[],caD=[],caE1=[],caE2=[],caN=[];
       Object.keys(pl).forEach(function(sk){
         (pl[sk]||[]).forEach(function(p){
           var r=(p.role||'').toUpperCase();
@@ -827,7 +833,7 @@
           if(r==='CA'&&st==='night')               caN.push({name:p.name,role:r});
         });
       });
-      return {rnD:rnD,rnN:rnN,caD:caD,caN:caN};
+      return {rnD:rnD,rnN:rnN,caD:caD,caE1:caE1,caE2:caE2,caN:caN};
     }
 
     // ── Build HTML ────────────────────────────────────────────────
@@ -855,7 +861,7 @@
         var c = getCounts(dt);
         return sec.grp==='rnlpn'
           ? (sec.type==='day' ? c.openRnD : c.openRnN) > 0
-          : (sec.type==='day' ? c.openCaD : c.openCaN) > 0;
+          : ({day:c.openCaD,eve1:c.openCaE1,eve2:c.openCaE2,night:c.openCaN}[sec.type]) > 0;
       });
 
       html += '<div style="margin-bottom:20px;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;">';
@@ -878,8 +884,8 @@
         var alt=false;
         dates.forEach(function(dt) {
           var c = getCounts(dt);
-          var filled = sec.grp==='rnlpn' ? (sec.type==='day'?c.rnD:c.rnN) : (sec.type==='day'?c.caD:c.caN);
-          var open   = sec.grp==='rnlpn' ? (sec.type==='day'?c.openRnD:c.openRnN) : (sec.type==='day'?c.openCaD:c.openCaN);
+          var filled = sec.grp==='rnlpn' ? (sec.type==='day'?c.rnD:c.rnN) : ({day:c.caD,eve1:c.caE1,eve2:c.caE2,night:c.caN}[sec.type]);
+          var open   = sec.grp==='rnlpn' ? (sec.type==='day'?c.openRnD:c.openRnN) : ({day:c.openCaD,eve1:c.openCaE1,eve2:c.openCaE2,night:c.openCaN}[sec.type]);
           if (open<=0) return;
           var dow=window._sbDOW(dt), isWE=dow==='Sat'||dow==='Sun'||dow==='Fri';
           var rowBg=isWE?'#fefce8':(alt?'#f8fafc':'#fff'); alt=!alt;
@@ -913,8 +919,10 @@
       var openRnD = showRnlpn ? c.openRnD : 0;
       var openRnN = showRnlpn ? c.openRnN : 0;
       var openCaD = showCa    ? c.openCaD : 0;
+      var openCaE1 = showCa ? c.openCaE1 : 0;
+      var openCaE2 = showCa ? c.openCaE2 : 0;
       var openCaN = showCa    ? c.openCaN : 0;
-      var totalOpen = openRnD+openRnN+openCaD+openCaN;
+      var totalOpen = openRnD+openRnN+openCaD+openCaE1+openCaE2+openCaN;
 
       html += '<div style="border:1px solid '+(isWE?'#fcd34d':'#cbd5e1')+';border-radius:8px;margin-bottom:14px;overflow:hidden;border-left:4px solid '+(totalOpen>0?'#b32318':'#16a34a')+';">';
       html += '<div style="background:'+(isWE?'#fef9c3':'#f8fafc')+';padding:9px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e2e8f0;">'+
@@ -939,6 +947,9 @@
       if (showCa) {
         html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;'+(showRnlpn?'border-top:1px solid #e2e8f0;background:#fafbff;':'')+'">';
         html += shiftCol('☀️ Day — CA', st.caD, openCaD, tgts.caDay, true);
+        html += shiftCol('🌤️ Eve 1 — CA', st.caE1, openCaE1, tgts.caDay, false);
+        html += '</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid #e2e8f0;">';
+        html += shiftCol('🌆 Eve 2 — CA', st.caE2, openCaE2, tgts.caNgt, true);
         html += shiftCol('🌙 Night — CA', st.caN, openCaN, tgts.caNgt, false);
         html += '</div>';
       }
@@ -949,7 +960,7 @@
     // Footer
     html += '<div style="margin-top:24px;padding-top:12px;border-top:2px solid #1a4480;display:flex;justify-content:space-between;font-size:10px;color:#64748b;">'+
       '<span>3B Tele Med Surg · Arnot Ogden Medical Center</span>'+
-      '<span>Targets: RN/LPN Day '+tgts.rnDay+' · Night '+tgts.rnNgt+' · CA Day '+tgts.caDay+' · Night '+tgts.caNgt+'</span>'+
+      '<span>Targets: RN/LPN Day '+tgts.rnDay+' · Night '+tgts.rnNgt+' · CA Day/Eve 1 '+tgts.caDay+' · Eve 2/Night '+tgts.caNgt+'</span>'+
       '<span>'+printed+'</span></div>';
     html += '</div>';
     report.innerHTML = html;
