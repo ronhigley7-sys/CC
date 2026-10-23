@@ -59,7 +59,7 @@ thead{background:#244c79}th{color:#ffda81}tbody tr:nth-child(even){background:#f
 <div class="card"><h2>CNO / Service Line Director — Weekly PLATO Brief</h2><p class="muted notice">Friday–Thursday reporting. Choose a week, record new HAPI events and the two leading missed interventions, then copy the summary. Manually entered fields are stored in this browser only, not synchronized between devices.</p>
 <div class="controls"><label>Week starting Friday<select id="briefWeek"></select></label><label>New HAPI events<input id="newHapi" type="number" min="0" step="1" placeholder="Not entered"></label><label>Most missed intervention<input id="missOne" placeholder="Not entered"></label><label>Second most missed<input id="missTwo" placeholder="Not entered"></label><label>Third most missed<input id="missThree" placeholder="Not entered"></label><button id="saveBrief">Save weekly details</button><button id="copyBrief">Copy CNO report</button></div><div id="briefOutput" class="card" style="white-space:pre-wrap;line-height:1.6"></div></div>
 <div class="card"><h2>Week-to-week changes</h2><p class="muted">Change in percentage points compared with the preceding week. Weeks run Friday–Thursday.</p><div class="table-wrap"><table><thead><tr><th>Week</th><th>Rounds</th><th>Rounds change</th><th>HAPI %</th><th>HAPI change</th><th>Falls %</th><th>Falls change</th></tr></thead><tbody id="changes"><tr><td colspan="7">No data loaded</td></tr></tbody></table></div></div>
-<div class="card" id="hapiCoaching"><h2>Ongoing HAPI Coaching</h2><p class="muted notice">Observation-based flags for review, not individual fault findings. RN and LPN cannot be reliably separated without a verified staff-role directory. Weekly reporting uses Friday–Thursday periods. Coaching completion is not inferred from audit results.</p><div class="controls"><label>Role<select id="coachRole"><option value="ALL">All staff</option><option value="RN">RN / LPN (role unverified)</option><option value="CA">CA</option></select></label><label>Show<select id="coachFilter"><option value="ALL">All observed failures</option><option value="REPEAT">2+ failures in one week</option></select></label></div><div class="table-wrap"><table><thead><tr><th>Staff member</th><th>Role group</th><th>HAPI fails</th><th>Passes</th><th>Pass %</th><th>Latest failure</th><th>Max fails/week</th><th>Follow-up</th></tr></thead><tbody id="coachRows"><tr><td colspan="8">Connect to Supabase to load coaching flags</td></tr></tbody></table></div></div>
+<div class="card" id="hapiCoaching"><h2>Ongoing HAPI Coaching</h2><p class="muted notice">Observation-based flags for review, not individual fault findings. RN and LPN cannot be reliably separated without a verified staff-role directory. Weekly reporting uses Friday–Thursday periods. Coaching completion is not inferred from audit results.</p><div class="controls"><label>Role<select id="coachRole"><option value="ALL">All staff</option><option value="RN">RN / LPN (role unverified)</option><option value="CA">CA</option></select></label><label>Show<select id="coachFilter"><option value="ALL">All observed failures</option><option value="REPEAT">2+ failures in one week</option></select></label></div><div class="controls"><label>Employee name<input id="coachName" type="search" placeholder="Search employee"></label><label>Week (Friday–Thursday)<select id="coachWeek"><option value="ALL">All loaded weeks</option></select></label></div><div class="table-wrap"><table><thead><tr><th>Staff member</th><th>Role group</th><th>HAPI fails</th><th>Passes</th><th>Pass %</th><th>Latest failure</th><th>Max fails/week</th><th>Missed HAPI interventions</th><th>Follow-up</th></tr></thead><tbody id="coachRows"><tr><td colspan="9">Connect to Supabase to load coaching flags</td></tr></tbody></table></div></div>
 <div class="card"><h2>RN and CA compliance</h2><p class="muted notice">Each nurse and CA named on a PLATO observation is credited with the same observed HAPI result. This is an observation-based team measure, not proof of individual responsibility. Missing or unrecognized results are excluded. Cumulative rates cover all records returned for the selected date range.</p><div class="controls"><label>Staff role<select id="role" style="padding:10px;background:#102640;color:#fff;border:1px solid #456e9b;border-radius:8px"><option value="RN">RN / LPN</option><option value="CA">Clinical assistant</option></select></label><label>Week<select id="staffWeek" style="padding:10px;background:#102640;color:#fff;border:1px solid #456e9b;border-radius:8px"></select></label></div><h3>Selected week</h3><div class="table-wrap"><table><thead><tr><th>Staff member</th><th>Passes</th><th>Fails</th><th>Pass rate</th><th>Change vs prior week</th></tr></thead><tbody id="staffWeekly"></tbody></table></div><h3>Ongoing / selected date range</h3><div class="table-wrap"><table><thead><tr><th>Staff member</th><th>Passes</th><th>Fails</th><th>Pass rate</th></tr></thead><tbody id="staffOngoing"></tbody></table></div></div>
 <div class="card"><h2>Imported observations</h2><div class="table-wrap"><table><thead><tr><th>Date</th><th>Nurse</th><th>Second nurse</th><th>CA</th><th>HAPI</th><th>Falls</th><th>Source row</th></tr></thead><tbody id="records"><tr><td colspan="7">No data loaded</td></tr></tbody></table></div></div>
 <p class="muted notice">Data source: Supabase plato_observations. Only rows tagged 3B, 3C or 3B/3C are included. Results are not verified against the original Smartsheet report; review source records before using for coaching or official compliance reporting. Missing Falls values are excluded from the Falls denominator. This site does not modify records.</p>
@@ -150,20 +150,40 @@ function renderExecutive(){
 }
 
 function renderCoaching(){
- const role=$('coachRole').value,filter=$('coachFilter').value,groups=new Map();
- for(const r of staffRows){if(!yes(r.hapi_compliance)&&!no(r.hapi_compliance))continue;
+ const role=$('coachRole').value,filter=$('coachFilter').value,nameFilter=$('coachName').value.trim().toLowerCase(),selectedWeek=$('coachWeek').value;
+ const weeks=[...new Set(staffRows.map(r=>week(r.observation_date)))].sort().reverse();
+ const previous=$('coachWeek').value;
+ $('coachWeek').innerHTML='<option value="ALL">All loaded weeks</option>'+weeks.map(w=>'<option value="'+esc(w)+'">'+esc(w)+'</option>').join('');
+ $('coachWeek').value=weeks.includes(previous)?previous:'ALL';
+ const selected=$('coachWeek').value;
+ const groups=new Map();
+ for(const r of staffRows){if(selected!=='ALL'&&week(r.observation_date)!==selected)continue;if(!yes(r.hapi_compliance)&&!no(r.hapi_compliance))continue;
   for(const [kind,names] of [['RN',[r.staff_name,r.second_nurse]],['CA',[r.ca_name]]]){
    for(const name of new Set(names.map(n=>String(n||'').trim()).filter(Boolean))){const id=kind+'|'+name;
-    const x=groups.get(id)||{name,kind,pass:0,fail:0,latest:'',weeks:{}};
-    if(yes(r.hapi_compliance))x.pass++;else{x.fail++;x.latest=x.latest>r.observation_date?x.latest:r.observation_date;const w=week(r.observation_date);x.weeks[w]=(x.weeks[w]||0)+1;}
+    const x=groups.get(id)||{name,kind,pass:0,fail:0,latest:'',weeks:{},missed:new Map(),unspecified:0};
+    if(yes(r.hapi_compliance))x.pass++;else{
+      x.fail++;x.latest=x.latest>r.observation_date?x.latest:r.observation_date;
+      const w=week(r.observation_date);x.weeks[w]=(x.weeks[w]||0)+1;
+      const details=r.intervention_details&&typeof r.intervention_details==='object'?r.intervention_details:{};
+      let found=false;
+      for(const [label,value] of Object.entries(details)){
+       if(!/^hapi\b/i.test(label.trim()))continue;
+       if(!['no','not compliant','non-compliant','not in place','absent','false'].includes(String(value??'').trim().toLowerCase()))continue;
+       x.missed.set(label,(x.missed.get(label)||0)+1);found=true;
+      }
+      if(!found)x.unspecified++;
+    }
     groups.set(id,x);
    }
   }
  }
- const data=[...groups.values()].filter(x=>x.fail>0&&(role==='ALL'||role===x.kind)&&(filter!=='REPEAT'||Math.max(0,...Object.values(x.weeks))>=2)).sort((a,b)=>Math.max(0,...Object.values(b.weeks))-Math.max(0,...Object.values(a.weeks))||b.fail-a.fail||a.name.localeCompare(b.name));
- $('coachRows').innerHTML=data.map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+(x.kind==='CA'?'CA':'RN/LPN · verify')+'</td><td>'+x.fail+'</td><td>'+x.pass+'</td><td>'+(100*x.pass/(x.pass+x.fail)).toFixed(1)+'%</td><td>'+esc(x.latest)+'</td><td>'+Math.max(0,...Object.values(x.weeks))+'</td><td>'+(Math.max(0,...Object.values(x.weeks))>=2?'Review repeated misses':'Review observation')+'</td></tr>').join('')||'<tr><td colspan="8">No matching observed HAPI failures in the loaded date range</td></tr>';
+ const data=[...groups.values()].filter(x=>(x.pass+x.fail)>0&&(role==='ALL'||role===x.kind)&&x.name.toLowerCase().includes(nameFilter)&&(filter!=='REPEAT'||Math.max(0,...Object.values(x.weeks))>=2)).sort((a,b)=>b.fail-a.fail||a.name.localeCompare(b.name));
+ $('coachRows').innerHTML=data.map(x=>{
+  const missed=[...x.missed].sort((a,b)=>b[1]-a[1]).map(([label,n])=>esc(label)+' ('+n+')').join('; ')+(x.unspecified?(x.missed.size?'; ':'')+'Not specified in '+x.unspecified+' failed observation(s)':'');
+  return '<tr><td>'+esc(x.name)+'</td><td>'+(x.kind==='CA'?'CA':'RN/LPN · verify')+'</td><td>'+x.fail+'</td><td>'+x.pass+'</td><td>'+(100*x.pass/(x.pass+x.fail)).toFixed(1)+'%</td><td>'+esc(x.latest||'—')+'</td><td>'+Math.max(0,...Object.values(x.weeks))+'</td><td>'+ (missed||'—') +'</td><td>'+(Math.max(0,...Object.values(x.weeks))>=2?'Review repeated misses':x.fail?'Review observation':'No observed failure')+'</td></tr>';
+ }).join('')||'<tr><td colspan="9">No matching observations in the selected week/date range</td></tr>';
 }
-$('coachRole').onchange=renderCoaching;$('coachFilter').onchange=renderCoaching;
+$('coachRole').onchange=renderCoaching;$('coachFilter').onchange=renderCoaching;$('coachName').oninput=renderCoaching;$('coachWeek').onchange=renderCoaching;
 function render(){
 const valid=rows.filter(r=>['3B','3C','3B/3C'].includes(String(r.nurse_home_unit||'').trim().toUpperCase()));
 const h=valid.filter(r=>yes(r.hapi_compliance)||no(r.hapi_compliance)),f=valid.filter(r=>yes(r.fall_compliance)||no(r.fall_compliance));
