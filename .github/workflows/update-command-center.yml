@@ -1,0 +1,77 @@
+name: Update Command Center from patch
+
+on:
+  workflow_dispatch:
+    inputs:
+      patch_file:
+        description: 'Repository-relative path to a reviewed .patch file'
+        required: true
+        default: '.github/patches/command-center.patch'
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cc-index-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out current main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+
+      - name: Validate patch and target
+        shell: bash
+        env:
+          PATCH_FILE: ${{ inputs.patch_file }}
+        run: |
+          set -euo pipefail
+          case "$PATCH_FILE" in
+            .github/patches/*.patch) ;;
+            *) echo "Patch must be inside .github/patches/"; exit 1 ;;
+          esac
+          test -f "$PATCH_FILE"
+          python3 - "$PATCH_FILE" <<'PY'
+          import pathlib, re, sys
+          patch = pathlib.Path(sys.argv[1]).read_text()
+          paths = re.findall(r'^(?:---|\+\+\+) ([^\n]+)$', patch, re.M)
+          if not paths or any(p not in ('a/index.html', 'b/index.html') for p in paths):
+              raise SystemExit('Only index.html may be changed by this workflow')
+          PY
+          git apply --check "$PATCH_FILE"
+
+      - name: Apply reviewed patch
+        shell: bash
+        env:
+          PATCH_FILE: ${{ inputs.patch_file }}
+        run: |
+          set -euo pipefail
+          git apply "$PATCH_FILE"
+          test -s index.html
+          python3 - <<'PY'
+          from pathlib import Path
+          html = Path('index.html').read_text(encoding='utf-8')
+          assert len(html) > 100000, 'index.html unexpectedly small'
+          assert '<html' in html.lower() and '</html>' in html.lower()
+          PY
+          git diff --check
+          git diff --stat
+
+      - name: Commit and publish
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- index.html
+          if git diff --cached --quiet; then
+            echo "No changes to publish."
+            exit 0
+          fi
+          git commit -m "Update Command Center via reviewed patch"
+          git push origin HEAD:main
