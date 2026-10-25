@@ -1,19 +1,19 @@
 --- a/index.html
 +++ b/index.html
-@@ -13504,0 +13505,2 @@
+@@ -13503,0 +13504,2 @@
 +  // ACLS eligibility comes from the employee's Education certification expiry date.
 +  // An empty, malformed or expired ACLS record never qualifies for the medication/defib role.
-@@ -13511 +13513 @@
+@@ -13510 +13512 @@
 -    [['primary','Primary RN'],['secondary','Secondary RN'],['runner','Runner']].forEach(([role,label])=>{
 +    [['primary','Primary RN'],['meddefib','Medication / Defibrillator RN'],['compressions1','Compressions 1'],['compressions2','Compressions 2'],['recorder','RN Recorder']].forEach(([role,label])=>{
-@@ -13513 +13515 @@
+@@ -13512 +13514 @@
 -        staff.filter(p=>role==='runner'||p.role==='RN').map(p=>'<option value="'+ccEsc(p.name)+'" '+(team[role]===p.name?'selected':'')+'>'+ccEsc(p.name)+' ('+p.role+')</option>').join('')+'</select></label>';
 +        staff.filter(p=>(!['primary','meddefib','recorder'].includes(role)||p.role==='RN') && (role!=='meddefib'||codeHasCurrentACLS(p.name))).map(p=>'<option value="'+ccEsc(p.name)+'" '+(team[role]===p.name?'selected':'')+'>'+ccEsc(p.name)+' ('+p.role+')</option>').join('')+'</select></label>';
-@@ -13514,0 +13517,3 @@
+@@ -13513,0 +13516,3 @@
 +    if (team.meddefib && !codeHasCurrentACLS(team.meddefib)) {
 +      html+='<div style="color:var(--red2);font-size:12px;margin-top:8px;">⚠ Medication / Defibrillator RN assignment is not valid: ACLS is missing or expired. Select a currently certified RN.</div>';
 +    }
-@@ -13518,0 +13524,10 @@
+@@ -13517,0 +13523,9 @@
 +function codeHasCurrentACLS(name) {
 +  const expiry = String((state.certs && state.certs[name] && state.certs[name].ACLS) || '').trim();
 +  const match = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(expiry);
@@ -23,15 +23,15 @@
 +  if (end.getFullYear() !== year || end.getMonth() !== month - 1 || end.getDate() !== day) return false;
 +  return end.getTime() >= Date.now();
 +}
-@@ -13520,0 +13537,5 @@
+@@ -13518,0 +13533,5 @@
 +  if (role === 'meddefib' && name && !codeHasCurrentACLS(name)) {
 +    alert('Medication / Defibrillator RN requires a current ACLS expiration date in the Education tab.');
 +    renderCharge();
 +    return;
 +  }
-@@ -13523 +13544 @@
+@@ -13521 +13540 @@
 -  if(name && Object.entries(team).some(([r,n])=>r!==role&&n===name)){alert('Already assigned to another code role.');renderCharge();return;}
 +  if(name && Object.entries(team).some(([r,n])=>['primary','meddefib','compressions1','compressions2','recorder'].includes(r)&&r!==role&&n===name)){alert('Already assigned to another code role.');renderCharge();return;}
-@@ -31883 +31904 @@
+@@ -31883 +31902 @@
 -      ${[['primary','Primary RN'],['secondary','Secondary RN'],['runner','Runner']].map(([role,label])=>`<tr><td>${label}</td><td>${ccEsc(((state.codeResponseTeam||{})[dateKey+'|DAY']||{})[role]||'—')}</td><td>${ccEsc(((state.codeResponseTeam||{})[dateKey+'|NIGHT']||{})[role]||'—')}</td></tr>`).join('')}
 +      ${[['primary','Primary RN'],['meddefib','Medication / Defibrillator RN'],['compressions1','Compressions 1'],['compressions2','Compressions 2'],['recorder','RN Recorder']].map(([role,label])=>`<tr><td>${label}</td><td>${ccEsc(role==='meddefib' && !codeHasCurrentACLS(((state.codeResponseTeam||{})[dateKey+'|DAY']||{})[role]) ? 'UNASSIGNED — ACLS NOT CURRENT' : (((state.codeResponseTeam||{})[dateKey+'|DAY']||{})[role]||'—'))}</td><td>${ccEsc(role==='meddefib' && !codeHasCurrentACLS(((state.codeResponseTeam||{})[dateKey+'|NIGHT']||{})[role]) ? 'UNASSIGNED — ACLS NOT CURRENT' : (((state.codeResponseTeam||{})[dateKey+'|NIGHT']||{})[role]||'—'))}</td></tr>`).join('')}
