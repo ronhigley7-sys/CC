@@ -18,7 +18,18 @@ $('template').onclick=()=>download('active-staff-template.csv',[['name','role','
 // Read the same Supabase roster and app_state that CC already maintains.
 // Uses the existing CC browser configuration; no secret or service-role key is embedded.
 async function syncCCDirectory(){
- const cfg=(()=>{try{return JSON.parse(localStorage.getItem('_sbConfig')||'{}')}catch{return {}}})();
+ let cfg={};try{cfg=JSON.parse(localStorage.getItem('_sbConfig')||'{}')}catch{}
+ if(!cfg.url||!cfg.key){
+  try{
+   const page=await fetch('./index.html',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('CC page unavailable');return r.text()});
+   const block=page.match(/const SB_DEFAULT_CONFIG\\s*=\\s*\\{([\\s\\S]*?)\\};/);
+   if(!block)throw Error('CC default connection not found');
+   const url=block[1].match(/url:\\s*['"]([^'"]+)['"]/);
+   const key=block[1].match(/key:\\s*['"]([^'"]+)['"]/);
+   if(!url||!key)throw Error('CC default connection incomplete');
+   cfg={url:url[1],key:key[1]};
+  }catch(e){$('directoryStatus').textContent='Could not read CC connection settings: '+e.message;$('directoryStatus').className='error';return}
+ }
  if(!cfg.url||!cfg.key){$('directoryStatus').textContent='CC connection settings not found in this browser. Open CC and connect its Supabase sync, then return here and click Sync.';$('directoryStatus').className='warning';return}
  const base=cfg.url.replace(/\/$/,'');
  const headers={apikey:cfg.key,Authorization:'Bearer '+cfg.key};
@@ -47,7 +58,7 @@ async function syncCCDirectory(){
  }catch(e){$('directoryStatus').textContent='Live sync failed: '+e.message+'. Existing roster retained.';$('directoryStatus').className='error'}
 }
 $('syncCC').onclick=syncCCDirectory;
-if(localStorage.getItem('_sbConfig'))syncCCDirectory();
-window.addEventListener('focus',()=>{if(localStorage.getItem('_sbConfig'))syncCCDirectory()});
+syncCCDirectory();
+window.addEventListener('focus',()=>{syncCCDirectory()});
 render();
 </script></body></html>
