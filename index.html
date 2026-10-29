@@ -2189,7 +2189,7 @@ if (new URLSearchParams(location.search).get('vf')) {
       <button class="btn btn-ghost" type="button" aria-haspopup="true" onclick="showPrintMenu()" style="min-height:40px;">Actions ▾</button>
       <div id="print-menu" role="menu" style="display:none;position:absolute;top:46px;right:0;background:var(--navy);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,0.5);z-index:2000;min-width:280px;padding:6px 0;">
         <div class="cc-menu-label">Print</div>
-        <button class="cc-menu-item" role="menuitem" onclick="hidePrintMenu();printUnitDailyReport()"><b>Unit Daily Report</b><small>Staffing + Education due + Float/Sitter</small></button>
+        <button class="cc-menu-item" role="menuitem" onclick="hidePrintMenu();printUnitDailyReport()"><b>Unit Daily Report</b><small>Staffing + Education due</small></button>
         <button class="cc-menu-item" role="menuitem" onclick="hidePrintMenu();printNursingServices()"><b>Nursing Services</b><small>Staff assignments only · full-screen</small></button>
         <button class="cc-menu-item" role="menuitem" onclick="hidePrintMenu();printManagerView()"><b>Manager Report</b><small>Full board: staffing + float + certs</small></button>
         <div class="cc-menu-sep"></div>
@@ -31692,26 +31692,6 @@ function printUnitDailyReport() {
       &nbsp; <span style="background:#fee2e2;color:#dc2626;padding:1px 7px;border-radius:8px;font-weight:700;font-size:8pt;">EXPIRED</span> Past due
       &nbsp; <span style="background:#fef3c7;color:#d97706;padding:1px 7px;border-radius:8px;font-weight:700;font-size:8pt;">EXPIRING</span> Due within 90 days
       &nbsp; <span style="background:#dbeafe;color:#1e40af;padding:1px 7px;border-radius:8px;font-weight:700;font-size:8pt;">📚 Pending</span> Education assigned
-    </div>
-
-    <div class="footer">
-      <span>3B Tele Med Surg · AOMC Nursing Operations</span>
-      <span>Printed: ${printedAt}</span>
-    </div>
-  </div>
-
-  <!-- PAGE 3: FLOAT & SITTER -->
-  <div class="page page-break">
-    <div class="logo">Arnot<em>Health</em></div>
-    <h1>Float &amp; Sitter Tracking</h1>
-    <h2>${dateLabel}</h2>
-
-    ${quickRefHtml}
-
-    ${floatHtml}
-
-    <div style="margin-top:16px;padding:8px 12px;background:#f0f4f8;border-radius:4px;font-size:8.5pt;color:#374151;">
-      Data sourced from Google Sheet. Connect in Board tab → Float & Sitter section → ⚙️ Sheet Setup.
     </div>
 
     <div class="footer">
