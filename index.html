@@ -2877,8 +2877,15 @@ if (new URLSearchParams(location.search).get('vf')) {
       </label>
     </div>
   </div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0 12px">
+    <button class="btn btn-ghost btn-sm" id="charge-multiday-toggle" onclick="toggleChargeMultiDay()">📅 Edit Multiple Days</button>
+    <span style="font-size:11px;color:var(--text3)">Edit every imported date without switching days</span>
+  </div>
+  <div id="charge-multiday-panel" style="display:none"></div>
+  <div id="charge-single-day-view">
   <div class="date-tabs" id="charge-date-tabs"></div>
   <div id="charge-assignments"></div>
+  </div>
 </div>
 
 <!-- ══════════════ DIRECTORY TAB ══════════════ -->
@@ -13314,6 +13321,50 @@ function initCharge() {
   if (cb) cb.checked = state.alwaysRNCharge || false;
 }
 
+let chargeMultiDayOpen = false;
+function toggleChargeMultiDay() {
+  chargeMultiDayOpen = !chargeMultiDayOpen;
+  const multi = document.getElementById('charge-multiday-panel');
+  const single = document.getElementById('charge-single-day-view');
+  const button = document.getElementById('charge-multiday-toggle');
+  if(multi) multi.style.display = chargeMultiDayOpen ? 'block' : 'none';
+  if(single) single.style.display = chargeMultiDayOpen ? 'none' : 'block';
+  if(button) button.textContent = chargeMultiDayOpen ? '↩ Single-Day Charge Board' : '📅 Edit Multiple Days';
+  if(chargeMultiDayOpen) renderChargeMultiDay();
+  else { renderChargeDateTabs(); renderCharge(); }
+}
+function setChargeMultiDay(date,shift,unit,name) {
+  const key = date + '|' + shift;
+  if(unit==='3B') {
+    state.chargeNurses[key]=name;
+    if(name && state.charge3C[key]===name) state.charge3C[key]='';
+  } else {
+    state.charge3C[key]=name;
+    if(name && state.chargeNurses[key]===name) state.chargeNurses[key]='';
+  }
+  persistSave();
+  renderChargeMultiDay();
+  renderBoard();
+}
+function renderChargeMultiDay() {
+  const root=document.getElementById('charge-multiday-panel');
+  if(!root || !chargeMultiDayOpen)return;
+  const dates=state.dates||[];
+  if(!dates.length){root.innerHTML='<p>No uploaded dates available. Import UKG staffing first.</p>';return}
+  const shifts=[['0700-1500','Day'],['1500-1900','Evening'],['1900-0700','Night']];
+  const safe=x=>String(x||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  let html='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th style="padding:9px">Date</th><th>Shift</th><th>3B Charge</th><th>3C Charge</th></tr></thead><tbody>';
+  dates.forEach(date=>{
+    shifts.forEach(([shift,label],index)=>{
+      const key=date+'|'+shift;
+      const roster=((state.placements[date]||{})[shift]||[]).filter(p=>p.role==='RN'||p.role==='LPN');
+      const a=state.chargeNurses[key]||'',b=state.charge3C[key]||'';
+      const opts=(unit,selected,exclude)=>'<select style="width:100%;min-width:150px;background:var(--slate);color:var(--white);border:1px solid var(--border);border-radius:5px;padding:7px" onchange="setChargeMultiDay('+JSON.stringify(date)+','+JSON.stringify(shift)+','+JSON.stringify(unit)+',this.value)"><option value="">— Unassigned —</option>'+roster.filter(p=>(unit!=='3B'||!state.alwaysRNCharge||p.role==='RN')&&p.name!==exclude).map(p=>'<option value="'+safe(p.name)+'"'+(p.name===selected?' selected':'')+'>'+safe(p.name)+' ('+p.role+')</option>').join('')+'</select>';
+      html+='<tr style="border-bottom:1px solid var(--border)"><td style="padding:9px">'+(index===0?'<strong>'+safe(date)+'</strong>':'')+'</td><td>'+label+'</td><td>'+opts('3B',a,b)+'</td><td>'+opts('3C',b,a)+'</td></tr>';
+    });
+  });
+  root.innerHTML=html+'</tbody></table></div><div style="margin-top:8px;font-size:11px;color:var(--text3)">Each change saves automatically. Only staff listed on that date and shift are selectable.</div>';
+}
 function renderChargeDateTabs() {
   buildDateTabs('charge-date-tabs', state.activeChargeDate, 'selectChargeDate', renderCharge);
 }
