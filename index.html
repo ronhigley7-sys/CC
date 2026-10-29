@@ -2885,6 +2885,7 @@ if (new URLSearchParams(location.search).get('vf')) {
   <div id="charge-single-day-view">
   <div class="date-tabs" id="charge-date-tabs"></div>
   <div id="charge-assignments"></div>
+  <div id="cc-code-team-editor" style="margin-top:16px"></div>
   </div>
 </div>
 
@@ -13365,6 +13366,56 @@ function renderChargeMultiDay() {
   });
   root.innerHTML=html+'</tbody></table></div><div style="margin-top:8px;font-size:11px;color:var(--text3)">Each change saves automatically. Only staff listed on that date and shift are selectable.</div>';
 }
+
+// Code team: only staff scheduled for the chosen date/shift with verified, unexpired education certificates.
+function ccCodeCertActive(name,cert,date) {
+  const value=(state.certs[name]||{})[cert];
+  const expiration=typeof parseDate==='function'?parseDate(value):null;
+  const serviceDate=typeof parseDate==='function'?parseDate(date):null;
+  return !!(expiration && serviceDate && expiration.getTime()>=serviceDate.getTime());
+}
+function ccCodeCandidates(date,period,role,cert) {
+  const placements=state.placements[date]||{};
+  const keys=period==='day'?['0700-1500','1500-1900','0630-1430','1430-1830']:['1900-0700','1830-2230','2230-0630'];
+  const names=new Map();
+  keys.forEach(k=>(placements[k]||[]).forEach(p=>{
+    if((role==='RN'?p.role==='RN':(p.role==='LPN'||p.role==='CA'))&&ccCodeCertActive(p.name,cert,date))names.set(p.name,p.role);
+  }));
+  return [...names].map(([name,job])=>({name,job})).sort((a,b)=>a.name.localeCompare(b.name));
+}
+function ccCodeSet(date,period,slot,name) {
+  state.codeResponseTeams=state.codeResponseTeams||{};
+  const key=date+'|'+period;
+  const team=state.codeResponseTeams[key]||{};
+  if(name && Object.entries(team).some(([k,v])=>k!==slot&&v===name)) {
+    alert('One person cannot fill two code response roles.');return;
+  }
+  team[slot]=name;
+  state.codeResponseTeams[key]=team;
+  persistSave();
+  ccCodeRender();
+}
+function ccCodeRender() {
+  const root=document.getElementById('cc-code-team-editor');
+  if(!root)return;
+  const date=state.activeChargeDate||state.activeBoardDate;
+  if(!date){root.innerHTML='';return}
+  const esc=x=>String(x||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  const slots=[['med','Med / Defib RN','RN','ACLS'],['documentation','Documentation RN','RN','ACLS'],['compressor1','Compressor 1','LPN','BLS'],['compressor2','Compressor 2','LPN','BLS']];
+  let html='<div class="section-header"><div><div class="section-title">🚨 Code Response Team</div><div class="section-sub">Active ACLS for RN roles · Active BLS for LPN/CA compressors · Staff working that shift only</div></div></div>';
+  ['day','night'].forEach(period=>{
+    const team=(state.codeResponseTeams||{})[date+'|'+period]||{};
+    html+='<div class="card" style="margin-bottom:10px;padding:12px"><strong>'+ (period==='day'?'Day 0700–1900':'Night 1900–0700') +'</strong><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px;margin-top:10px">';
+    slots.forEach(([slot,label,role,cert])=>{
+      const people=ccCodeCandidates(date,period,role,cert);
+      const selected=team[slot]||'';
+      const valid=people.some(p=>p.name===selected);
+      html+='<label style="font-size:12px">'+label+' <span style="font-size:10px;color:var(--text3)">('+cert+' required)</span><select class="form-select" style="width:100%;margin-top:5px" onchange="ccCodeSet('+JSON.stringify(date)+','+JSON.stringify(period)+','+JSON.stringify(slot)+',this.value)"><option value="">— Unassigned —</option>'+people.map(p=>'<option value="'+esc(p.name)+'"'+(p.name===selected?' selected':'')+'>'+esc(p.name)+' ('+p.job+')</option>').join('')+'</select>'+(selected&&!valid?'<div style="color:var(--red2)">⚠ Previous assignment no longer eligible: '+esc(selected)+'</div>':'')+'</label>';
+    });
+    html+='</div></div>';
+  });
+  root.innerHTML=html;
+}
 function renderChargeDateTabs() {
   buildDateTabs('charge-date-tabs', state.activeChargeDate, 'selectChargeDate', renderCharge);
 }
@@ -13376,6 +13427,7 @@ function selectChargeDate(d) {
 }
 
 function renderCharge() {
+  setTimeout(ccCodeRender,0);
   const dateKey = state.activeChargeDate;
   const cont = document.getElementById('charge-assignments');
   if (!dateKey) { cont.innerHTML = '<div class="card" style="color:var(--text3);text-align:center;padding:30px;">No data loaded</div>'; return; }
@@ -31811,6 +31863,17 @@ function printNursingServices() {
     </tr>`;
   }
 
+  // Code team printed below staffing. Recheck credentials on the selected date.
+  const codeTeamRows=['day','night'].map(period=>{
+    const team=(state.codeResponseTeams||{})[dateKey+'|'+period]||{};
+    const roles=[['med','Med / Defib RN','RN','ACLS'],['documentation','Documentation RN','RN','ACLS'],['compressor1','Compressor 1','LPN','BLS'],['compressor2','Compressor 2','LPN','BLS']];
+    const cells=roles.map(([slot,label,role,cert])=>{
+      const name=team[slot]||'';
+      const valid=name&&ccCodeCandidates(dateKey,period,role,cert).some(p=>p.name===name);
+      return '<td style="font-size:8pt;padding:4px;border:1px solid #ccc"><strong>'+label+'</strong><div>'+(valid?name:(name?'NOT VERIFIED — REASSIGN':'Unassigned'))+'</div></td>';
+    }).join('');
+    return '<tr><th style="font-size:8pt;padding:4px;border:1px solid #ccc">'+(period==='day'?'Day':'Night')+'</th>'+cells+'</tr>';
+  }).join('');
   // Notes
   const noteDay   = noteFor('DAY');
   const noteEve   = noteFor('EVE');
@@ -31901,6 +31964,9 @@ function printNursingServices() {
       <tbody>${caRows}</tbody>
     </table>
 
+    <!-- CODE RESPONSE TEAM -->
+    <div class="ps-section-label">Code Response Team — verified education</div>
+    <table class="ps-table" style="table-layout:fixed"><tbody>${codeTeamRows}</tbody></table>
     <!-- NOTES -->
     ${(noteDay || noteEve || noteNight || noteGen) ? `
     <div class="ps-section-label">Shift Notes</div>
