@@ -28810,10 +28810,10 @@ function initAll() {
   initProductivity();
   initEquipmentLog();
   renderShiftTargets();
-  // Manager Home is the default landing screen.
+  // Board is the default landing screen. Home remains available in navigation.
   setTimeout(() => {
-    const homeTab = document.querySelector('[data-panel="home"]');
-    if (homeTab) switchTab(homeTab);
+    const boardTab = document.querySelector('.tab[data-panel="board"]');
+    if (boardTab) switchTab(boardTab);
   }, 0);
 }
 
