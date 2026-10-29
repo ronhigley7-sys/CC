@@ -47,5 +47,7 @@ async function syncCCDirectory(){
  }catch(e){$('directoryStatus').textContent='Live sync failed: '+e.message+'. Existing roster retained.';$('directoryStatus').className='error'}
 }
 $('syncCC').onclick=syncCCDirectory;
+if(localStorage.getItem('_sbConfig'))syncCCDirectory();
+window.addEventListener('focus',()=>{if(localStorage.getItem('_sbConfig'))syncCCDirectory()});
 render();
 </script></body></html>
