@@ -1891,6 +1891,57 @@ function printManagerView() {
   printStaffingSheet();
 }
 
+// Overdue / upcoming competencies by staff member — read from the imported Education items
+// (entries look like "2026 Hand Hygiene Competency* (Due: Nov 18, 2026)"). Shows every competency
+// that is already overdue or due within the next 30 days; 30+ days overdue is flagged in red.
+function buildCompetencyDueHtml() {
+  try {
+    const DAY = 86400000, today = new Date(); today.setHours(0, 0, 0, 0);
+    const jobOf = {}; (MASTER_STAFF || []).forEach(s => { jobOf[s.name] = s.job; });
+    const esc2 = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    const byStaff = [];
+    Object.entries(state.pendingEdu || {}).forEach(([name, items]) => {
+      const rows = [];
+      (items || []).forEach(it => {
+        const str = String(it);
+        if (!/competenc/i.test(str)) return;
+        const m = str.match(/\(Due:\s*([^)]*)\)\s*$/i);
+        const due = m ? new Date(m[1].trim()) : null;
+        if (!due || isNaN(due)) return;
+        due.setHours(0, 0, 0, 0);
+        const over = Math.round((today - due) / DAY);          // >0 overdue, <0 days until due
+        if (over < -30) return;                                // not due within 30 days
+        rows.push({ course: str.replace(/\s*\(Due:[^)]*\)\s*$/i, '').replace(/\*+$/, ''), due, over });
+      });
+      if (rows.length) { rows.sort((a, b) => b.over - a.over); byStaff.push({ name, job: jobOf[name] || '', rows, worst: rows[0].over }); }
+    });
+    if (!byStaff.length) return '';
+    byStaff.sort((a, b) => b.worst - a.worst || a.name.localeCompare(b.name));
+    const total = byStaff.reduce((n, s) => n + s.rows.length, 0);
+    const over30 = byStaff.reduce((n, s) => n + s.rows.filter(r => r.over >= 30).length, 0);
+    const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const body = byStaff.map(s => s.rows.map((r, i) => {
+      const status = r.over >= 30 ? `<b style="color:#b91c1c;">${r.over}d OVERDUE (30+)</b>`
+        : r.over > 0 ? `<b style="color:#b45309;">${r.over}d overdue</b>`
+        : r.over === 0 ? '<b style="color:#b45309;">Due today</b>' : `Due in ${-r.over}d`;
+      return `<tr>${i === 0 ? `<td rowspan="${s.rows.length}" style="padding:4px 8px;border:1px solid #ddd;vertical-align:top;white-space:nowrap;"><b>${esc2(s.name)}</b>${s.job ? `<div style="font-size:8pt;color:#555;">${esc2(s.job)}</div>` : ''}</td>` : ''}
+        <td style="padding:4px 8px;border:1px solid #ddd;">${esc2(r.course)}</td>
+        <td style="padding:4px 8px;border:1px solid #ddd;white-space:nowrap;">${fmt(r.due)}</td>
+        <td style="padding:4px 8px;border:1px solid #ddd;white-space:nowrap;">${status}</td></tr>`;
+    }).join('')).join('');
+    return `<div class="ps-section-label" style="margin-top:16px;">📋 Competencies Overdue / Due Within 30 Days (${total}${over30 ? ` · <span style="color:#b91c1c;">${over30} are 30+ days overdue</span>` : ''})</div>
+      <table style="width:100%;border-collapse:collapse;font-size:9pt;">
+        <thead><tr style="background:#f0f0f0;">
+          <th style="padding:5px 8px;border:1px solid #ccc;text-align:left;">Staff</th>
+          <th style="padding:5px 8px;border:1px solid #ccc;text-align:left;">Competency</th>
+          <th style="padding:5px 8px;border:1px solid #ccc;text-align:left;">Due</th>
+          <th style="padding:5px 8px;border:1px solid #ccc;text-align:left;">Status</th>
+        </tr></thead>
+        <tbody>${body}</tbody>
+      </table>`;
+  } catch (e) { return ''; }
+}
+
 // Pending audit-finding acknowledgments — shown on the Manager Report so
 // nothing sent to a staff member for sign-off gets lost. Reads directly from
 // Supabase (audit_acknowledgments / audit_findings), same project the Audit
@@ -1938,6 +1989,7 @@ async function printStaffingSheet() {
   // Pending audit acknowledgments — fetched up front so it's ready when the
   // report string is assembled below (see audit_acknowledgments table).
   const pendingAckHtml = await buildPendingAckHtml();
+  const competencyDueHtml = buildCompetencyDueHtml();
 
   const shifts   = state.placements[dateKey] || {};
   const dateObj  = new Date(dateKey + 'T12:00:00');
@@ -2467,6 +2519,7 @@ async function printStaffingSheet() {
 
     <!-- PENDING AUDIT ACKNOWLEDGMENTS -->
     ${pendingAckHtml}
+    ${competencyDueHtml}
 
     <div class="ps-footer"><span>3B Tele Med Surg · AOMC</span><span>Review reminders · 90-day window</span><span>Printed: ${printedAt}</span></div>
   </div>`;
