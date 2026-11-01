@@ -803,6 +803,42 @@ function restoreHiddenCompSkills() {
 
 // Override renderCompetency to use allCompSkills and show delete buttons for custom skills
 const _origRenderCompetency = renderCompetency;
+// ── Education tab → Competency link ─────────────────────────────────────
+// BLS / ACLS / NIHSS competency cells read the expiry date entered or imported on the Education tab.
+// A current (not expired) date counts as validated for the current year; manual validation is the fallback.
+const COMP_CERT_LINK = { bls:'BLS', acls:'ACLS', nihss:'NIHSS' };
+function eduCertInfo(name, field) {
+  const ds = ((state.certs||{})[name]||{})[field];
+  if (!ds) return null;
+  const days = certDaysLeft(ds);
+  return days === null ? null : { date: ds, days };
+}
+function compCell(name, sk, yr) {
+  const rec = ((state.competency||{})[name]||{})[sk.key];
+  const field = COMP_CERT_LINK[sk.key];
+  if (field && yr === new Date().getFullYear()) {
+    const e = eduCertInfo(name, field);
+    if (e) {
+      const passed = e.days >= 0;
+      return { passed, thisYr:true, linked:true, soon: passed && e.days <= CERT_WARN_DAYS,
+        tip: `From Education tab · ${field} ${passed ? 'expires' : 'EXPIRED'} ${e.date}` };
+    }
+  }
+  const thisYr = !!(rec && rec.yr === yr);
+  return { passed: !!(thisYr && rec.passed), thisYr, linked:false,
+    tip: rec ? `${rec.passed?'Passed':'Needs Remediation'} · ${rec.date||''} · ${rec.validator||''}` : 'Click to validate' };
+}
+function eduExtraCols(staffList) {
+  const std = [['License','License'],['HealthEval','Health Eval'],['FitTest','Fit Test']];
+  const cols = std.map(([field,label]) => ({ field, label }));
+  [1,2,3,4,5].forEach(n => {
+    const label = staffList.map(s => ((state.certs||{})[s.name]||{})['custom'+n+'_label']).find(Boolean);
+    if (label) cols.push({ field:'custom'+n+'_date', label });
+  });
+  // always keep BLS/ACLS/NIHSS handled by skills; only show others that someone actually has
+  return cols.filter(c => staffList.some(s => ((state.certs||{})[s.name]||{})[c.field]));
+}
+
 function renderCompetency() {
   const roleFilter   = document.getElementById('comp-role')?.value   || 'RN';
   const yr           = parseInt(document.getElementById('comp-year')?.value) || new Date().getFullYear();
@@ -815,9 +851,8 @@ function renderCompetency() {
   if (sumEl) {
     let totalCells=0, doneCells=0;
     staffList.forEach(s => skills.forEach(sk => {
-      const v = ((state.competency||{})[s.name]||{})[sk.key];
       totalCells++;
-      if (v && v.passed && v.yr === yr) doneCells++;
+      if (compCell(s.name, sk, yr).passed) doneCells++;
     }));
     const compPct = totalCells ? Math.round(doneCells/totalCells*100) : 0;
     const customCount = ((state.customCompSkills||{})[roleFilter]||[]).length;
@@ -844,7 +879,7 @@ function renderCompetency() {
   let displayStaff = staffList;
   if (statusFilter !== 'ALL') {
     displayStaff = staffList.filter(s => {
-      const done = skills.every(sk => { const v=((state.competency||{})[s.name]||{})[sk.key]; return v&&v.passed&&v.yr===yr; });
+      const done = skills.every(sk => compCell(s.name, sk, yr).passed);
       return statusFilter==='complete' ? done : !done;
     });
   }
@@ -852,6 +887,12 @@ function renderCompetency() {
   const tableEl = document.getElementById('comp-table');
   if (!tableEl) return;
   if (!displayStaff.length) { tableEl.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3);">No staff match filter</div>'; return; }
+
+  // Extra columns pulled straight from the Education tab (certs not already a competency skill)
+  const linkedFields = Object.values(COMP_CERT_LINK);
+  const eduCols = eduExtraCols(staffList).filter(ec => !linkedFields.includes(ec.field));
+  const eduHeader = eduCols.map(ec => `<th style="padding:6px 8px;font-size:11px;font-weight:700;color:var(--accent2);text-align:center;min-width:60px;border-left:1px solid rgba(255,255,255,0.05);">${ec.label.split(' ').join('<br>')}<br><span style="font-size:11px;font-weight:400;color:var(--text3);">Education</span></th>`).join('')
+    + `<th style="padding:6px 8px;font-size:11px;font-weight:700;color:var(--accent2);text-align:center;min-width:60px;border-left:1px solid rgba(255,255,255,0.05);">Pending<br>Edu</th>`;
 
   const headerCols = skills.map(sk => {
     const isCustom = sk.custom;
@@ -864,17 +905,25 @@ function renderCompetency() {
   const rows = displayStaff.map(s => {
     const rCol = IV_ROLE_COLOR[s.job]||'var(--text2)';
     const cells = skills.map(sk => {
-      const v = ((state.competency||{})[s.name]||{})[sk.key];
-      const thisYr = v && v.yr === yr;
-      const status = thisYr && v.passed ? '✓' : thisYr && !v.passed ? '↺' : '—';
-      const col    = thisYr && v.passed ? 'var(--green2)' : thisYr ? 'var(--amber2)' : 'var(--text3)';
-      const bg     = thisYr && v.passed ? 'rgba(37,168,104,0.1)' : thisYr ? 'rgba(245,158,11,0.08)' : '';
-      const tip    = v ? `${v.passed?'Passed':'Needs Remediation'} · ${v.date||''} · ${v.validator||''}` : 'Click to validate';
+      const c = compCell(s.name, sk, yr);
+      const thisYr = c.thisYr;
+      const status = c.linked ? (c.passed ? (c.soon ? '⚠' : '✓') : '✕') : (c.passed ? '✓' : thisYr ? '↺' : '—');
+      const col    = c.linked ? (c.passed ? (c.soon ? 'var(--amber2)' : 'var(--green2)') : 'var(--red2)') : (c.passed ? 'var(--green2)' : thisYr ? 'var(--amber2)' : 'var(--text3)');
+      const bg     = c.linked ? (c.passed ? 'rgba(37,168,104,0.1)' : 'rgba(239,68,68,0.1)') : (c.passed ? 'rgba(37,168,104,0.1)' : thisYr ? 'rgba(245,158,11,0.08)' : '');
+      const tip    = c.tip;
       return `<td style="padding:6px 8px;text-align:center;border-left:1px solid rgba(255,255,255,0.05);background:${bg};">
         <span onclick="openCompModal('${s.name.replace(/'/g,"\\'")}','${sk.key}','${sk.label}')"
           title="${tip}" style="font-size:13px;cursor:pointer;color:${col};font-weight:700;">${status}</span></td>`;
     }).join('');
-    const staffDone = skills.filter(sk=>{const v=((state.competency||{})[s.name]||{})[sk.key];return v&&v.passed&&v.yr===yr;}).length;
+    const staffDone = skills.filter(sk=>compCell(s.name, sk, yr).passed).length;
+    const eduCells = eduCols.map(ec => {
+      const e = eduCertInfo(s.name, ec.field);
+      const mark = !e ? '—' : e.days < 0 ? '✕' : e.days <= CERT_WARN_DAYS ? '⚠' : '✓';
+      const col2 = !e ? 'var(--text3)' : e.days < 0 ? 'var(--red2)' : e.days <= CERT_WARN_DAYS ? 'var(--amber2)' : 'var(--green2)';
+      return `<td style="padding:6px 8px;text-align:center;border-left:1px solid rgba(255,255,255,0.05);background:rgba(46,125,209,0.05);" title="${e ? 'From Education tab · '+ec.label+' '+(e.days<0?'EXPIRED ':'expires ')+e.date : 'No date on Education tab'}"><span style="font-size:13px;font-weight:700;color:${col2};">${mark}</span>${e ? `<div style="font-size:11px;color:var(--text3);">${e.date}</div>` : ''}</td>`;
+    }).join('');
+    const pend = (state.pendingEdu||{})[s.name] || [];
+    const pendCell = `<td style="padding:6px 8px;text-align:center;border-left:1px solid rgba(255,255,255,0.05);background:rgba(46,125,209,0.05);" title="${pend.length ? pend.map(x=>String(x).replace(/"/g,'&quot;')).join('\n') : 'No pending education'}"><span style="font-size:12px;font-weight:700;color:${pend.length?'var(--amber2)':'var(--green2)'};">${pend.length || '✓'}</span></td>`;
     const staffPct  = skills.length ? Math.round(staffDone/skills.length*100) : 0;
     const incomplete = skills.length - staffDone;
     return `<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
@@ -882,7 +931,7 @@ function renderCompetency() {
         <div style="font-size:11px;font-weight:700;color:var(--white);">${s.name.split(',')[0]}</div>
         <div style="font-size:11px;color:${rCol};">${s.job} · ${staffDone}/${skills.length}${incomplete>0?` · <span style="color:var(--amber2);">${incomplete} pending</span>`:' <span style="color:var(--green2);">✓ complete</span>'}</div>
       </td>
-      ${cells}
+      ${cells}${eduCells}${pendCell}
     </tr>`;
   }).join('');
 
@@ -891,13 +940,13 @@ function renderCompetency() {
       <thead style="position:sticky;top:var(--sticky-top);z-index:10;background:var(--card);">
         <tr style="background:var(--navy2);">
           <th style="padding:8px 10px;font-size:11px;color:var(--text3);text-align:left;position:sticky;left:0;background:var(--navy2);z-index:3;min-width:130px;">Staff</th>
-          ${headerCols}
+          ${headerCols}${eduHeader}
         </tr>
       </thead>
       <tbody>${rows}</tbody>
     </table>
   </div>
-  <div style="margin-top:8px;font-size:11px;color:var(--text3);">✓ Passed &nbsp;·&nbsp; ↺ Needs Remediation &nbsp;·&nbsp; — Not yet validated &nbsp;·&nbsp; Click any cell to validate · Purple = custom skill</div>`;
+  <div style="margin-top:8px;font-size:11px;color:var(--text3);">✓ Passed &nbsp;·&nbsp; ↺ Needs Remediation &nbsp;·&nbsp; — Not yet validated &nbsp;·&nbsp; BLS/ACLS/NIHSS and blue columns update automatically from the Education tab (⚠ = expires within 60 days, ✕ = expired) &nbsp;·&nbsp; Click any cell to validate · Purple = custom skill</div>`;
 }
 
 // ════════════════════════════════════
