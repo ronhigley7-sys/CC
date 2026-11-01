@@ -22,8 +22,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Single deploy job since we're just deploying
+  # Guard: never deploy an empty/broken/out-of-sync index.html
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: index.html must match src/ (and not be empty)
+        run: python3 build.py --check
+      - name: Smoke test
+        run: |
+          pip install playwright
+          playwright install --with-deps chromium
+          python3 tests/smoke.py
+
   deploy:
+    needs: check
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

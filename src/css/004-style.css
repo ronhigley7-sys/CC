@@ -1,0 +1,6 @@
+
+  .os-role-btn-active { background:var(--accent2) !important; border-color:var(--accent2) !important; color:#fff !important; }
+  .os-role-btn-rn-active { background:#1a4480 !important; border-color:#1a4480 !important; color:#fff !important; }
+  .os-role-btn-lpn-active { background:#5b21b6 !important; border-color:#5b21b6 !important; color:#fff !important; }
+  .os-role-btn-rnlpn-active { background:#0e4f8a !important; border-color:#0e4f8a !important; color:#fff !important; }
+  .os-role-btn-ca-active { background:#b45309 !important; border-color:#b45309 !important; color:#fff !important; }

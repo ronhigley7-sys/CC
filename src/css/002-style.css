@@ -1,0 +1,8 @@
+
+  .coach-area-pill { display:inline-flex; align-items:center; gap:5px; font-size:11px; padding:5px 10px; background:var(--slate); border:1px solid var(--border); border-radius:14px; color:var(--text2); cursor:pointer; user-select:none; }
+  .coach-area-pill input { accent-color: var(--accent2); margin:0; }
+  .coach-area-pill.checked { background:rgba(46,125,209,0.15); border-color:rgba(46,125,209,0.45); color:var(--white); }
+  .coach-area-metric { font-size:11px; font-weight:700; padding:1px 6px; border-radius:8px; background:rgba(255,255,255,0.06); color:var(--text3); margin-left:2px; }
+  .coach-area-metric:empty { display:none; }
+  .coach-area-metric.warn { background:rgba(239,68,68,0.18); color:var(--red2); }
+  .coach-area-metric.ok   { background:rgba(16,185,129,0.15); color:var(--green2); }
