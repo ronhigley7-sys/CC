@@ -31423,9 +31423,19 @@ function printManagerView() {
 function getCompetencyDueData() {
   try {
     const DAY = 86400000, today = new Date(); today.setHours(0, 0, 0, 0);
-    const jobOf = {}; (MASTER_STAFF || []).forEach(s => { jobOf[s.name] = s.job; });
+    // Only staff who are in the Directory (MASTER_STAFF). Imported names are matched ignoring case,
+    // periods and middle initials, e.g. "Christiansen, Deanna M." -> "Christiansen, Deanna M".
+    const norm = n => String(n || '').toLowerCase().replace(/[.,]/g, ' ').replace(/\s+/g, ' ').trim();
+    const firstLast = n => { const p = String(n || '').split(','); const last = norm(p[0]); const first = norm(p.slice(1).join(' ')).split(' ')[0] || ''; return last + '|' + first; };
+    const dirFull = {}, dirFL = {}, dirCount = {};
+    (MASTER_STAFF || []).forEach(s => { dirFull[norm(s.name)] = s; const k = firstLast(s.name); dirCount[k] = (dirCount[k] || 0) + 1; dirFL[k] = s; });
+    const lookup = n => dirFull[norm(n)] || (dirCount[firstLast(n)] === 1 ? dirFL[firstLast(n)] : null);
+    const jobOf = {};
     const byStaff = [];
-    Object.entries(state.pendingEdu || {}).forEach(([name, items]) => {
+    Object.entries(state.pendingEdu || {}).forEach(([importName, items]) => {
+      const dirStaff = lookup(importName);
+      if (!dirStaff) return;                       // not in the Directory -> not shown
+      const name = dirStaff.name; jobOf[name] = dirStaff.job;
       const rows = [];
       (items || []).forEach(it => {
         const str = String(it);
