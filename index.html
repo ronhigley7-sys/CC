@@ -2122,6 +2122,15 @@ header #census-bar { gap: 8px; }
 .cc-home-list { display: flex; flex-direction: column; gap: 4px; margin: 10px 0 14px; max-height: 50vh; overflow-y: auto; }
 .cc-hl-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 8px; border-bottom: 1px solid var(--border); font-size: 14px; color: var(--text); }
 .cc-hl-row label { display: flex; align-items: center; gap: 8px; }
+#cc-home-more { padding: 0; margin-bottom: 14px; order: 1000 !important; }
+#cc-home-more > summary { display: flex; align-items: baseline; gap: 10px; padding: 12px 14px; cursor: pointer; list-style: none; user-select: none; min-height: 44px; }
+#cc-home-more > summary::-webkit-details-marker { display: none; }
+#cc-home-more > summary::before { content: '▸'; color: var(--text2); transition: transform .15s; }
+#cc-home-more[open] > summary::before { transform: rotate(90deg); }
+#cc-home-more > summary small { color: var(--text3); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#cc-home-more .cc-more-body { padding: 0 12px 12px; display: flex; flex-direction: column; gap: 10px; }
+#cc-home-more .cc-more-body > .card { margin-bottom: 0 !important; }
+@media (max-width: 700px) { #cc-home-more > summary small { display: none; } #mgr-trend-body table { display: block; overflow-x: auto; white-space: nowrap; } }
 .cc-home-hidden { display: none !important; }
 #panel-home.active { display: flex !important; flex-direction: column; }
 #print-menu { max-height: calc(100vh - 80px); overflow-y: auto; }
@@ -38617,6 +38626,23 @@ function printWeeklyManagerReview(){
   });
 
   /* ── init ── */
+  /* Home tidy: keep KPI row, priorities, exceptions, vacancy trends; collapse the rest under "More" */
+  var HOME_MORE = ['cc-checklist', 'cc-trend', 'mgr-daily-action-card', 'mgr-task-pulse-card', 'mgr-data-health-card', 'mgr-people-pulse-card', 'mgr-exec-snapshot-card', 'mgr-quality-pulse-card'];
+  function tidyHome() {
+    var hp = $('#panel-home'); if (!hp) return;
+    var det = $('#cc-home-more');
+    if (!det) {
+      det = document.createElement('details'); det.id = 'cc-home-more'; det.className = 'card cc-home-more';
+      det.innerHTML = '<summary><span class="card-title">More</span><small>Coverage grid, checklist, task pulse, people pulse, snapshots, quality</small></summary><div class="cc-more-body"></div>';
+      try { det.open = localStorage.getItem('_ccHomeMoreOpen') === '1'; } catch (e) {}
+      det.addEventListener('toggle', function () { try { localStorage.setItem('_ccHomeMoreOpen', det.open ? '1' : '0'); } catch (e) {} });
+      hp.appendChild(det);
+    }
+    var body = det.querySelector('.cc-more-body');
+    var list = HOME_MORE.map(function (id) { return document.getElementById(id); }).concat(Array.prototype.slice.call(hp.children).filter(function (c) { return c.classList.contains('mgr-layout'); }));
+    list.forEach(function (el) { if (el && el.parentNode !== body) body.appendChild(el); });
+    if (hp.lastElementChild !== det) hp.appendChild(det);
+  }
   function init() {
     extendMenu(); initPwa(); applyView();
     var row = $('#panel-home .cc-home-row');
@@ -38626,7 +38652,9 @@ function printWeeklyManagerReview(){
     ['census-day', 'census-eve', 'census-night'].forEach(function (id) { var el = $('#' + id); if (el) el.addEventListener('input', function () { setTimeout(renderTrend, 50); }); });
     setTimeout(baseline, 12000);
     setTimeout(function () { try { digest(false); } catch (e) {} }, 7000);
-    setTimeout(function () { wrapImports(); wrapIncidents(); hookSave(); applyHome(); }, 3500);
+    setTimeout(function () { wrapImports(); wrapIncidents(); hookSave(); applyHome(); tidyHome(); }, 3500);
+    setTimeout(tidyHome, 6000);
+    try { var hp = $('#panel-home'); if (hp && window.MutationObserver) { var tt; new MutationObserver(function () { clearTimeout(tt); tt = setTimeout(tidyHome, 300); }).observe(hp, { childList: true }); } } catch (e) {}
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setTimeout(init, 400); }); else setTimeout(init, 400);
 })();
