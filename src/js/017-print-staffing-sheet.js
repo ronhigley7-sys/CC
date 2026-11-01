@@ -1894,11 +1894,10 @@ function printManagerView() {
 // Overdue / upcoming competencies by staff member — read from the imported Education items
 // (entries look like "2026 Hand Hygiene Competency* (Due: Nov 18, 2026)"). Shows every competency
 // that is already overdue or due within the next 30 days; 30+ days overdue is flagged in red.
-function buildCompetencyDueHtml() {
+function getCompetencyDueData() {
   try {
     const DAY = 86400000, today = new Date(); today.setHours(0, 0, 0, 0);
     const jobOf = {}; (MASTER_STAFF || []).forEach(s => { jobOf[s.name] = s.job; });
-    const esc2 = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;');
     const byStaff = [];
     Object.entries(state.pendingEdu || {}).forEach(([name, items]) => {
       const rows = [];
@@ -1915,10 +1914,19 @@ function buildCompetencyDueHtml() {
       });
       if (rows.length) { rows.sort((a, b) => b.over - a.over); byStaff.push({ name, job: jobOf[name] || '', rows, worst: rows[0].over }); }
     });
-    if (!byStaff.length) return '';
     byStaff.sort((a, b) => b.worst - a.worst || a.name.localeCompare(b.name));
     const total = byStaff.reduce((n, s) => n + s.rows.length, 0);
     const over30 = byStaff.reduce((n, s) => n + s.rows.filter(r => r.over >= 30).length, 0);
+    const overdue = byStaff.reduce((n, s) => n + s.rows.filter(r => r.over > 0).length, 0);
+    return { byStaff, total, over30, overdue };
+  } catch (e) { return { byStaff: [], total: 0, over30: 0, overdue: 0 }; }
+}
+
+function buildCompetencyDueHtml() {
+  try {
+    const { byStaff, total, over30 } = getCompetencyDueData();
+    if (!byStaff.length) return '';
+    const esc2 = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;');
     const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     const body = byStaff.map(s => s.rows.map((r, i) => {
       const status = r.over >= 30 ? `<b style="color:#b91c1c;">${r.over}d OVERDUE (30+)</b>`
