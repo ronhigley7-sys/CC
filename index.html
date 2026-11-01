@@ -2656,8 +2656,6 @@ if (new URLSearchParams(location.search).get('vf')) {
   <div style="margin-top:28px;padding-top:16px;border-top:2px solid var(--accent);">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
       <div style="font-size:15px;font-weight:700;color:var(--accent2);">📊 Float · Sitter · Call-Off Tracking</div>
-      <button onclick="showFloatSheetSetup()" style="font-size:11px;padding:3px 9px;background:rgba(46,125,209,0.1);border:1px solid rgba(46,125,209,0.3);border-radius:4px;color:var(--accent2);cursor:pointer;" title="Configure Google Sheet URL and columns">⚙️ Sheet Setup</button>
-      <button class="btn btn-ghost btn-sm" onclick="loadFloatSheet()">↻ Reload Sheet</button>
     </div>
     <div id="tracking-grid"></div>
   </div>
@@ -5307,50 +5305,6 @@ if (new URLSearchParams(location.search).get('vf')) {
 
 <!-- ══════════════ IMPORT TAB ══════════════ -->
 <div class="tab-panel" id="panel-import" style="display:none;">
-  <!-- Twilio SMS Integration -->
-  <div class="card" style="margin-bottom:14px;padding:14px;border-color:rgba(239,68,68,0.4);">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
-      <div>
-        <div style="font-size:13px;font-weight:700;color:#ef4444;">📱 Twilio SMS Integration</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:2px;">Send SMS alerts for open shifts, education overdue, and policy sign-offs</div>
-      </div>
-      <div style="display:flex;gap:8px;">
-        <div id="twilio-status-badge" style="font-size:11px;"></div>
-        <button onclick="testTwilioConnection()" class="btn btn-ghost btn-sm">Test</button>
-      </div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
-      <div>
-        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px;">Account SID</div>
-        <input type="password" id="twilio-sid" placeholder="ACxxxxxxxxxxxxxxx" value=""
-          style="width:100%;background:var(--slate);border:1px solid var(--border);color:var(--white);padding:6px 8px;border-radius:5px;font-size:11px;font-family:'IBM Plex Mono',monospace;outline:none;"
-          oninput="saveTwilioConfig()">
-      </div>
-      <div>
-        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px;">Auth Token</div>
-        <input type="password" id="twilio-token" placeholder="Auth token from console"
-          style="width:100%;background:var(--slate);border:1px solid var(--border);color:var(--white);padding:6px 8px;border-radius:5px;font-size:11px;font-family:'IBM Plex Mono',monospace;outline:none;"
-          oninput="saveTwilioConfig()">
-      </div>
-      <div style="grid-column:1/-1;">
-        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px;">From Phone Number (E.164 format)</div>
-        <input type="tel" id="twilio-from" placeholder="+16071234567"
-          style="width:200px;background:var(--slate);border:1px solid var(--border);color:var(--white);padding:6px 8px;border-radius:5px;font-size:11px;font-family:'IBM Plex Mono',monospace;outline:none;"
-          oninput="saveTwilioConfig()">
-      </div>
-    </div>
-    <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06);">
-      <div style="font-size:11px;font-weight:700;color:var(--white);margin-bottom:8px;">📤 Send SMS Alerts</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button onclick="twilioSendOpenShifts()" class="btn btn-ghost btn-sm" style="color:var(--accent2);border-color:rgba(46,125,209,0.4);">📋 Open Shifts</button>
-        <button onclick="twilioSendEducationOverdue()" class="btn btn-ghost btn-sm" style="color:var(--amber2);border-color:rgba(245,158,11,0.4);">📚 Education Overdue</button>
-        <button onclick="twilioSendPolicyReminders()" class="btn btn-ghost btn-sm" style="color:var(--purple2);border-color:rgba(139,92,246,0.4);">✍️ Policy Sign-Off</button>
-        <button onclick="twilioSendCertExpiring()" class="btn btn-ghost btn-sm" style="color:var(--red2);border-color:rgba(239,68,68,0.4);">⚠️ Certs Expiring</button>
-      </div>
-      <div id="twilio-send-log" style="margin-top:8px;font-size:11px;color:var(--text3);max-height:80px;overflow-y:auto;"></div>
-    </div>
-  </div>
-
   <!-- Supabase Live Sync -->
   <div class="card" style="margin-bottom:14px;padding:14px;border-color:rgba(46,125,209,0.5);">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
@@ -6575,7 +6529,6 @@ let state = {
   upc: { meetings: [] }, // Unit Practice Council — { meetings: [{date,attendees:[],goals:[],notes,outcomes:[]}] }
   weekendSummary: {}, // { dateKey: { notes, incidents } }
   unitFalls: [], // [ { date, room, staff, desc, category } ]
-  twilioConfig: { accountSid:'', authToken:'', fromNumber:'' }, // Twilio credentials
   empPreceptor:   {}, // { name: true } — certified preceptors
   empPayEligible: {}, // { name: true } — RN/LPN: Eligible Pay
   empPayGuarHigh: {}, // { name: true } — RN/LPN: Guaranteed High Pay
@@ -6762,7 +6715,6 @@ function switchTab(el) {
   if (el.dataset.panel === 'variance')   initVarianceTab();
   if (el.dataset.panel === 'painaudit' || el.dataset.panel === 'txaudit') initAuditDates();
   if (el.dataset.panel === 'todo')       renderTodo();
-  if (el.dataset.panel === 'import')     initTwilioUI();
   if (el.dataset.panel === 'ninebox')    renderNineBox();
   if (el.dataset.panel === 'incidents')  renderIncidents();
   if (el.dataset.panel === 'interview')   renderInterviewList();
@@ -17993,182 +17945,17 @@ function showSyncToast(user) {
 // Stub for legacy SP references
 function disableSPSync() { localStorage.setItem(SB_CONFIG_KEY, JSON.stringify({ enabled:false })); _sbConnected = false; updateSyncBadge(); showSaveBanner('☁️ Sync disabled'); }
 
-// ════════════════════════════════════════════════════════════
-//  TWILIO SMS INTEGRATION
-// ════════════════════════════════════════════════════════════
 
-function saveTwilioConfig() {
-  state.twilioConfig = {
-    accountSid:  document.getElementById('twilio-sid')?.value.trim()   || '',
-    authToken:   document.getElementById('twilio-token')?.value.trim() || '',
-    fromNumber:  document.getElementById('twilio-from')?.value.trim()  || '',
-  };
-  // Also persist directly to localStorage so it survives even before Supabase syncs
-  try { localStorage.setItem('_twilioConfig', JSON.stringify(state.twilioConfig)); } catch(e) {}
-  persistSave();
-  updateTwilioStatusBadge();
-}
 
-function initTwilioUI() {
-  if (!state.twilioConfig || !state.twilioConfig.accountSid) {
-    // Try localStorage backup first
-    try {
-      const local = JSON.parse(localStorage.getItem('_twilioConfig') || '{}');
-      if (local.accountSid) state.twilioConfig = local;
-    } catch(e) {}
-  }
-  if (!state.twilioConfig) state.twilioConfig = { accountSid:'', authToken:'', fromNumber:'' };
-  const cfg = state.twilioConfig;
-  const sid   = document.getElementById('twilio-sid');
-  const token = document.getElementById('twilio-token');
-  const from  = document.getElementById('twilio-from');
-  if (sid)   sid.value   = cfg.accountSid  || '';
-  if (token) token.value = cfg.authToken   || '';
-  if (from)  from.value  = cfg.fromNumber  || '';
-  updateTwilioStatusBadge();
-}
 
-function updateTwilioStatusBadge() {
-  const el  = document.getElementById('twilio-status-badge');
-  if (!el) return;
-  const cfg = state.twilioConfig || {};
-  const ok  = cfg.accountSid && cfg.authToken && cfg.fromNumber;
-  el.innerHTML = ok
-    ? '<span style="color:var(--green2);font-weight:700;">✓ Configured</span>'
-    : '<span style="color:var(--text3);">Not configured</span>';
-}
 
-async function twilioSendSMS(to, body) {
-  const cfg = state.twilioConfig || {};
-  if (!cfg.accountSid || !cfg.authToken || !cfg.fromNumber) {
-    throw new Error('Twilio not configured — enter Account SID, Auth Token, and From Number first.');
-  }
-  const phone = to.replace(/\D/g,'');
-  if (phone.length < 10) throw new Error(`Invalid phone number: ${to}`);
-  const toE164 = phone.startsWith('1') ? '+'+phone : '+1'+phone;
 
-  const url = `https://api.twilio.com/2010-04-01/Accounts/${cfg.accountSid}/Messages.json`;
-  const params = new URLSearchParams({ To: toE164, From: cfg.fromNumber, Body: body });
-
-  const resp = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Authorization': 'Basic ' + btoa(`${cfg.accountSid}:${cfg.authToken}`),
-      'Content-Type':  'application/x-www-form-urlencoded',
-    },
-    body: params.toString(),
-  });
-  const data = await resp.json();
-  if (!resp.ok) throw new Error(data.message || `Twilio error ${resp.status}`);
-  return data.sid;
-}
-
-async function testTwilioConnection() {
-  const badge = document.getElementById('twilio-status-badge');
-  if (badge) badge.innerHTML = '<span style="color:var(--text3);">Testing...</span>';
-  const cfg = state.twilioConfig || {};
-  if (!cfg.accountSid || !cfg.authToken) {
-    alert('Enter Account SID and Auth Token first.');
-    updateTwilioStatusBadge();
-    return;
-  }
-  try {
-    const url  = `https://api.twilio.com/2010-04-01/Accounts/${cfg.accountSid}.json`;
-    const resp = await fetch(url, {
-      headers: { 'Authorization': 'Basic ' + btoa(`${cfg.accountSid}:${cfg.authToken}`) }
-    });
-    const data = await resp.json();
-    if (resp.ok) {
-      if (badge) badge.innerHTML = '<span style="color:var(--green2);font-weight:700;">✓ Connected — ' + (data.friendly_name||cfg.accountSid) + '</span>';
-      showSaveBanner('✅ Twilio connected!');
-    } else {
-      throw new Error(data.message || 'Auth failed');
-    }
-  } catch(e) {
-    if (badge) badge.innerHTML = '<span style="color:var(--red2);">✗ ' + e.message + '</span>';
-    alert('Twilio test failed: ' + e.message);
-  }
-}
-
-function twilioLog(msg) {
-  const el = document.getElementById('twilio-send-log');
-  if (!el) return;
-  const ts = new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
-  el.innerHTML = `<div>${ts} — ${msg}</div>` + el.innerHTML;
-}
 
 // ── Open Shifts ──────────────────────────────────────────────────────
 // ── Recipient Picker Modal ──────────────────────────────────────────
-// Opens a modal with checkboxes before sending any Twilio SMS
 // recipients: [{ name, job, phone, preview }]  — preview = the message they'll get
 // onSend: async function(selectedRecipients) — called when user confirms
 
-function openTwilioRecipientPicker(title, recipients, onSend) {
-  const existing = document.getElementById('twilio-picker-modal');
-  if (existing) existing.remove();
-
-  if (!recipients.length) {
-    showSaveBanner('✅ No eligible recipients found');
-    return;
-  }
-
-  const modal = document.createElement('div');
-  modal.id = 'twilio-picker-modal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:9999;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:16px;';
-
-  const rColorMap = { RN:'var(--accent2)', LPN:'var(--purple2)', CA:'var(--teal2)', UC:'var(--text2)' };
-
-  const rows = recipients.map((r, i) => {
-    const rCol  = rColorMap[r.job] || 'var(--text2)';
-    const phone = r.phone ? r.phone.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3') : '';
-    return `<div class="tpick-row" style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
-      <input type="checkbox" class="tpick-cb" data-idx="${i}" checked
-        style="width:16px;height:16px;accent-color:var(--purple2);cursor:pointer;flex-shrink:0;margin-top:2px;">
-      <div style="flex:1;min-width:0;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;">
-          <span style="font-size:12px;font-weight:700;color:var(--white);">${r.name}</span>
-          <span style="font-size:11px;font-weight:700;color:${rCol};border:1px solid currentColor;padding:1px 5px;border-radius:3px;">${r.job}</span>
-          <span style="font-size:11px;color:var(--text3);">${phone}</span>
-        </div>
-        ${r.preview ? `<div style="font-size:9.5px;color:var(--text3);background:rgba(255,255,255,0.04);border-radius:5px;padding:6px 8px;white-space:pre-wrap;max-height:80px;overflow-y:auto;line-height:1.5;">${r.preview}</div>` : ''}
-      </div>
-    </div>`;
-  }).join('');
-
-  modal.innerHTML = `<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px;width:100%;max-width:640px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-      <div style="font-size:15px;font-weight:700;color:var(--white);">📱 ${title}</div>
-      <button onclick="document.getElementById('twilio-picker-modal').remove()" style="background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;line-height:1;">✕</button>
-    </div>
-    <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">${recipients.length} recipients — uncheck anyone you don't want to include</div>
-
-    <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
-      <button onclick="document.querySelectorAll('.tpick-cb').forEach(c=>c.checked=true);updateTPickCount()" class="btn btn-ghost btn-sm" style="font-size:11px;">✓ Select All</button>
-      <button onclick="document.querySelectorAll('.tpick-cb').forEach(c=>c.checked=false);updateTPickCount()" class="btn btn-ghost btn-sm" style="font-size:11px;">✗ Deselect All</button>
-      <span id="tpick-count" style="font-size:11px;color:var(--accent2);align-self:center;margin-left:4px;">${recipients.length} selected</span>
-    </div>
-
-    <div style="max-height:50vh;overflow-y:auto;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:0 12px;">
-      ${rows}
-    </div>
-
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);">
-      <button onclick="document.getElementById('twilio-picker-modal').remove()" class="btn btn-ghost btn-sm">Cancel</button>
-      <button onclick="confirmTwilioSend()" class="btn btn-primary" style="background:rgba(139,92,246,0.3);border-color:rgba(139,92,246,0.5);color:var(--purple2);">📤 Send SMS</button>
-    </div>
-  </div>`;
-
-  // Store recipients + callback on window for confirmTwilioSend
-  window._twilioPending = { recipients, onSend };
-
-  // Wire checkboxes to update count
-  modal.querySelectorAll('.tpick-cb').forEach(cb => {
-    cb.addEventListener('change', updateTPickCount);
-  });
-
-  document.body.appendChild(modal);
-  updateTPickCount();
-}
 
 function updateTPickCount() {
   const checked = document.querySelectorAll('.tpick-cb:checked').length;
@@ -18176,190 +17963,16 @@ function updateTPickCount() {
   if (el) el.textContent = `${checked} selected`;
 }
 
-async function confirmTwilioSend() {
-  const modal = document.getElementById('twilio-picker-modal');
-  const { recipients, onSend } = window._twilioPending || {};
-  if (!recipients || !onSend) return;
-
-  const selected = [];
-  document.querySelectorAll('.tpick-cb').forEach((cb, i) => {
-    if (cb.checked) selected.push(recipients[i]);
-  });
-
-  if (!selected.length) { alert('Select at least one recipient.'); return; }
-
-  // Close modal and send
-  if (modal) modal.remove();
-
-  const btn = document.querySelector('#twilio-send-log');
-  twilioLog(`Sending to ${selected.length} selected recipients...`);
-  await onSend(selected);
-}
 
 // ── Open Shifts ──────────────────────────────────────────────────────
-async function twilioSendOpenShifts() {
-  const dateKey = state.activeBoardDate;
-  if (!dateKey) { alert('No board date loaded.'); return; }
-  const shifts  = state.placements[dateKey] || {};
-  const dateStr = new Date(dateKey+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
-
-  const budgets  = state.vacancyBudgets || {};
-  const openLines = [];
-  ['RN','LPN','CA'].forEach(role => {
-    const bud = parseFloat(budgets[`${role.toLowerCase()}-total`]) || 0;
-    if (!bud) return;
-    const filled = getStaffOnShift(role, shifts).total;
-    const open   = Math.round((bud - filled) * 10) / 10;
-    if (open > 0) openLines.push(`${role}: ${open} FTE open`);
-  });
-
-  if (!openLines.length) { showSaveBanner('✅ No open shifts to notify about'); return; }
-
-  const msgBody = `3B Tele Med Surg — Open Shifts\n${dateStr}\n\n${openLines.join('\n')}\n\nAre you available? Reply or call the unit.\n\nAOMC 3B Management`;
-
-  const scheduledNames = new Set(Object.values(shifts).flat().map(p=>p.name));
-  const candidates = MASTER_STAFF.filter(s => !scheduledNames.has(s.name) && (state.phones?.[s.name]||'').replace(/\D/g,'').length >= 10);
-
-  if (!candidates.length) { alert('No off-duty staff with phone numbers found.'); return; }
-
-  const recipients = candidates.map(s => ({
-    name: s.name, job: s.job,
-    phone: (state.phones?.[s.name]||'').replace(/\D/g,''),
-    preview: msgBody,
-    msgBody,
-  }));
-
-  openTwilioRecipientPicker('Open Shift Alerts', recipients, async (selected) => {
-    let sent=0, failed=0;
-    for (const r of selected) {
-      try { await twilioSendSMS(r.phone, r.msgBody); sent++; }
-      catch(e) { failed++; twilioLog(`✗ ${r.name}: ${e.message}`); }
-    }
-    twilioLog(`✅ Open shifts: ${sent} sent, ${failed} failed`);
-    showSaveBanner(`📱 Open shift SMS: ${sent} sent`);
-  });
-}
 
 // ── Education Overdue ────────────────────────────────────────────────
-async function twilioSendEducationOverdue() {
-  const candidates = MASTER_STAFF.filter(s => {
-    const pending = state.pendingEdu[s.name] || [];
-    const phone   = (state.phones?.[s.name]||'').replace(/\D/g,'');
-    return pending.length > 0 && phone.length >= 10;
-  });
-
-  if (!candidates.length) { showSaveBanner('✅ No staff with overdue education and a phone number'); return; }
-
-  const recipients = candidates.map(s => {
-    const items = state.pendingEdu[s.name] || [];
-    const fname = s.name.split(',')[1]?.trim() || s.name.split(',')[0];
-    const msgBody = `Hi ${fname} — 3B Tele Med Surg reminder:\n\nYou have ${items.length} pending education item${items.length!==1?'s':''}:\n${items.slice(0,3).map(i=>`• ${i}`).join('\n')}${items.length>3?`\n• ...and ${items.length-3} more`:''}\n\nPlease complete in HealthStream.\n\nAOMC 3B Management`;
-    return { name: s.name, job: s.job, phone: (state.phones?.[s.name]||'').replace(/\D/g,''), preview: msgBody, msgBody };
-  });
-
-  openTwilioRecipientPicker('Education Overdue Reminders', recipients, async (selected) => {
-    let sent=0, failed=0;
-    for (const r of selected) {
-      try { await twilioSendSMS(r.phone, r.msgBody); sent++; }
-      catch(e) { failed++; twilioLog(`✗ ${r.name}: ${e.message}`); }
-    }
-    twilioLog(`✅ Education: ${sent} sent, ${failed} failed`);
-    showSaveBanner(`📱 Education SMS: ${sent} sent`);
-  });
-}
 
 // ── Policy Sign-Off Reminders ────────────────────────────────────────
-async function twilioSendPolicyReminders() {
-  const policies = (state.policies || []).filter(p => p.requireAck !== false);
-  if (!policies.length) { showSaveBanner('No policies configured'); return; }
-
-  const pendingMap = {};
-  policies.forEach(p => {
-    getPolicyStaff(p).forEach(s => {
-      if (!(p.acks||{})[s.name]) {
-        if (!pendingMap[s.name]) pendingMap[s.name] = { staff: s, pols: [] };
-        pendingMap[s.name].pols.push(p.title);
-      }
-    });
-  });
-
-  const candidates = Object.values(pendingMap).filter(({ staff }) =>
-    (state.phones?.[staff.name]||'').replace(/\D/g,'').length >= 10
-  );
-
-  if (!candidates.length) { alert('No staff with unsigned policies and phone numbers.'); return; }
-
-  const recipients = candidates.map(({ staff, pols }) => {
-    const fname = staff.name.split(',')[1]?.trim() || staff.name.split(',')[0];
-    const msgBody = `Hi ${fname} — 3B Tele Med Surg reminder:\n\nPlease sign off on ${pols.length} polic${pols.length!==1?'ies':'y'}:\n${pols.slice(0,3).map(t=>`• ${t}`).join('\n')}${pols.length>3?`\n• ...and ${pols.length-3} more`:''}\n\nOpen the 3B Staff Command Center → Education → Read & Sign.\n\nAOMC 3B Management`;
-    return { name: staff.name, job: staff.job, phone: (state.phones?.[staff.name]||'').replace(/\D/g,''), preview: msgBody, msgBody };
-  });
-
-  openTwilioRecipientPicker('Policy Sign-Off Reminders', recipients, async (selected) => {
-    let sent=0, failed=0;
-    for (const r of selected) {
-      try { await twilioSendSMS(r.phone, r.msgBody); sent++; }
-      catch(e) { failed++; twilioLog(`✗ ${r.name}: ${e.message}`); }
-    }
-    twilioLog(`✅ Policy reminders: ${sent} sent, ${failed} failed`);
-    showSaveBanner(`📱 Policy SMS: ${sent} sent`);
-  });
-}
 
 // ── Cert Expiring Alerts ─────────────────────────────────────────────
-async function twilioSendCertExpiring() {
-  const CERT_FIELDS = [
-    {key:'bls',label:'BLS/CPR'},{key:'acls',label:'ACLS'},{key:'nihss',label:'NIHSS'},
-    {key:'pivInsertion',label:'PIV Insertion'},{key:'bloodAdmin',label:'Blood Admin'},
-    {key:'telemetry',label:'Telemetry'},{key:'ecgAcquisition',label:'12-Lead ECG'},
-    {key:'tncc',label:'TNCC'},{key:'cen',label:'CEN'},{key:'pals',label:'PALS'},
-  ];
-  const now = new Date();
-  function daysLeft(dt) { if (!dt) return 999; return Math.round((new Date(dt+'T12:00:00') - now) / 86400000); }
 
-  const candidates = MASTER_STAFF.filter(s => {
-    const certs = state.certs[s.name] || {};
-    const phone = (state.phones?.[s.name]||'').replace(/\D/g,'');
-    return CERT_FIELDS.some(f => daysLeft(certs[f.key]) < 30) && phone.length >= 10;
-  });
 
-  if (!candidates.length) { showSaveBanner('✅ No certifications expiring within 30 days'); return; }
-
-  const recipients = candidates.map(s => {
-    const certs = state.certs[s.name] || {};
-    const due   = CERT_FIELDS.filter(f => daysLeft(certs[f.key]) < 30).map(f => {
-      const d = daysLeft(certs[f.key]);
-      return `• ${f.label}: ${d < 0 ? 'EXPIRED' : d+'d remaining'} (${certs[f.key]})`;
-    });
-    const fname = s.name.split(',')[1]?.trim() || s.name.split(',')[0];
-    const msgBody = `Hi ${fname} — 3B Tele Med Surg:\n\nCertification${due.length!==1?'s':''} needing attention:\n${due.join('\n')}\n\nPlease renew as soon as possible.\n\nAOMC 3B Management`;
-    return { name: s.name, job: s.job, phone: (state.phones?.[s.name]||'').replace(/\D/g,''), preview: msgBody, msgBody };
-  });
-
-  openTwilioRecipientPicker('Cert Expiration Alerts', recipients, async (selected) => {
-    let sent=0, failed=0;
-    for (const r of selected) {
-      try { await twilioSendSMS(r.phone, r.msgBody); sent++; }
-      catch(e) { failed++; twilioLog(`✗ ${r.name}: ${e.message}`); }
-    }
-    twilioLog(`✅ Cert alerts: ${sent} sent, ${failed} failed`);
-    showSaveBanner(`📱 Cert expiration SMS: ${sent} sent`);
-  });
-}
-
-// // Replace per-staff SMS button with Twilio if configured
-async function sendSMSToStaff(phone, body) {
-  const cfg = state.twilioConfig || {};
-  if (cfg.accountSid && cfg.authToken && cfg.fromNumber) {
-    return twilioSendSMS(phone, body);
-  }
-  // Fallback: SMS app or copy
-  openSMSOrCopy(phone, body);
-}
-
-function initTwilioTab() {
-  if (document.getElementById('panel-import')?.style.display !== 'none') initTwilioUI();
-}
 
 // ── Float Stats YTD / 30-day Enhancements ────────────────────────────
 function renderFloatYtdCards() {
@@ -18831,7 +18444,6 @@ function buildSavePayload() {
     customOriMilestones: state.customOriMilestones, customOriGoals: state.customOriGoals,
     onboarding: state.onboarding, offboarding: state.offboarding,
     coaching: state.coaching, placements: state.placements, dates: state.dates,
-    twilioConfig: state.twilioConfig || {},
     docOpps: state.docOpps || {},
     fallRoundData: state.fallRoundData || [],
     staffNameMap: state.staffNameMap || {},
@@ -19030,7 +18642,6 @@ function applyLoadedData(data) {
     if (has('orientAssign'))    state.orientAssign    = data.orientAssign    || {};
     if (has('empDbl'))         state.empDbl         = data.empDbl         || {};
     if (has('empSkipSchedule')) state.empSkipSchedule = data.empSkipSchedule || {};
-    if (has('twilioConfig'))   state.twilioConfig   = data.twilioConfig   || {accountSid:'',authToken:'',fromNumber:''};
     if (!state.empDbl)          state.empDbl          = {};
     if (!state.empSkipSchedule) state.empSkipSchedule = {};
     if (!state.upc)             state.upc             = { meetings: [] };
@@ -28861,7 +28472,6 @@ function initAll() {
   renderBoardPolicyAlerts();
   updateCallInSummary();
   renderWeekendSummary('board-weekend-summary');
-  initTwilioUI();
   // Restore comp collapse state
   if (isCompCollapsed()) toggleCompCollapse(true);
   if (isCompNoneDue()) applyCompNoneDue(true);
@@ -29373,121 +28983,13 @@ function _normDate(d) {
   } catch(e) {}
 })();
 
-const FLOAT_SHEET_CSV_DEFAULT = 'https://docs.google.com/spreadsheets/d/1Wj8wwrMl1k3rk-rui4Vyo97jA_ybwxYd-6c9gNbaURc/export?format=csv&gid=0';
-function getFloatSheetUrl() {
-  return localStorage.getItem('_floatSheetUrl') || FLOAT_SHEET_CSV_DEFAULT;
-}
+// Google Sheet float import removed: tracking grid is manual entry + Supabase float data.
+async function loadFloatSheet() { sheetLoadStatus = 'loaded'; renderTrackingGrid(); }
+function sendSMSToStaff(phone, body) { openSMSOrCopy(phone, body); }
 
-function showFloatSheetSetup() {
-  const cur = localStorage.getItem('_floatSheetUrl') || '';
-  const existing = document.getElementById('float-sheet-modal');
-  if (existing) existing.remove();
-  const div = document.createElement('div');
-  div.id = 'float-sheet-modal';
-  div.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9000;display:flex;align-items:center;justify-content:center;';
-  div.onclick = e => { if(e.target===div) div.remove(); };
-  div.innerHTML = `
-    <div style="background:var(--navy);border:1px solid var(--border);border-radius:12px;padding:24px;width:520px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
-      <div style="font-size:14px;font-weight:700;color:var(--white);margin-bottom:4px;">📊 Google Sheet — Float / Sitter Dates</div>
-      <div style="font-size:11px;color:var(--text3);margin-bottom:16px;">Auto-fetches on load · refreshes every 5 min · must be set to "Anyone with link can view"</div>
 
-      <div style="background:rgba(46,125,209,0.08);border:1px solid rgba(46,125,209,0.25);border-radius:8px;padding:12px;margin-bottom:14px;font-size:11px;color:var(--text2);line-height:1.7;">
-        <strong style="color:var(--accent2);">To share your Google Sheet:</strong><br>
-        1. Open the sheet → tap <strong>Share</strong><br>
-        2. Change access to <strong>"Anyone with the link"</strong> → <strong>Viewer</strong><br>
-        3. Copy the share link and paste it below
-      </div>
 
-      <div style="margin-bottom:10px;">
-        <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">Google Sheet URL (share link or export URL)</div>
-        <input id="float-sheet-url-input" type="text" value="${cur}"
-          placeholder="https://docs.google.com/spreadsheets/d/..."
-          style="width:100%;background:var(--slate);border:1px solid var(--border);border-radius:4px;padding:7px 9px;color:var(--white);font-size:11px;outline:none;box-sizing:border-box;">
-      </div>
 
-      <div style="margin-bottom:14px;">
-        <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">Column mapping — which column has each field? (A=1, B=2, C=3...)</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
-          <div><div style="font-size:11px;color:var(--text3);margin-bottom:2px;">Staff Name col</div>
-            <input id="fcol-name" type="number" min="1" max="30" value="${localStorage.getItem('_fCol_name')||'1'}"
-              style="width:100%;background:var(--slate);border:1px solid var(--border);border-radius:4px;padding:5px 7px;color:var(--white);font-size:12px;outline:none;box-sizing:border-box;"></div>
-          <div><div style="font-size:11px;color:var(--text3);margin-bottom:2px;">Float Date col</div>
-            <input id="fcol-float" type="number" min="1" max="30" value="${localStorage.getItem('_fCol_float')||'2'}"
-              style="width:100%;background:var(--slate);border:1px solid var(--border);border-radius:4px;padding:5px 7px;color:var(--white);font-size:12px;outline:none;box-sizing:border-box;"></div>
-          <div><div style="font-size:11px;color:var(--text3);margin-bottom:2px;">Sitter Date col</div>
-            <input id="fcol-sitter" type="number" min="1" max="30" value="${localStorage.getItem('_fCol_sitter')||'3'}"
-              style="width:100%;background:var(--slate);border:1px solid var(--border);border-radius:4px;padding:5px 7px;color:var(--white);font-size:12px;outline:none;box-sizing:border-box;"></div>
-          <div><div style="font-size:11px;color:var(--text3);margin-bottom:2px;">Call-Off Date col</div>
-            <input id="fcol-calloff" type="number" min="1" max="30" value="${localStorage.getItem('_fCol_calloff')||'4'}"
-              style="width:100%;background:var(--slate);border:1px solid var(--border);border-radius:4px;padding:5px 7px;color:var(--white);font-size:12px;outline:none;box-sizing:border-box;"></div>
-          <div><div style="font-size:11px;color:var(--text3);margin-bottom:2px;">Mandate col (opt)</div>
-            <input id="fcol-mandate" type="number" min="0" max="30" value="${localStorage.getItem('_fCol_mandate')||'5'}"
-              style="width:100%;background:var(--slate);border:1px solid var(--border);border-radius:4px;padding:5px 7px;color:var(--white);font-size:12px;outline:none;box-sizing:border-box;"></div>
-          <div><div style="font-size:11px;color:var(--text3);margin-bottom:2px;">Header rows to skip</div>
-            <input id="fcol-skip" type="number" min="0" max="5" value="${localStorage.getItem('_fCol_skip')||'1'}"
-              style="width:100%;background:var(--slate);border:1px solid var(--border);border-radius:4px;padding:5px 7px;color:var(--white);font-size:12px;outline:none;box-sizing:border-box;"></div>
-        </div>
-      </div>
-
-      <div id="float-sheet-test-result" style="font-size:11px;min-height:18px;margin-bottom:12px;"></div>
-
-      <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;">
-        <button onclick="document.getElementById('float-sheet-modal').remove()" style="background:rgba(255,255,255,0.07);border:1px solid var(--border);border-radius:5px;padding:6px 14px;color:var(--text2);font-size:12px;cursor:pointer;">Cancel</button>
-        <button onclick="testFloatSheetUrl()" style="background:rgba(46,125,209,0.12);border:1px solid rgba(46,125,209,0.35);border-radius:5px;padding:6px 14px;color:var(--accent2);font-size:12px;cursor:pointer;">🔍 Test</button>
-        <button onclick="saveFloatSheetConfig()" class="btn btn-primary" style="font-size:12px;padding:6px 18px;">💾 Save & Load</button>
-      </div>
-    </div>`;
-  document.body.appendChild(div);
-}
-
-async function testFloatSheetUrl() {
-  const raw = document.getElementById('float-sheet-url-input')?.value?.trim();
-  const res = document.getElementById('float-sheet-test-result');
-  if (!raw) { if(res) res.innerHTML='<span style="color:var(--red2);">Enter a URL first.</span>'; return; }
-  const url = normalizeSheetUrl(raw);
-  if(res) res.innerHTML='<span style="color:var(--accent2);">Testing...</span>';
-  try {
-    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
-    const r = await fetch(proxyUrl);
-    if (r.ok) {
-      const text = await r.text();
-      const lines = text.split('\n').filter(l=>l.trim()).length;
-      if(res) res.innerHTML=`<span style="color:var(--green2);">✅ Accessible — ${lines} rows found. Looks good!</span>`;
-    } else {
-      if(res) res.innerHTML=`<span style="color:var(--red2);">❌ Could not fetch — is the sheet set to "Anyone with link"?</span>`;
-    }
-  } catch(e) {
-    if(res) res.innerHTML=`<span style="color:var(--red2);">❌ Network error — check the URL.</span>`;
-  }
-}
-
-function normalizeSheetUrl(raw) {
-  // Convert share URL to CSV export URL
-  if (raw.includes('/export?format=csv')) return raw;
-  const match = raw.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
-  if (match) {
-    const gidMatch = raw.match(/[#&]gid=(\d+)/);
-    const gid = gidMatch ? gidMatch[1] : '0';
-    return `https://docs.google.com/spreadsheets/d/${match[1]}/export?format=csv&gid=${gid}`;
-  }
-  return raw;
-}
-
-function saveFloatSheetConfig() {
-  const raw = document.getElementById('float-sheet-url-input')?.value?.trim();
-  if (!raw) return;
-  const url = normalizeSheetUrl(raw);
-  localStorage.setItem('_floatSheetUrl',    url);
-  localStorage.setItem('_fCol_name',    document.getElementById('fcol-name')?.value    || '1');
-  localStorage.setItem('_fCol_float',   document.getElementById('fcol-float')?.value   || '2');
-  localStorage.setItem('_fCol_sitter',  document.getElementById('fcol-sitter')?.value  || '3');
-  localStorage.setItem('_fCol_calloff', document.getElementById('fcol-calloff')?.value || '4');
-  localStorage.setItem('_fCol_mandate', document.getElementById('fcol-mandate')?.value || '5');
-  localStorage.setItem('_fCol_skip',    document.getElementById('fcol-skip')?.value     || '1');
-  document.getElementById('float-sheet-modal')?.remove();
-  loadFloatSheet();
-  showSaveBanner('📊 Sheet config saved — loading data...');
-}
 
 
 
@@ -29561,81 +29063,6 @@ function getSheetDest(row) {
 }
 
 // Fetch and parse the Google Sheet CSV
-async function loadFloatSheet() {
-  sheetLoadStatus = 'loading';
-  renderTrackingGrid();
-
-  const SHEET_URL = getFloatSheetUrl();
-  const skip     = parseInt(localStorage.getItem('_fCol_skip')    || '1');
-  const colName  = parseInt(localStorage.getItem('_fCol_name')    || '1') - 1;
-  const colFloat = parseInt(localStorage.getItem('_fCol_float')   || '2') - 1;
-  const colSitter= parseInt(localStorage.getItem('_fCol_sitter')  || '3') - 1;
-  const colOff   = parseInt(localStorage.getItem('_fCol_calloff') || '4') - 1;
-  const colMand  = parseInt(localStorage.getItem('_fCol_mandate') || '5') - 1;
-
-  const attempts = [
-    SHEET_URL,
-    `https://corsproxy.io/?${encodeURIComponent(SHEET_URL)}`,
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(SHEET_URL)}`,
-    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(SHEET_URL)}`,
-  ];
-
-  let text = null;
-  for (const url of attempts) {
-    try {
-      const resp = await fetch(url, { mode: 'cors' });
-      if (resp.ok) {
-        text = await resp.text();
-        if (text && text.length > 50) break;
-      }
-    } catch(e) { /* try next */ }
-  }
-
-  if (!text) {
-    sheetLoadStatus = 'error';
-    renderTrackingGrid();
-    return;
-  }
-
-  function parseCSV(csv) {
-    const rows = [];
-    const csvLines = csv.split('\n');
-    for (const line of csvLines) {
-      if (!line.trim()) continue;
-      const cols = [];
-      let cur = '', inQ = false;
-      for (let i = 0; i < line.length; i++) {
-        const ch = line[i];
-        if (ch === '"') { inQ = !inQ; }
-        else if ((ch === ',' || ch === '\t') && !inQ) { cols.push(cur); cur = ''; }
-        else cur += ch;
-      }
-      cols.push(cur);
-      rows.push(cols.map(c => c.trim().replace(/^"|"$/g, '')));
-    }
-    return rows;
-  }
-
-  const parsed = parseCSV(text);
-  sheetRows = parsed.slice(skip).filter(r => r.length > colName && r[colName]);
-
-  // Build name-keyed lookup for the tracking grid
-  if (!window._floatSummary) window._floatSummary = {};
-  sheetRows.forEach(r => {
-    const name = r[colName] || '';
-    if (!name) return;
-    window._floatSummary[name] = {
-      float:   colFloat  >= 0 ? (r[colFloat]  || '') : '',
-      sitter:  colSitter >= 0 ? (r[colSitter] || '') : '',
-      calloff: colOff    >= 0 ? (r[colOff]    || '') : '',
-      mandate: colMand   >= 0 ? (r[colMand]   || '') : '',
-    };
-  });
-
-  sheetLoadStatus = 'loaded';
-  renderTrackingGrid();
-  showSaveBanner(`✓ Float sheet loaded — ${sheetRows.length} staff records`);
-}
 
 function buildManualGrid() {
   const dateKey = state.activeBoardDate;
@@ -29764,18 +29191,12 @@ function renderTrackingGrid() {
   if (sheetLoadStatus === 'error') {
     el.innerHTML = `
       <div style="background:rgba(179,35,24,0.08);border:1px solid rgba(230,57,70,0.2);border-radius:6px;padding:8px 14px;margin-bottom:12px;font-size:11px;color:var(--text2);display:flex;align-items:center;justify-content:space-between;gap:8px;">
-        <span>⚠ Could not reach Float Response sheet — showing scheduled staff for manual entry.</span>
-        <button class="btn btn-ghost btn-sm" onclick="loadFloatSheet()">↻ Retry</button>
+        <span>Showing scheduled staff for manual entry.</span>
       </div>
       ${buildManualGrid()}`;
     return;
   }
-  if (sheetLoadStatus === 'idle') {
-    el.innerHTML = `<div class="card" style="text-align:center;padding:20px;color:var(--text2);">
-      <button class="btn btn-primary" onclick="loadFloatSheet()">📊 Load Float Response Sheet</button>
-    </div>`;
-    return;
-  }
+  if (sheetLoadStatus === 'idle') { el.innerHTML = buildManualGrid(); return; }
 
   if (!dateKey) {
     el.innerHTML = buildManualGrid();
@@ -29790,7 +29211,6 @@ function renderTrackingGrid() {
         <div class="tracking-grid-title">📊 3B/3C Float · Sitter · Tracking</div>
         <div style="font-size:11px;color:var(--text3);margin-top:2px;">${sheetRows.length} records loaded · Last Float/Sitter dates shown · 🔵 Blue = from Float Dashboard</div>
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="loadFloatSheet()" title="Reload from Google Sheet">↻ Refresh</button>
     </div>
     ${buildManualGrid()}`;
 }
