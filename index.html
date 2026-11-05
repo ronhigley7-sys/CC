@@ -38674,7 +38674,7 @@ var CC_SYNC_VERSION = 'sync-v2';
   function ensureFont() {
     if (document.getElementById('ds-font')) return Promise.resolve();
     var l = document.createElement('link'); l.id = 'ds-font'; l.rel = 'stylesheet';
-    l.href = 'https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&display=swap';
+    l.href = 'https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Reenie+Beanie&display=swap';
     document.head.appendChild(l);
     return (document.fonts && document.fonts.load) ? document.fonts.load('16pt "Caveat"').catch(function () {}) : Promise.resolve();
   }
@@ -38690,7 +38690,7 @@ var CC_SYNC_VERSION = 'sync-v2';
       return uniq(out).map(function (p) { return p.name; });
     }
     function cell(label, name) {
-      return '<span class="ds-n">' + esc(label) + '</span>' + (name ? '<span class="ds-w">' + esc(name) + '</span>' : '');
+      return '<span class="ds-n">' + esc(label) + '</span>' + (name ? '<span class="ds-w" style="transform:rotate(' + (Math.random() * 3 - 1.5).toFixed(2) + 'deg) translateY(' + (Math.random() * 3 - 1.5).toFixed(1) + 'px);">' + esc(name) + '</span>' : '');
     }
     // cols: array of name arrays; numbered = how many numbered rows; orient = label for the extra orient row
     function table(headers, cols, minRows, numbered, orient) {
@@ -38719,23 +38719,22 @@ var CC_SYNC_VERSION = 'sync-v2';
     var ca = [get('CA', ['0630-1430']), get('CA', ['1430-1830']), get('CA', ['1830-2230']), get('CA', ['2230-0630'])];
 
     var css = '<style>' +
-      '.ds-page{font-family:Arial,Helvetica,sans-serif;color:#111;padding:6px 8px;}' +
+      '.ds-page{font-family:"Kalam","Segoe Print","Bradley Hand",cursive;color:#222;padding:6px 8px;}' +
       '.ds-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;}' +
-      '.ds-top .ds-title{font-size:20pt;font-weight:700;}' +
-      '.ds-top .ds-unit{font-size:18pt;font-weight:700;}' +
-      '.ds-top .ds-date{font-size:18pt;font-weight:700;}' +
-      '.ds-hand{font-family:"Caveat","Segoe Script","Bradley Hand",cursive;font-weight:700;font-size:22pt;border-bottom:1.5px solid #111;padding:0 8px;}' +
-      '.ds-sec{font-size:10.5pt;font-weight:700;margin:12px 0 3px;}' +
+      '.ds-top .ds-title{font-size:22pt;font-weight:700;}' +
+      '.ds-top .ds-unit,.ds-top .ds-date{font-size:17pt;font-weight:700;}' +
+      '.ds-hand{font-family:"Reenie Beanie","Segoe Print",cursive;font-weight:400;font-size:28pt;color:#173a8c;border-bottom:1.5px solid #222;padding:0 10px;display:inline-block;transform:rotate(-1.5deg);}' +
+      '.ds-sec{font-size:12pt;font-weight:700;margin:10px 0 2px;}' +
       '.ds-t{width:100%;border-collapse:collapse;table-layout:fixed;}' +
-      '.ds-t th{font-size:9.5pt;font-weight:700;text-align:left;border:1px solid #111;padding:2px 5px;}' +
-      '.ds-t td{border:1px solid #111;height:21px;padding:0 5px;vertical-align:middle;font-size:9pt;overflow:hidden;white-space:nowrap;}' +
-      '.ds-n{font-size:8.5pt;color:#111;display:inline-block;min-width:34px;}' +
-      '.ds-w{font-family:"Caveat","Segoe Script","Bradley Hand",cursive;font-weight:700;font-size:15pt;line-height:1;}' +
+      '.ds-t th{font-size:10.5pt;font-weight:700;text-align:left;border:1px solid #333;padding:1px 6px;}' +
+      '.ds-t td{border:1px solid #333;height:22px;padding:0 6px;vertical-align:middle;font-size:10pt;overflow:hidden;white-space:nowrap;}' +
+      '.ds-n{font-size:10pt;color:#333;display:inline-block;min-width:34px;}' +
+      '.ds-w{font-family:"Reenie Beanie","Segoe Print",cursive;font-size:21pt;line-height:1;color:#173a8c;display:inline-block;}' +
       '</style>';
 
     var html = css + '<div class="ds-page">' +
       '<div class="ds-top"><span class="ds-title">Daily Staffing Sheet</span>' +
-      '<span class="ds-unit">Unit <span class="ds-hand" style="font-size:20pt;">3B / 3C</span></span>' +
+      '<span class="ds-unit">Unit <span class="ds-hand" >3B / 3C</span></span>' +
       '<span class="ds-date">Date <span class="ds-hand">' + esc(dateTxt) + '</span></span></div>' +
       '<div class="ds-sec">Unit Clerk</div>' + table(['Day', 'Evening', 'Night'], uc, 2, 0, null) +
       '<div class="ds-sec">RNs</div>' + table(['Days 0700-1900', 'Nights 1900-0700'], rn, 9, 8, 'orient') +
@@ -38748,10 +38747,10 @@ var CC_SYNC_VERSION = 'sync-v2';
     if (!w) { alert('Allow pop-ups for this site to print the Daily Staffing Sheet.'); return; }
     w.document.open();
     w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>Daily Staffing Sheet ' + esc(dateTxt) + '</title>' +
-      '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&display=swap">' +
+      '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Reenie+Beanie&display=swap">' +
       '<style>@page{size:letter portrait;margin:0.4in;}body{margin:0;background:#fff;}</style></head><body>' + html +
       '<script>(function(){function go(){setTimeout(function(){window.print();},250);}' +
-      'if(document.fonts&&document.fonts.load){Promise.all([document.fonts.load("700 16pt Caveat"),document.fonts.ready]).then(go,go);}else{go();}})();<\/script>' +
+      'if(document.fonts&&document.fonts.load){Promise.all([document.fonts.load("700 12pt Kalam"),document.fonts.load("20pt \\"Reenie Beanie\\""),document.fonts.ready]).then(go,go);}else{go();}})();<\/script>' +
       '</body></html>');
     w.document.close();
   };
