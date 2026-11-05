@@ -77,9 +77,16 @@
       '<div class="ds-sec">Sitters</div>' + table(['Days', 'Nights'], [[], []], 4, 3, null) +
       '</div>';
 
-    document.getElementById('print-sheet').innerHTML = html;
-    await ensureFont();
-    window.print();
+    var w = window.open('', '_blank');
+    if (!w) { alert('Allow pop-ups for this site to print the Daily Staffing Sheet.'); return; }
+    w.document.open();
+    w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>Daily Staffing Sheet ' + esc(dateTxt) + '</title>' +
+      '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&display=swap">' +
+      '<style>@page{size:letter portrait;margin:0.4in;}body{margin:0;background:#fff;}</style></head><body>' + html +
+      '<script>(function(){function go(){setTimeout(function(){window.print();},250);}' +
+      'if(document.fonts&&document.fonts.load){Promise.all([document.fonts.load("700 16pt Caveat"),document.fonts.ready]).then(go,go);}else{go();}})();<\/script>' +
+      '</body></html>');
+    w.document.close();
   };
 
   // Nursing Services print now uses this form; the previous layout stays available as "old layout".
