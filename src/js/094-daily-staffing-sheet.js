@@ -54,8 +54,8 @@
     var css = '<style>' +
       '.ds-page{font-family:"Kalam","Segoe Print","Bradley Hand",cursive;color:#222;padding:6px 8px;}' +
       '.ds-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;}' +
-      '.ds-top .ds-title{font-size:22pt;font-weight:700;}' +
-      '.ds-top .ds-unit,.ds-top .ds-date{font-size:17pt;font-weight:700;}' +
+      '.ds-top .ds-title{font-family:Calibri,\"Segoe UI\",Arial,Helvetica,sans-serif;font-size:22pt;font-weight:700;letter-spacing:.2px;}' +
+      '.ds-top .ds-unit,.ds-top .ds-date{font-family:Calibri,\"Segoe UI\",Arial,Helvetica,sans-serif;font-size:16pt;font-weight:700;}' +
       '.ds-hand{font-family:"Reenie Beanie","Segoe Print",cursive;font-weight:400;font-size:28pt;color:#111;border-bottom:1.5px solid #222;padding:0 10px;display:inline-block;transform:rotate(-1.5deg);}' +
       '.ds-sec{font-size:12pt;font-weight:700;margin:10px 0 2px;}' +
       '.ds-t{width:100%;border-collapse:collapse;table-layout:fixed;}' +
