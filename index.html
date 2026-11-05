@@ -38667,7 +38667,7 @@ var CC_SYNC_VERSION = 'sync-v2';
 <script>
 /* ═══ Daily Staffing Sheet (3B / 3C) — fill-in form, handwriting style ═══
  * Blank-form layout (Unit Clerk / RNs / LPNs / CAs / Sitters) pre-filled from the board for the active date.
- * Print menu → "Daily Staffing Sheet". */
+ * Print menu → "Nursing Services". */
 (function () {
   'use strict';
   function esc(t) { return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
@@ -38749,14 +38749,22 @@ var CC_SYNC_VERSION = 'sync-v2';
     window.print();
   };
 
+  // Nursing Services print now uses this form; the previous layout stays available as "old layout".
+  if (typeof window.printNursingServices === 'function' && !window.printNursingServicesOld) {
+    window.printNursingServicesOld = window.printNursingServices;
+  }
+  window.printNursingServices = window.printDailyStaffingSheet;
+
   function addMenuItem() {
     var menu = document.getElementById('print-menu');
-    if (!menu || document.getElementById('cc-ds-menu')) return;
-    var anchor = menu.querySelector('button[onclick*="printManagerView"]');
+    if (!menu || document.getElementById('cc-ns-old')) return;
+    var anchor = menu.querySelector('button[onclick*="printNursingServices"]');
+    if (anchor) anchor.innerHTML = '<b>Nursing Services</b><small>Daily Staffing Sheet · 3B / 3C fill-in form</small>';
+    if (!window.printNursingServicesOld) return;
     var b = document.createElement('button');
-    b.id = 'cc-ds-menu'; b.className = 'cc-menu-item'; b.setAttribute('role', 'menuitem');
-    b.setAttribute('onclick', 'hidePrintMenu();printDailyStaffingSheet()');
-    b.innerHTML = '<b>Daily Staffing Sheet</b><small>Fill-in form for 3B / 3C · names in handwriting</small>';
+    b.id = 'cc-ns-old'; b.className = 'cc-menu-item'; b.setAttribute('role', 'menuitem');
+    b.setAttribute('onclick', 'hidePrintMenu();printNursingServicesOld()');
+    b.innerHTML = '<b>Nursing Services (old layout)</b><small>Previous full-screen staff assignments print</small>';
     if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(b, anchor.nextSibling); else menu.appendChild(b);
   }
   if (document.readyState === 'complete') setTimeout(addMenuItem, 500); else window.addEventListener('load', function () { setTimeout(addMenuItem, 500); });
