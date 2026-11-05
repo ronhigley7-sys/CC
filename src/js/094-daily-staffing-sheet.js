@@ -56,13 +56,13 @@
       '.ds-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;}' +
       '.ds-top .ds-title{font-size:22pt;font-weight:700;}' +
       '.ds-top .ds-unit,.ds-top .ds-date{font-size:17pt;font-weight:700;}' +
-      '.ds-hand{font-family:"Reenie Beanie","Segoe Print",cursive;font-weight:400;font-size:28pt;color:#173a8c;border-bottom:1.5px solid #222;padding:0 10px;display:inline-block;transform:rotate(-1.5deg);}' +
+      '.ds-hand{font-family:"Reenie Beanie","Segoe Print",cursive;font-weight:400;font-size:28pt;color:#111;border-bottom:1.5px solid #222;padding:0 10px;display:inline-block;transform:rotate(-1.5deg);}' +
       '.ds-sec{font-size:12pt;font-weight:700;margin:10px 0 2px;}' +
       '.ds-t{width:100%;border-collapse:collapse;table-layout:fixed;}' +
       '.ds-t th{font-size:10.5pt;font-weight:700;text-align:left;border:1px solid #333;padding:1px 6px;}' +
       '.ds-t td{border:1px solid #333;height:22px;padding:0 6px;vertical-align:middle;font-size:10pt;overflow:hidden;white-space:nowrap;}' +
       '.ds-n{font-size:10pt;color:#333;display:inline-block;min-width:34px;}' +
-      '.ds-w{font-family:"Reenie Beanie","Segoe Print",cursive;font-size:21pt;line-height:1;color:#173a8c;display:inline-block;}' +
+      '.ds-w{font-family:"Reenie Beanie","Segoe Print",cursive;font-size:21pt;line-height:1;color:#111;display:inline-block;}' +
       '</style>';
 
     var html = css + '<div class="ds-page">' +
