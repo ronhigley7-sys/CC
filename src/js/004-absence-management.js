@@ -1425,7 +1425,20 @@ function updateQualityTotals(key) {
   }
 }
 
+function qualMissCell(list, emptyTxt) {
+  if (!list.length) return `<span style="color:var(--text3);">${emptyTxt}</span>`;
+  const top = list.slice(0,3).map(x => `<span style="white-space:nowrap;"><b>${x.m}</b> ×${x.c}</span>`).join(' · ');
+  const more = list.length > 3 ? ` <span style="color:var(--text3);" title="${list.slice(3).map(x=>x.m+' ×'+x.c).join(', ')}">+${list.length-3}</span>` : '';
+  return top + more;
+}
+function qualClearMisses(name, key) {
+  if (!confirm('Clear the missed-medication detail saved for ' + name.split(',')[0] + ' in this month?')) return;
+  const q = ((state.qualityData[name]||{})[key]);
+  if (q) { delete q.scanMiss; delete q.painMiss; persistSave(); renderQualityTab(); }
+}
+
 function renderQualityTab() {
+  if (window.ccQualShot && ccQualShot.init) ccQualShot.init();
   const el   = document.getElementById('quality-table');
   const sumEl = document.getElementById('quality-summary');
   if (!el) return;
@@ -1460,13 +1473,25 @@ function renderQualityTab() {
   const scanPct = pct(totScans, totScanT);
   const painPct = pct(totPain, totPainT);
 
+  // Most-missed medications (from screenshot lists): per staff + unit
+  const missScan = {}, missPain = {};
+  staff.forEach(s => {
+    missScan[s.name] = ccQualShot.missCounts(getQ(s.name), 'scan');
+    missPain[s.name] = ccQualShot.missCounts(getQ(s.name), 'pain');
+  });
+  const unitMissScan = ccQualShot.mergeCounts(staff.map(s => missScan[s.name]));
+  const unitMissPain = ccQualShot.mergeCounts(staff.map(s => missPain[s.name]));
+  const topTxt = l => l.length ? `${l[0].m} ×${l[0].c}` : '—';
+
   if (sumEl) sumEl.innerHTML = [
     { label:'Unit Scan %',          val: scanPct !== null ? scanPct+'%' : '—', color: pctColor(scanPct), icon:'💊', qual:'scan' },
     { label:'Unit Pain Reassess %', val: painPct !== null ? painPct+'%' : '—', color: pctColor(painPct), icon:'💔', qual:'pain' },
     { label:'Blood Transfusions',   val: totTx,  color: 'var(--accent2)',  icon:'🩸', qual:'tx' },
+    { label:'Most Missed Scan',     val: topTxt(unitMissScan), color: 'var(--accent2)', icon:'💊', qual:'', small:true },
+    { label:'Most Missed Reassess', val: topTxt(unitMissPain), color: 'var(--amber2)',  icon:'💔', qual:'', small:true },
     { label:'Staff Tracked',        val: staff.filter(s=>getQ(s.name).scanTotal>0).length+'/'+staff.length, color:'var(--text2)', icon:'👤', qual:'' },
   ].map(b=>`<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 18px;min-width:140px;">
-    <div style="font-size:20px;font-weight:700;color:${b.color};">${b.icon} <span${b.qual?' data-qual="'+b.qual+'"':''}>${b.val}</span></div>
+    <div style="font-size:${b.small?'15':'20'}px;font-weight:700;color:${b.color};">${b.icon} <span${b.qual?' data-qual="'+b.qual+'"':''}>${b.val}</span></div>
     <div style="font-size:11px;color:var(--text3);margin-top:2px;">${b.label} · ${MONTHS[mo]} ${yr}</div>
   </div>`).join('');
 
@@ -1476,8 +1501,8 @@ function renderQualityTab() {
         <tr style="background:rgba(255,255,255,0.06);">
           <th style="padding:8px 10px;text-align:left;color:var(--text3);position:sticky;left:0;background:var(--card);">Staff</th>
           <th style="padding:8px 6px;text-align:center;color:var(--text3);">Role</th>
-          <th style="padding:8px 6px;text-align:center;color:var(--accent2);" colspan="3">💊 Scanning</th>
-          <th style="padding:8px 6px;text-align:center;color:var(--amber2);" colspan="3">💔 Pain Reassessment</th>
+          <th style="padding:8px 6px;text-align:center;color:var(--accent2);" colspan="4">💊 Scanning</th>
+          <th style="padding:8px 6px;text-align:center;color:var(--amber2);" colspan="4">💔 Pain Reassessment</th>
           <th style="padding:8px 6px;text-align:center;color:var(--red2);">🩸 Blood Tx</th>
         </tr>
         <tr style="background:rgba(255,255,255,0.03);">
@@ -1486,9 +1511,11 @@ function renderQualityTab() {
           <th style="padding:4px 6px;text-align:center;font-size:11px;color:var(--text3);">Scanned</th>
           <th style="padding:4px 6px;text-align:center;font-size:11px;color:var(--text3);">Total Meds</th>
           <th style="padding:4px 6px;text-align:center;font-size:11px;color:var(--text3);">%</th>
+          <th style="padding:4px 6px;text-align:left;font-size:11px;color:var(--accent2);min-width:170px;">Most Missed Meds</th>
           <th style="padding:4px 6px;text-align:center;font-size:11px;color:var(--text3);">Reassessed</th>
           <th style="padding:4px 6px;text-align:center;font-size:11px;color:var(--text3);">Total Opps</th>
           <th style="padding:4px 6px;text-align:center;font-size:11px;color:var(--text3);">%</th>
+          <th style="padding:4px 6px;text-align:left;font-size:11px;color:var(--amber2);min-width:170px;">Most Missed Meds</th>
           <th style="padding:4px 6px;text-align:center;font-size:11px;color:var(--text3);">Count</th>
         </tr>
       </thead>
@@ -1514,6 +1541,7 @@ function renderQualityTab() {
                 style="width:60px;background:var(--slate);border:1px solid var(--border);color:var(--white);border-radius:4px;padding:2px 4px;text-align:center;font-size:11px;">
             </td>
             <td id="q_${sid}_scanpct" style="padding:4px 6px;text-align:center;font-weight:700;font-size:13px;color:${pctColor(sP)};">${sP!==null?sP+'%':'—'}</td>
+            <td style="padding:4px 6px;font-size:11px;line-height:1.5;" title="${(((getQ(s.name).scanMiss)||{}) && Object.values(getQ(s.name).scanMiss||{}).map(e=>e.f+' — '+e.t.replace('T',' ')).join('\n')).replace(/"/g,'&quot;')}">${qualMissCell(missScan[s.name],'—')}</td>
             <td style="padding:4px 6px;text-align:center;">
               <input type="number" id="q_${sid}_pain" min="0" value="${q.pain||''}" placeholder="0"
                 oninput="saveQuality('${safe}','pain',this.value,'q_${sid}_painpct','q_${sid}_pain','q_${sid}_paint')"
@@ -1525,6 +1553,7 @@ function renderQualityTab() {
                 style="width:60px;background:var(--slate);border:1px solid var(--border);color:var(--white);border-radius:4px;padding:2px 4px;text-align:center;font-size:11px;">
             </td>
             <td id="q_${sid}_painpct" style="padding:4px 6px;text-align:center;font-weight:700;font-size:13px;color:${pctColor(pP)};">${pP!==null?pP+'%':'—'}</td>
+            <td style="padding:4px 6px;font-size:11px;line-height:1.5;" title="${(Object.values(getQ(s.name).painMiss||{}).map(e=>e.f+' — '+e.t.replace('T',' ')+(e.mins!=null?' ('+e.mins+' min)':' (never reassessed)')).join('\n')).replace(/"/g,'&quot;')}">${qualMissCell(missPain[s.name],'—')}${(missScan[s.name].length||missPain[s.name].length)?` <a href="#" onclick="qualClearMisses('${safe}','${key}');return false;" style="color:var(--text3);font-size:10px;" title="Clear saved missed-med detail for this month">✕</a>`:''}</td>
             <td style="padding:4px 6px;text-align:center;">
               <div style="display:flex;flex-direction:column;gap:2px;align-items:center;">
                 <div style="display:flex;gap:2px;align-items:center;">
@@ -1549,9 +1578,11 @@ function renderQualityTab() {
           <td id="qtot-scans"  style="padding:6px 6px;text-align:center;">${totScans}</td>
           <td id="qtot-scant"  style="padding:6px 6px;text-align:center;">${totScanT}</td>
           <td id="qtot-scanpct" style="padding:6px 6px;text-align:center;color:${pctColor(scanPct)};">${scanPct!==null?scanPct+'%':'—'}</td>
+          <td style="padding:6px 6px;font-size:11px;font-weight:600;line-height:1.5;">${qualMissCell(unitMissScan,'—')}</td>
           <td id="qtot-pain"   style="padding:6px 6px;text-align:center;">${totPain}</td>
           <td id="qtot-paint"  style="padding:6px 6px;text-align:center;">${totPainT}</td>
           <td id="qtot-painpct" style="padding:6px 6px;text-align:center;color:${pctColor(painPct)};">${painPct!==null?painPct+'%':'—'}</td>
+          <td style="padding:6px 6px;font-size:11px;font-weight:600;line-height:1.5;">${qualMissCell(unitMissPain,'—')}</td>
           <td id="qtot-tx"     style="padding:6px 6px;text-align:center;color:var(--red2);">${totTx}</td>
         </tr>
       </tfoot>
