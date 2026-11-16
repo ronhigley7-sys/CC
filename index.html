@@ -35219,6 +35219,33 @@ window.fsm_showToast          = fsm_showToast;
     // Role label for header
     var roleLabel = role==='ALL'?'All Positions':role==='RNLPN'?'RN & LPN':role;
 
+    // CA coverage blocks (4 windows). 12/13-hr CA shifts count toward every block they overlap (same convention as Manager coverage).
+    var CA_BLOCKS = [
+      { key:'0630-1430', label:'0630–1430', name:'Day',       icon:'☀️', color:'#b45309', cover:['0630-1430','0630-1830'] },
+      { key:'1430-1830', label:'1430–1830', name:'Eve Early', icon:'🌆', color:'#0369a1', cover:['1430-1830','0630-1830','1430-0300'] },
+      { key:'1830-2230', label:'1830–2230', name:'Eve Late',  icon:'🌇', color:'#7c3aed', cover:['1830-2230','1430-0300','1830-0630'] },
+      { key:'2230-0630', label:'2230–0630', name:'Night',     icon:'🌙', color:'#5b21b6', cover:['2230-0630','1430-0300','1830-0630'] }
+    ];
+    function caTgt(key) {
+      var rq = (typeof getRiskReqs==='function' ? getRiskReqs() : {})[key] || {};
+      return (typeof rq.CA==='number') ? rq.CA : 4;
+    }
+    // Per-date CA staff + open count for each of the 4 blocks
+    function getCaBlocks(dt) {
+      var pl=(state.placements||{})[dt]||{};
+      return CA_BLOCKS.map(function(b) {
+        var staff=[];
+        b.cover.forEach(function(sk){
+          (pl[sk]||[]).forEach(function(p){
+            if((p.role||'').toUpperCase()!=='CA') return;
+            staff.push({name:p.name,role:'CA',ext:sk!==b.key?sk:''});
+          });
+        });
+        var tgt=caTgt(b.key);
+        return { key:b.key, label:b.label, name:b.name, icon:b.icon, staff:staff, tgt:tgt, open:Math.max(0,tgt-staff.length) };
+      });
+    }
+
     // Build sections to show
     var sections = [];
     if (role==='ALL'||role==='RN'||role==='LPN'||role==='RNLPN') {
@@ -35226,8 +35253,9 @@ window.fsm_showToast          = fsm_showToast;
       sections.push({ label:'RN / LPN — Night Shift (1900–0700)', type:'night', grp:'rnlpn', tgt:tgts.rnNgt, icon:'🌙', hdrBg:'#0e7490' });
     }
     if (role==='ALL'||role==='CA') {
-      sections.push({ label:'Clinical Assistant (CA) — Day Shift (0630–1430)',   type:'day',   grp:'ca', tgt:tgts.caDay, icon:'☀️', hdrBg:'#b45309' });
-      sections.push({ label:'Clinical Assistant (CA) — Night Shift (2230–0630)', type:'night', grp:'ca', tgt:tgts.caNgt, icon:'🌙', hdrBg:'#5b21b6' });
+      CA_BLOCKS.forEach(function(b) {
+        sections.push({ label:'Clinical Assistant (CA) — '+b.name+' ('+b.label+')', grp:'ca', blk:b.key, tgt:caTgt(b.key), icon:b.icon, hdrBg:b.color });
+      });
     }
 
     // Per-date filled counts
@@ -35295,6 +35323,7 @@ window.fsm_showToast          = fsm_showToast;
 
     sections.forEach(function(sec) {
       var hasAny = dates.some(function(dt) {
+        if (sec.grp==='ca') return getCaBlocks(dt).filter(function(b){return b.key===sec.blk;})[0].open > 0;
         var c = getCounts(dt);
         return sec.grp==='rnlpn'
           ? (sec.type==='day' ? c.openRnD : c.openRnN) > 0
@@ -35320,9 +35349,14 @@ window.fsm_showToast          = fsm_showToast;
 
         var alt=false;
         dates.forEach(function(dt) {
-          var c = getCounts(dt);
-          var filled = sec.grp==='rnlpn' ? (sec.type==='day'?c.rnD:c.rnN) : (sec.type==='day'?c.caD:c.caN);
-          var open   = sec.grp==='rnlpn' ? (sec.type==='day'?c.openRnD:c.openRnN) : (sec.type==='day'?c.openCaD:c.openCaN);
+          var c = getCounts(dt), filled, open;
+          if (sec.grp==='ca') {
+            var cb = getCaBlocks(dt).filter(function(b){return b.key===sec.blk;})[0];
+            filled = cb.staff.length; open = cb.open;
+          } else {
+            filled = sec.type==='day'?c.rnD:c.rnN;
+            open   = sec.type==='day'?c.openRnD:c.openRnN;
+          }
           if (open<=0) return;
           var dow=window._sbDOW(dt), isWE=dow==='Sat'||dow==='Sun'||dow==='Fri';
           var rowBg=isWE?'#fefce8':(alt?'#f8fafc':'#fff'); alt=!alt;
@@ -35355,9 +35389,9 @@ window.fsm_showToast          = fsm_showToast;
 
       var openRnD = showRnlpn ? c.openRnD : 0;
       var openRnN = showRnlpn ? c.openRnN : 0;
-      var openCaD = showCa    ? c.openCaD : 0;
-      var openCaN = showCa    ? c.openCaN : 0;
-      var totalOpen = openRnD+openRnN+openCaD+openCaN;
+      var caB = showCa ? getCaBlocks(dt) : [];
+      var openCa = caB.reduce(function(a,b){return a+b.open;},0);
+      var totalOpen = openRnD+openRnN+openCa;
 
       html += '<div style="border:1px solid '+(isWE?'#fcd34d':'#cbd5e1')+';border-radius:8px;margin-bottom:14px;overflow:hidden;border-left:4px solid '+(totalOpen>0?'#b32318':'#16a34a')+';">';
       html += '<div style="background:'+(isWE?'#fef9c3':'#f8fafc')+';padding:9px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e2e8f0;">'+
@@ -35380,9 +35414,11 @@ window.fsm_showToast          = fsm_showToast;
         html += '</div>';
       }
       if (showCa) {
-        html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;'+(showRnlpn?'border-top:1px solid #e2e8f0;background:#fafbff;':'')+'">';
-        html += shiftCol('☀️ Day — CA', st.caD, openCaD, tgts.caDay, true);
-        html += shiftCol('🌙 Night — CA', st.caN, openCaN, tgts.caNgt, false);
+        html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;'+(showRnlpn?'border-top:1px solid #e2e8f0;background:#fafbff;':'')+'">';
+        caB.forEach(function(b,i){
+          var arr=b.staff.map(function(p){return {name:p.name+(p.ext?' ('+p.ext+')':''),role:'CA'};});
+          html += shiftCol(b.icon+' '+b.label+' — CA', arr, b.open, b.tgt, i<3);
+        });
         html += '</div>';
       }
       html += '</div>';
@@ -35392,7 +35428,7 @@ window.fsm_showToast          = fsm_showToast;
     // Footer
     html += '<div style="margin-top:24px;padding-top:12px;border-top:2px solid #1a4480;display:flex;justify-content:space-between;font-size:10px;color:#64748b;">'+
       '<span>3B Tele Med Surg · Arnot Ogden Medical Center</span>'+
-      '<span>Targets: RN/LPN Day '+tgts.rnDay+' · Night '+tgts.rnNgt+' · CA Day '+tgts.caDay+' · Night '+tgts.caNgt+'</span>'+
+      '<span>Targets: RN/LPN Day '+tgts.rnDay+' · Night '+tgts.rnNgt+' · CA '+CA_BLOCKS.map(function(b){return b.label+': '+caTgt(b.key);}).join(' · ')+'</span>'+
       '<span>'+printed+'</span></div>';
     html += '</div>';
     report.innerHTML = html;
