@@ -19,6 +19,7 @@
     { key: 'valuables',  label: 'Valuables',               who: 'nurse' },
     { key: 'painadmit',  label: 'Pain on admission',       who: 'nurse' },
     { key: 'painreas',   label: 'Pain reassessments',      who: 'nurse' },
+    { key: 'careplan',   label: 'Care plan',               who: 'nurse' },
     { key: 'si',         label: 'SI',                      who: 'both' }
   ];
 
