@@ -13605,7 +13605,7 @@ function toggleFmla(name, val) {
   if (!val) delete state.empFmla[name];
   persistSave();
   renderDirectory();
-  showSaveBanner(`💾 FMLA ${val ? 'flagged (weekly check-in reminder on)' : 'removed'} for ${name.split(',')[0]}`);
+  showSaveBanner(`💾 FMLA ${val ? 'flagged — weekly check-in email will go to their email on file' : 'removed'} for ${name.split(',')[0]}`);
 }
 
 function saveFmla(name, field, val) {
@@ -14579,7 +14579,7 @@ function renderDirectory() {
                   style="${inputStyle}color:var(--green2);" title="Expected return date"
                   oninput="saveDbl('${safe}','returnDate',this.value)"
                   onblur="saveDbl('${safe}','returnDate',this.value)">`:''}
-                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;margin-top:3px;color:${onFmla?'var(--amber2)':'var(--text3)'};" title="FMLA — weekly check-in reminder is emailed while flagged">
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;margin-top:3px;color:${onFmla?'var(--amber2)':'var(--text3)'};" title="FMLA — a weekly check-in email goes to their email on file while flagged (Mondays)">
                   <input type="checkbox" ${onFmla?'checked':''} onchange="toggleFmla('${safe}',this.checked)" style="accent-color:var(--amber2);cursor:pointer;width:13px;height:13px;">
                   ${onFmla?'📋 FMLA':'FMLA'}
                 </label>
