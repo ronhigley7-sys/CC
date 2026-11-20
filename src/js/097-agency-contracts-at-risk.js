@@ -24,10 +24,13 @@
     var host = document.getElementById('agency-risk-card');
     if (!host || typeof state === 'undefined') return;
     var today = new Date(); today.setHours(0, 0, 0, 0);
-    var active = [], ended = [], bad = [];
+    var active = [], ended = [], bad = [], orphans = [];
+    var inDir = {};
+    (typeof MASTER_STAFF !== 'undefined' ? MASTER_STAFF : []).forEach(function (m) { inDir[m.name] = 1; });
     Object.keys(state.agencyDates || {}).forEach(function (name) {
       var v = state.agencyDates[name];
       if (!v || !v.isAgency) return;
+      if (!inDir[name]) { orphans.push(name); return; }   // only people actually listed in the Directory
       var end = pd(v.contractEnd), start = pd(v.contractStart), ext = pd(v.extensionEnd);
       if (v.extensionEnd && !ext) { bad.push({ name: name, raw: v.extensionEnd }); return; }
       if (ext && ext >= today) return;                 // extended and still current
@@ -37,7 +40,7 @@
     });
     active.sort(function (a, b) { return a.end - b.end; });
     ended.sort(function (a, b) { return b.end - a.end; });
-    if (!active.length && !ended.length && !bad.length) { host.innerHTML = ''; return; }
+    if (!active.length && !ended.length && !bad.length && !orphans.length) { host.innerHTML = ''; return; }
 
     var rows = active.map(function (r) {
       var days = Math.round((r.end - today) / 86400000);
@@ -56,7 +59,8 @@
     host.innerHTML = '<details open class="card" style="margin-bottom:14px;padding:10px 14px;"><summary style="cursor:pointer;font-weight:700;font-size:13px;">🧳 Agency contracts at risk of not extending (' + active.length + ')</summary>' +
       '<div style="font-size:11px;color:var(--text3);margin:4px 0 8px;">Active contracts with no extension entered, soonest end first. Enter the extension end date on the staff row to remove someone.</div>' +
       (rows ? '<table style="width:100%;border-collapse:collapse;"><thead><tr><th style="' + TH + '">Ends</th><th style="' + TH + '">Staff</th><th style="' + TH + '">Left</th><th style="' + TH + '">Midpoint</th><th style="' + TH + '">Email</th></tr></thead><tbody>' + rows + '</tbody></table>' : '<div style="font-size:12px;color:var(--text3);">None.</div>') +
-      endedHtml + badHtml + '</details>';
+      endedHtml + badHtml +
+      (orphans.length ? '<div style="margin-top:8px;font-size:11px;color:var(--text3);">Not in the Directory (agency dates saved, ignored here and by the emails): ' + orphans.map(function (n) { return esc(disp(n)); }).join(', ') + '</div>' : '') + '</details>';
   }
 
   function arm() {
