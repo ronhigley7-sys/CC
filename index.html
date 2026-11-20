@@ -39429,7 +39429,7 @@ var CC_SYNC_VERSION = 'sync-v2';
   }
   function providerHistory() {
     var seen = {}, out = [];
-    list().forEach(function (r) { if (r.event === 'molst' && r.who && !seen[r.who]) { seen[r.who] = 1; out.push(r.who); } });
+    list().forEach(function (r) { var pv = r.event === 'molst' ? r.who : r.provider; if (pv && !seen[pv]) { seen[pv] = 1; out.push(pv); } });
     return out.sort();
   }
 
@@ -39445,6 +39445,10 @@ var CC_SYNC_VERSION = 'sync-v2';
       var s = (MASTER_STAFF || []).filter(function (x) { return x.name === who; })[0];
       role = s ? s.job : '';
     }
+    var provEl = document.getElementById('ma-prov');
+    var provider = e.who === 'provider' ? who : (provEl ? provEl.value.trim() : '');
+    var roomEl = document.getElementById('ma-room');
+    var room = roomEl ? roomEl.value.trim() : '';
     if (!who) { alert(e.who === 'provider' ? 'Enter the provider.' : 'Select a staff member.'); return; }
     var date = document.getElementById('ma-date').value || dayKey(new Date());
     var now = new Date();
@@ -39452,7 +39456,7 @@ var CC_SYNC_VERSION = 'sync-v2';
     var parts = date.split('-');
     var logged = new Date(+parts[0], +parts[1] - 1, +parts[2], now.getHours(), now.getMinutes());
     list().push({ id: 'ma' + now.getTime() + Math.floor(Math.random() * 1000), date: date, event: evKey, who: who, role: role,
-      loggedAt: logged.toISOString(), completed: false, completedAt: null });
+      loggedAt: logged.toISOString(), completed: false, completedAt: null, provider: provider, room: room });
     save(); render();
     banner('📝 Logged: ' + e.label + ' — ' + disp(who));
   }
@@ -39501,6 +39505,11 @@ var CC_SYNC_VERSION = 'sync-v2';
       : '<select id="ma-staff" style="' + inputStyle + 'min-width:200px;"><option value="">Select staff…</option>' +
         staffFor(e.who).map(function (s) { return '<option value="' + esc(s.name) + '">' + esc(disp(s.name)) + ' (' + s.job + ')</option>'; }).join('') + '</select>';
 
+    var extraCtl = (e.who === 'provider' ? '' :
+      '<input id="ma-prov" list="ma-provider-list" placeholder="Provider" style="' + inputStyle + 'min-width:150px;"><datalist id="ma-provider-list">' +
+      providerHistory().map(function (p) { return '<option value="' + esc(p) + '">'; }).join('') + '</datalist>') +
+      '<input id="ma-room" placeholder="Room #" style="' + inputStyle + 'width:80px;">';
+
     var rows = list().filter(function (r) { return inRange(r, rng); });
     var open = list().filter(function (r) { return !r.completed; }).sort(function (a, b) { return a.loggedAt < b.loggedAt ? -1 : 1; });
     var recent = rows.filter(function (r) { return r.completed; }).sort(function (a, b) { return a.completedAt < b.completedAt ? 1 : -1; }).slice(0, 15);
@@ -39511,7 +39520,9 @@ var CC_SYNC_VERSION = 'sync-v2';
       return '<tr><td style="' + TD + 'width:34px;"><input type="checkbox" data-ma-done="' + r.id + '"' + (r.completed ? ' checked' : '') +
         ' title="Completed" style="width:16px;height:16px;accent-color:var(--green2);cursor:pointer;"></td>' +
         '<td style="' + TD + 'font-weight:600;">' + esc(ev(r.event).label) + '</td>' +
-        '<td style="' + TD + '">' + esc(disp(r.who)) + ' <span style="color:var(--text3);font-size:10px;">' + esc(r.role) + '</span></td>' +
+        '<td style="' + TD + '">' + esc(disp(r.who)) + ' <span style="color:var(--text3);font-size:10px;">' + esc(r.role) + '</span>' +
+        (r.room ? ' <span style="color:var(--text3);font-size:11px;">· Rm ' + esc(r.room) + '</span>' : '') +
+        (r.provider && r.event !== 'molst' ? ' <span style="color:var(--text3);font-size:11px;">· ' + esc(r.provider) + '</span>' : '') + '</td>' +
         '<td style="' + TD + 'color:var(--text3);">' + esc(fmtTime(r.loggedAt)) + '</td>' +
         '<td style="' + TD + 'color:' + (isOpen ? 'var(--amber2)' : 'var(--green2)') + ';font-weight:600;">' + age + (isOpen ? ' open' : '') + '</td>' +
         '<td style="' + TD + 'text-align:right;"><button class="btn btn-ghost btn-sm" data-ma-del="' + r.id + '" style="padding:1px 7px;font-size:11px;" title="Delete">✕</button></td></tr>';
@@ -39545,7 +39556,7 @@ var CC_SYNC_VERSION = 'sync-v2';
       '<select id="ma-range" style="' + inputStyle + '"><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option><option value="all">All time</option></select></div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">' +
       '<select id="ma-event" style="' + inputStyle + '">' + EVENTS.map(function (x) { return '<option value="' + x.key + '">' + esc(x.label) + '</option>'; }).join('') + '</select>' +
-      staffCtl +
+      staffCtl + extraCtl +
       '<input id="ma-date" type="date" value="' + dayKey(new Date()) + '" style="' + inputStyle + '">' +
       '<button class="btn btn-primary btn-sm" id="ma-add" type="button">＋ Log</button></div>' +
       '<div style="font-size:12px;font-weight:700;margin:6px 0;">Open (' + open.length + ')</div>' +
