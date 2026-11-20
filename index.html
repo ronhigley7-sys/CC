@@ -39563,6 +39563,19 @@ var CC_SYNC_VERSION = 'sync-v2';
         return '<tr><td style="' + TD + 'font-weight:600;white-space:nowrap;">' + esc(g.who) + '</td><td style="' + TD + '">' + g.s.n + '</td><td style="' + TD + 'color:' + (g.s.open ? 'var(--amber2)' : 'var(--text3)') + ';">' + g.s.open + '</td><td style="' + TD + '">' + dur(g.s.avg) + '</td><td style="' + TD + '">' + chips + '</td></tr>';
       }).join('');
 
+    // by room
+    var rmap = {};
+    rows.forEach(function (r) { if (r.room) (rmap[r.room] = rmap[r.room] || []).push(r); });
+    var roomRows = Object.keys(rmap).map(function (k) { return { room: k, rows: rmap[k], s: stats(rmap[k]) }; })
+      .sort(function (a, b) { return b.s.n - a.s.n || (a.room < b.room ? -1 : 1); })
+      .map(function (g) {
+        var chips = EVENTS.map(function (x) {
+          var c = g.rows.filter(function (r) { return r.event === x.key; }).length;
+          return c ? '<span style="display:inline-block;background:rgba(255,255,255,0.07);border-radius:10px;padding:1px 8px;margin:1px 3px 1px 0;font-size:11px;">' + esc(x.label) + ' ×' + c + '</span>' : '';
+        }).join('');
+        return '<tr><td style="' + TD + 'font-weight:600;white-space:nowrap;">Rm ' + esc(g.room) + '</td><td style="' + TD + '">' + g.s.n + '</td><td style="' + TD + 'color:' + (g.s.open ? 'var(--amber2)' : 'var(--text3)') + ';">' + g.s.open + '</td><td style="' + TD + '">' + dur(g.s.avg) + '</td><td style="' + TD + '">' + chips + '</td></tr>';
+      }).join('');
+
     host.innerHTML =
       '<div class="card" style="margin-bottom:14px;"><div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">' +
       '<div class="card-title">🌅 Morning Audits</div>' +
@@ -39581,7 +39594,9 @@ var CC_SYNC_VERSION = 'sync-v2';
       '<div><div style="font-size:12px;font-weight:700;margin-bottom:6px;">By staff / provider</div>' +
       (staffRows ? tbl(['Name', 'Logged', 'Open', 'Avg time', 'Events'], staffRows) : '<div style="color:var(--text3);font-size:12px;">No entries in this range.</div>') + '</div></div>' +
       '<div style="margin-top:14px;"><div style="font-size:12px;font-weight:700;margin-bottom:6px;">By provider</div>' +
-      (provRows ? tbl(['Provider', 'Logged', 'Open', 'Avg time', 'Events'], provRows) : '<div style="color:var(--text3);font-size:12px;">No provider entries in this range.</div>') + '</div></div>';
+      (provRows ? tbl(['Provider', 'Logged', 'Open', 'Avg time', 'Events'], provRows) : '<div style="color:var(--text3);font-size:12px;">No provider entries in this range.</div>') + '</div>' +
+      '<div style="margin-top:14px;"><div style="font-size:12px;font-weight:700;margin-bottom:6px;">By room</div>' +
+      (roomRows ? tbl(['Room', 'Logged', 'Open', 'Avg time', 'Events'], roomRows) : '<div style="color:var(--text3);font-size:12px;">No room numbers logged in this range.</div>') + '</div></div>';
 
     document.getElementById('ma-event').value = evKey;
     document.getElementById('ma-range').value = rng;
