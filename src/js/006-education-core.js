@@ -1145,6 +1145,23 @@ function saveDbl(name, field, val) {
   persistSave();
 }
 
+function toggleFmla(name, val) {
+  if (!state.empFmla) state.empFmla = {};
+  if (!state.empFmla[name]) state.empFmla[name] = {};
+  state.empFmla[name].onLeave = val;
+  if (!val) delete state.empFmla[name];
+  persistSave();
+  renderDirectory();
+  showSaveBanner(`💾 FMLA ${val ? 'flagged (weekly check-in reminder on)' : 'removed'} for ${name.split(',')[0]}`);
+}
+
+function saveFmla(name, field, val) {
+  if (!state.empFmla) state.empFmla = {};
+  if (!state.empFmla[name]) state.empFmla[name] = {};
+  state.empFmla[name][field] = val;
+  persistSave();
+}
+
 function toggleAlwaysCharge(name, checked) {
   if (checked) {
     state.empAlwaysCharge[name] = true;
@@ -2093,6 +2110,8 @@ function renderDirectory() {
             ${(()=>{
               const dbl = (state.empDbl || {})[s.name] || {};
               const onDbl = !!dbl.onLeave;
+              const fmla = (state.empFmla || {})[s.name] || {};
+              const onFmla = !!fmla.onLeave;
               const inputStyle = "background:var(--slate);border:1px solid var(--border);color:var(--white);padding:1px 4px;border-radius:3px;font-size:11px;width:76px;outline:none;margin-top:1px;";
               return `<div style="display:flex;flex-direction:column;gap:2px;min-width:100px;">
                 <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;color:${onDbl?'var(--purple2)':'var(--text3)'};">
@@ -2106,7 +2125,19 @@ function renderDirectory() {
                 <input type="text" value="${dbl.returnDate||''}" placeholder="Return MM/DD/YY"
                   style="${inputStyle}color:var(--green2);" title="Expected return date"
                   oninput="saveDbl('${safe}','returnDate',this.value)"
-                  onblur="saveDbl('${safe}','returnDate',this.value)">`:''}</div>`;
+                  onblur="saveDbl('${safe}','returnDate',this.value)">`:''}
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;margin-top:3px;color:${onFmla?'var(--amber2)':'var(--text3)'};" title="FMLA — weekly check-in reminder is emailed while flagged">
+                  <input type="checkbox" ${onFmla?'checked':''} onchange="toggleFmla('${safe}',this.checked)" style="accent-color:var(--amber2);cursor:pointer;width:13px;height:13px;">
+                  ${onFmla?'📋 FMLA':'FMLA'}
+                </label>
+                ${onFmla?`<input type="text" value="${fmla.startDate||''}" placeholder="FMLA start MM/DD/YY"
+                  style="${inputStyle}" title="FMLA start date"
+                  oninput="saveFmla('${safe}','startDate',this.value)"
+                  onblur="saveFmla('${safe}','startDate',this.value)">
+                <input type="text" value="${fmla.returnDate||''}" placeholder="Return MM/DD/YY"
+                  style="${inputStyle}color:var(--green2);" title="Expected return date"
+                  oninput="saveFmla('${safe}','returnDate',this.value)"
+                  onblur="saveFmla('${safe}','returnDate',this.value)">`:''}</div>`;
             })()}
           </td>
           <td class="dir-col-collapsible"><label style="display:flex;align-items:center;justify-content:center;gap:4px;${s.job==='CA'?'cursor:not-allowed;opacity:0.35;':'cursor:pointer;'}font-size:11px;color:${state.empPayEligible[s.name]?'var(--green2)':'var(--text3)'};" title="RN/LPN: Eligible Pay">
